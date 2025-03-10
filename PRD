@@ -1,0 +1,241 @@
+# Eddie2 – AI-Powered Education App: Product Requirements Document
+
+## 1. Overview
+
+Eddie2 is an AI-driven education-focused application that helps users interact with the OpenAI API through a text-based chat interface. Users can create, read, update, and delete (CRUD) AI-generated question-and-answer (Q&A) pairs either by chatting with the AI or by manually entering them in a dedicated interface.
+
+### MVP Scope
+- **Chat Interface**: Text-based chat for user prompts and OpenAI-generated responses, featuring a multi-pane layout similar to ChatGPT (sidebar + main chat area)
+- **Q&A CRUD**: Basic create, read, update, and delete operations for Q&A pairs
+- **Local Storage**: On-device storage for chat history and Q&A pairs
+- **Single User**: No authentication or multi-user support
+- **Web Platform**: Responsive design for web browsers
+- **Error Handling**: Robust handling and user-friendly messaging for all API interactions
+- **Direct Q&A Creation**: Manually create Q&A pairs outside of chat flow
+- **One-Click Saving**: Automatic detection of Q&A pairs in chat with a quick-save option
+- **API Key Storage**: Secure management of user-provided API keys
+- **Selectable Text**: Allows copy/paste of chat messages
+- **File Upload**: Basic single-file attachment within the chat, supporting any file type allowed by OpenAI
+
+### Full Implementation Scope (Post-MVP)
+- **User Authentication**: Multi-user support and secure login
+- **Cloud Database**: Storage of Q&A pairs and chat history in the cloud
+- **Cross-Platform Support**: Native builds for Windows, Mac, Linux, tablets, and mobile
+- **Advanced File Handling**: Multiple file uploads, drag-and-drop, advanced previews, etc.
+- **Offline Support & Synchronization**: Data sync across multiple devices, with offline access
+- **Optional Dark Mode**: Toggleable dark/light themes
+
+## 2. Technology Stack
+
+### MVP Technology Stack
+- **UI Framework**:
+  - **Flutter with Custom Theming**:
+    - Leverages Material 3 for advanced theming controls.
+    - Overrides default Material styling to achieve a minimal, ChatGPT-like look (flat elements, minimal shadows, neutral color palette).
+    - Maintains Flutter's multi-platform deployment benefits (web, iOS, Android, desktop).
+  - **(Optional) Utility-Style Libraries for Flutter**:
+    - Packages like VelocityX can provide a "utility-first" approach, somewhat reminiscent of Tailwind CSS, but adapted for Flutter's widget tree.
+- **State Management**: Riverpod
+- **API Handling**: Dio for HTTP requests to the OpenAI API
+- **Storage**:
+  - Shared Preferences for local data (chat history and Q&A pairs)
+  - Flutter Secure Storage for sensitive data (API keys)
+- **File Handling**:
+  - File picker for selecting single files
+  - Base64 encoding for sending file data to OpenAI
+- **AI Processing**: OpenAI API for generating Q&A content
+- **Web Deployment**: Flutter web with responsive design
+- **JSON Handling**: Dart convert library with error handling
+
+### Alternative Web-Centric Option (Non-MVP)
+For teams focused primarily on a web application and wanting to use Tailwind CSS or shadcn/ui, a React/Next.js stack could be used instead of Flutter. However, this would forgo the single codebase benefit for mobile/desktop.
+
+### Full Implementation Technology Stack (Post-MVP)
+- **Backend**: Firebase for user authentication and real-time database
+- **Database**: Firestore for storing Q&A pairs and user data
+- **Authentication**: Firebase Authentication (Email/Password, Google, Apple)
+- **File Handling**: Firebase Cloud Storage for large files and multi-file support
+- **MVP Technologies**: All components above remain in use and are extended
+
+## 3. Features & Functional Requirements
+
+### 3.1 Main Page (Chat Window)
+
+#### MVP Requirements
+- **Multi-Pane Layout Inspired by ChatGPT**:
+  - Sidebar for chat history, quick access to saved Q&A pairs, or settings navigation.
+  - Main Chat Section to display the ongoing conversation with the AI.
+  - Responsive design ensures the sidebar can collapse on smaller screens (mobile) to preserve space.
+- Real-time integration with the OpenAI API for user prompts and AI-generated responses.
+- Persistent chat history stored locally.
+- Automatic identification of potential Q&A pairs with a "Save as Q&A Pair" button.
+- Text in both user and AI messages is selectable for convenient copy/paste.
+- Clear error messages in the event of failed API communication.
+- File Attachment: Single-file attachment workflow (see Section 3.6).
+
+#### Full Implementation Requirements (Post-MVP)
+- **Advanced Multi-Pane UI**:
+  - Additional side panels for analytics, Q&A detail previews, or user notes.
+  - Drag-and-drop reordering of panels, or user-customizable layouts.
+  - Optional dark mode toggle for all panels.
+  - Rich text/HTML-based formatting.
+  - Full integration with advanced file-upload features (Section 3.6).
+
+### 3.2 Q&A Management (CRUD Operations)
+
+#### MVP Requirements
+- **Create**:
+  - Q&A pairs generated from AI responses or entered manually via a form
+  - One-click save of AI-detected Q&A pairs directly from the chat
+- **Read**:
+  - Dedicated screen or section displaying all stored Q&A pairs
+  - Quick navigation to each Q&A pair from the sidebar in the multi-pane layout
+- **Update**:
+  - Ability to edit existing Q&A pairs
+- **Delete**:
+  - Delete individual Q&A pairs or perform bulk removals
+- **Local Storage**:
+  - Data persistence using Shared Preferences
+- **Error Handling**:
+  - Graceful recovery if the API is unavailable or errors occur
+
+#### Full Implementation Requirements (Post-MVP)
+- Cloud-based synchronization of Q&A pairs across devices
+- Advanced search and filtering tools
+- Categorization and tagging of Q&A pairs
+- Sharing features for Q&A pairs
+
+### 3.3 OpenAI API Integration
+
+#### MVP Requirements
+- Sends user-entered text to the OpenAI API
+- Detects and structures Q&A pairs from AI responses
+- Multiple strategies for parsing response data (JSON, Markdown, or direct extraction)
+- Logs errors in detail for debugging
+- Stores and manages the API key securely
+
+#### Full Implementation Requirements (Post-MVP)
+- Additional AI endpoints for specialized tasks
+- Configurable AI parameters (temperature, max tokens, etc.)
+- Batch processing for multiple files or prompts in a single interaction
+- Handling of advanced or custom OpenAI endpoints
+
+### 3.4 Storage & Data Management
+
+#### MVP Requirements
+- Local storage of both chat history and Q&A pairs (Shared Preferences)
+- Secure storage of sensitive information like API keys (Flutter Secure Storage)
+- Automatic serialization and deserialization of Q&A data to/from JSON
+- Resilience to partial/corrupt data with fallback mechanisms
+
+#### Full Implementation Requirements (Post-MVP)
+- Cloud-based database (e.g., Firestore) for data persistence
+- Real-time synchronization and multi-device support
+- Backup and recovery features
+- Optional encryption of stored Q&A pairs
+
+### 3.5 Settings Management
+
+#### MVP Requirements
+- Dedicated settings screen for basic preferences
+- Secure interface for adding/updating/removing OpenAI API key
+- Visual feedback upon successful/failed operations
+- Configurable file size limits and disclaimers for file uploads
+
+#### Full Implementation Requirements (Post-MVP)
+- User profile settings (name, avatar, etc.)
+- Theme customization (including dark mode)
+- Language and localization options
+- Advanced AI parameter configuration
+
+### 3.6 File Upload Functionality
+
+#### MVP Requirements
+- **Basic File Attachment**:
+  - Users can attach a single file (any type supported by OpenAI) within the chat.
+  - File size validation according to OpenAI's API limits.
+  - Progress indicator for the upload process.
+  - Clear error handling for invalid or failed uploads.
+  - Ability to cancel or remove a file before sending.
+- **Transmission**:
+  - Base64-encoded upload of the file's contents to the OpenAI API.
+  - Minimal local retention of the file (only as needed for the request).
+
+#### Full Implementation Requirements (Post-MVP)
+- **Expanded File Handling**:
+  - Multiple file uploads in a single message.
+  - Drag-and-drop functionality from the user's file system.
+  - File compression for large attachments.
+  - Advanced preview and annotation within the app.
+  - Integration with Firebase Cloud Storage or similar for long-term file needs.
+
+## 4. Non-Functional Requirements
+
+### 4.1 Security & Privacy
+
+#### MVP Requirements
+- All communication with the OpenAI API over encrypted channels (HTTPS)
+- Secure, encrypted storage of user-provided API keys
+- Only essential data is stored; unneeded files or data are discarded
+- API key display is hidden or obscured by default
+- Uploaded files are used only for the immediate AI request and are not permanently stored
+
+#### Full Implementation Requirements (Post-MVP)
+- Full user authentication with secure password policies
+- Token-based authentication for external API calls
+- Compliance with privacy regulations (GDPR, CCPA, etc.)
+- End-to-end encryption for file transfers and data at rest
+
+### 4.2 Performance
+
+#### MVP Requirements
+- Low-latency chat interactions with the OpenAI API
+- Efficient local storage operations for chat history and Q&A pairs
+- Non-blocking UI with background processing for API calls
+- Optimized file encoding/transmission for single-file uploads
+
+#### Full Implementation Requirements (Post-MVP)
+- Server-side optimizations and caching for data sync
+- Smooth handling of large datasets and multiple file uploads
+- Advanced caching for frequently accessed data or Q&A sets
+- Background processing for resource-intensive operations
+
+### 4.3 Usability & UI/UX Design
+
+#### MVP Requirements
+- **Multi-Pane Layout & Modern Design**:
+  - Inspired by ChatGPT's UI: a sidebar for chat navigation/Q&A lists, a main panel for conversation, and a fluid layout that adapts to different screen sizes.
+- **Custom Material 3 Theming in Flutter**:
+  - Use neutral or minimal color palettes, reduce heavy shadows, and keep the UI uncluttered to mimic ChatGPT's style.
+- Clear, actionable error messages and visible loading indicators
+- Collapsible sidebar on smaller screens
+- Straightforward file-attachment flow with an obvious "Attach File" or "Upload" button
+- Simple settings screen with logical navigation
+
+#### Full Implementation Requirements (Post-MVP)
+- **Advanced Layout & Customization**:
+  - Additional panels for analytics, user notes, or data insights
+  - Drag-and-drop repositioning of UI elements, user-customizable layout
+  - Dark Mode Toggle with fully themed panels
+  - Additional layout options and advanced text formatting in chat
+  - Accessibility features (font sizes, screen reader compatibility)
+  - More robust file management interfaces
+
+## 5. Version Control
+
+To maintain a consistent, collaborative, and traceable development workflow, Eddie2 will use a structured Git-based version control strategy:
+
+- **Collaboration**: Enable multiple contributors to work in parallel without conflicts.
+- **Traceability**: Track all changes, revert if necessary, and maintain detailed commit histories.
+- **Branching Strategy**:
+  - Main (or Master) branch holds production-ready code.
+  - Development branch is the integration branch for new features.
+  - Feature or Topic branches are created off Development for each new feature or bug fix, then merged back via pull requests after code review.
+- **Release Management**: Tag specific commits for major releases (e.g., v1.0, v2.0) and maintain separate release branches if needed.
+- **Code Reviews**: All merges into Development and Main require peer review to ensure quality and consistency.
+- **Continuous Integration**: Automated testing will run on pull requests to verify build stability and code quality before merging.
+- **Tools**:
+  - Hosted Git service (e.g., GitHub, GitLab, or Bitbucket).
+  - Automated CI/CD pipelines (e.g., GitHub Actions, GitLab CI/CD) for build, test, and deploy tasks.
+
+By adhering to this branching strategy and code review process, Eddie2 will maintain a high-quality codebase, expedite collaboration, and enable smooth rollouts of new features.
