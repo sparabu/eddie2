@@ -1,0 +1,132 @@
+{
+  "appTitle": "Eddie2",
+  
+  "@@locale": "en",
+  
+  "chatTabLabel": "Chat",
+  "qaTabLabel": "Q&A Pairs",
+  "settingsTabLabel": "Settings",
+  
+  "newChatButton": "New Chat",
+  "deleteChatButton": "Delete Chat",
+  "deleteChat": "Delete chat",
+  "saveAsQAButton": "Save as Q&A",
+  "sendButton": "Send",
+  "attachFileButton": "Attach File",
+  "typeMessageHint": "Type a message...",
+  "startNewChatMessage": "Start a new chat",
+  "sendMessageToStartChatting": "Send a message to start chatting",
+  
+  "noQAPairsDetected": "No Q&A pairs detected in this message",
+  "qaPairsDetected": "{count, plural, =1{Saved 1 Q&A pair} other{Saved {count} Q&A pairs}}",
+  "@qaPairsDetected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "createManuallyButton": "Create Manually",
+  "cancelButton": "Cancel",
+  
+  "createQAPairTitle": "Create Q&A Pair",
+  "editQAPairTitle": "Edit Q&A Pair",
+  "questionLabel": "Question",
+  "answerLabel": "Answer",
+  "tagsLabel": "Tags (comma separated)",
+  "saveButton": "Save",
+  "deleteButton": "Delete",
+  
+  "searchQAPairsHint": "Search Q&A pairs",
+  "noQAPairsFound": "No Q&A pairs found",
+  "createQAPairButton": "Create Q&A Pair",
+  "qaPairCreatedSuccess": "Q&A pair created successfully",
+  "qaPairUpdatedSuccess": "Q&A pair updated successfully",
+  "qaPairDeletedSuccess": "Q&A pair deleted successfully",
+  
+  "settingsTitle": "Settings",
+  "apiKeySection": "OpenAI API Key",
+  "apiKeyLabel": "API Key",
+  "apiKeyHint": "Enter your OpenAI API key",
+  "saveApiKeyButton": "Save API Key",
+  "deleteApiKeyButton": "Delete API Key",
+  "apiKeySavedSuccess": "API key saved successfully. You can now use the chat!",
+  "apiKeyDeletedSuccess": "API key deleted successfully",
+  "apiKeyRequired": "Please add your OpenAI API key to get started",
+  "apiKeyRequiredForChat": "Please add your OpenAI API key in Settings first",
+  "apiKeySecureStorage": "Your API key is stored securely on your device and is never sent to our servers.",
+  "apiKeyHelperText": "You can get your API key from",
+  "apiKeyHelperLink": "OpenAI API Keys",
+  "deleteApiKeyConfirmTitle": "Delete API Key",
+  "deleteApiKeyConfirmMessage": "Are you sure you want to delete your API key? You will need to enter it again to use the app.",
+  "apiKeyValidationEmpty": "Please enter your API key",
+  "apiKeyValidationFormat": "Invalid API key format. It should start with \"sk-\"",
+  
+  "appearanceSection": "Appearance",
+  "darkModeLabel": "Dark Mode",
+  "darkModeDescription": "Toggle between light and dark theme",
+  
+  "languageSection": "Language",
+  "languageLabel": "Language",
+  "englishLanguage": "English",
+  "koreanLanguage": "한국어",
+  
+  "aiModelSection": "AI Model",
+  "aiModelLabel": "OpenAI Model",
+  "aiModelHint": "Select an OpenAI model",
+  "gpt4oModel": "GPT-4o (Recommended)",
+  "gpt4TurboModel": "GPT-4 Turbo",
+  "gpt35TurboModel": "GPT-3.5 Turbo (Faster)",
+  
+  "aboutSection": "About",
+  "versionLabel": "Version",
+  "sourceCodeLabel": "Source Code",
+  "sourceCodeDescription": "View the source code on GitHub",
+  "reportIssueLabel": "Report an Issue",
+  "reportIssueDescription": "Report bugs or request features",
+  
+  "errorTitle": "Error",
+  "genericError": "An error occurred. Please try again.",
+  "apiError": "Error communicating with OpenAI API: {message}",
+  "@apiError": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "filePickingCancelled": "File picking cancelled",
+  "filePickingFailed": "Failed to pick file: {message}",
+  "@filePickingFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "fileTooLarge": "File is too large. Maximum size is {maxSize}MB.",
+  "@fileTooLarge": {
+    "placeholders": {
+      "maxSize": {
+        "type": "int"
+      }
+    }
+  },
+  "noAssistantMessage": "No assistant message found",
+  "errorDetectingQAPairs": "Error detecting Q&A pairs: {message}",
+  "@errorDetectingQAPairs": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "deleteQAPairTitle": "Delete Q&A Pair",
+  "deleteQAPairMessage": "Are you sure you want to delete this Q&A pair?",
+  "noQAPairsYet": "No Q&A pairs yet",
+  "noQAPairsMatch": "No Q&A pairs match your search",
+  "noQAPairsDetectedMessage": "No Q&A pairs were automatically detected in this message. Would you like to:",
+  "userLabel": "You",
+  "assistantLabel": "Eddie"
+} 

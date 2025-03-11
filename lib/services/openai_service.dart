@@ -34,6 +34,7 @@ class OpenAIService {
     required List<Message> messages,
     String? filePath,
     String model = 'gpt-4o',
+    String languageCode = 'en',
   }) async {
     try {
       final apiKey = await getApiKey();
@@ -46,12 +47,27 @@ class OpenAIService {
         'Content-Type': 'application/json',
       };
       
-      final List<Map<String, dynamic>> formattedMessages = messages.map((message) {
+      // Create a system message to instruct the AI to respond in the user's language
+      String languageName = 'English';
+      if (languageCode == 'ko') {
+        languageName = 'Korean';
+      }
+      
+      final List<Map<String, dynamic>> formattedMessages = [];
+      
+      // Add system message with language instruction
+      formattedMessages.add({
+        'role': 'system',
+        'content': 'You are a helpful assistant. Always respond in $languageName unless explicitly asked to use a different language.'
+      });
+      
+      // Add user and assistant messages
+      formattedMessages.addAll(messages.map((message) {
         return {
           'role': message.role.toString().split('.').last,
           'content': message.content,
         };
-      }).toList();
+      }));
       
       // If there's a file, use the chat completions with file API
       if (filePath != null && filePath.isNotEmpty) {
@@ -137,7 +153,7 @@ class OpenAIService {
     }
   }
   
-  Future<List<Map<String, String>>> detectQAPairs(String text) async {
+  Future<List<Map<String, String>>> detectQAPairs(String text, {String languageCode = 'en'}) async {
     try {
       final apiKey = await getApiKey();
       if (apiKey == null || apiKey.isEmpty) {
@@ -148,6 +164,12 @@ class OpenAIService {
         'Authorization': 'Bearer $apiKey',
         'Content-Type': 'application/json',
       };
+      
+      // Determine language for response
+      String languageName = 'English';
+      if (languageCode == 'ko') {
+        languageName = 'Korean';
+      }
       
       final response = await _dio.post(
         '$_baseUrl/chat/completions',
@@ -162,6 +184,8 @@ Your task is to:
 2. Format them as a JSON object with a "pairs" key containing an array of objects with "question" and "answer" fields
 3. If no clear Q&A pairs are found, still return a valid JSON with an empty "pairs" array: {"pairs": []}
 4. If the text itself is in a Q&A format, treat the entire text as a single Q&A pair
+
+Always respond in $languageName unless explicitly asked to use a different language.
 
 Example output format:
 {"pairs": [{"question": "What is X?", "answer": "X is Y."}, {"question": "How does Z work?", "answer": "Z works by..."}]}'''

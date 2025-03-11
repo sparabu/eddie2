@@ -1,0 +1,1 @@
+Stay away from hardcoding specific language text in the code; instead always wrap them into proper localization files. 

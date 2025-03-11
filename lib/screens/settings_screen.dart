@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../providers/settings_provider.dart';
+import '../providers/locale_provider.dart';
 import '../utils/theme.dart';
 import '../widgets/api_key_form.dart';
 
@@ -15,10 +17,14 @@ class SettingsScreen extends ConsumerWidget {
     final apiKey = settings.apiKey;
     final isDarkMode = settings.isDarkMode;
     final hasApiKey = settings.hasApiKey;
+    final currentLocale = ref.watch(localeProvider);
+    
+    // Get localized strings
+    final l10n = AppLocalizations.of(context)!;
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: Text(l10n.settingsTitle),
         // Show a message when API key is needed
         bottom: !hasApiKey ? PreferredSize(
           preferredSize: const Size.fromHeight(30),
@@ -26,9 +32,9 @@ class SettingsScreen extends ConsumerWidget {
             width: double.infinity,
             color: AppTheme.primaryColor.withOpacity(0.1),
             padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
-            child: const Text(
-              'Please add your OpenAI API key to get started',
-              style: TextStyle(
+            child: Text(
+              l10n.apiKeyRequired,
+              style: const TextStyle(
                 color: AppTheme.primaryColor,
                 fontWeight: FontWeight.bold,
               ),
@@ -56,14 +62,19 @@ class SettingsScreen extends ConsumerWidget {
                         ref.read(settingsProvider.notifier).setApiKey(newApiKey);
                         // Show success message
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('API key saved successfully. You can now use the chat!'),
+                          SnackBar(
+                            content: Text(l10n.apiKeySavedSuccess),
                             backgroundColor: AppTheme.primaryColor,
                           ),
                         );
                       },
                       onDelete: () {
                         ref.read(settingsProvider.notifier).deleteApiKey();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(l10n.apiKeyDeletedSuccess),
+                          ),
+                        );
                       },
                     ),
                   ),
@@ -77,17 +88,17 @@ class SettingsScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Appearance',
-                          style: TextStyle(
+                        Text(
+                          l10n.appearanceSection,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 16),
                         SwitchListTile(
-                          title: const Text('Dark Mode'),
-                          subtitle: const Text('Toggle between light and dark theme'),
+                          title: Text(l10n.darkModeLabel),
+                          subtitle: Text(l10n.darkModeDescription),
                           value: isDarkMode,
                           onChanged: (value) {
                             ref.read(settingsProvider.notifier).toggleDarkMode();
@@ -95,6 +106,48 @@ class SettingsScreen extends ConsumerWidget {
                           secondary: Icon(
                             isDarkMode ? Icons.dark_mode : Icons.light_mode,
                           ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                // Language Section
+                Card(
+                  margin: const EdgeInsets.only(bottom: 24),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.languageSection,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: currentLocale.languageCode,
+                          decoration: InputDecoration(
+                            labelText: l10n.languageLabel,
+                          ),
+                          items: [
+                            DropdownMenuItem(
+                              value: 'en',
+                              child: Text(l10n.englishLanguage),
+                            ),
+                            DropdownMenuItem(
+                              value: 'ko',
+                              child: Text(l10n.koreanLanguage),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) {
+                              ref.read(localeProvider.notifier).setLocale(Locale(value));
+                            }
+                          },
                         ),
                       ],
                     ),
@@ -109,9 +162,9 @@ class SettingsScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'AI Model',
-                          style: TextStyle(
+                        Text(
+                          l10n.aiModelSection,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -119,22 +172,22 @@ class SettingsScreen extends ConsumerWidget {
                         const SizedBox(height: 16),
                         DropdownButtonFormField<String>(
                           value: settings.selectedModel,
-                          decoration: const InputDecoration(
-                            labelText: 'OpenAI Model',
-                            hintText: 'Select an OpenAI model',
+                          decoration: InputDecoration(
+                            labelText: l10n.aiModelLabel,
+                            hintText: l10n.aiModelHint,
                           ),
-                          items: const [
+                          items: [
                             DropdownMenuItem(
                               value: 'gpt-4o',
-                              child: Text('GPT-4o (Recommended)'),
+                              child: Text(l10n.gpt4oModel),
                             ),
                             DropdownMenuItem(
                               value: 'gpt-4-turbo',
-                              child: Text('GPT-4 Turbo'),
+                              child: Text(l10n.gpt4TurboModel),
                             ),
                             DropdownMenuItem(
                               value: 'gpt-3.5-turbo',
-                              child: Text('GPT-3.5 Turbo (Faster)'),
+                              child: Text(l10n.gpt35TurboModel),
                             ),
                           ],
                           onChanged: (value) {
@@ -155,24 +208,24 @@ class SettingsScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'About',
-                          style: TextStyle(
+                        Text(
+                          l10n.aboutSection,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 16),
-                        const ListTile(
-                          leading: Icon(Icons.info_outline),
-                          title: Text('Eddie2'),
-                          subtitle: Text('Version 1.0.0'),
+                        ListTile(
+                          leading: const Icon(Icons.info_outline),
+                          title: const Text('Eddie2'),
+                          subtitle: Text('${l10n.versionLabel} 1.0.0'),
                         ),
                         const Divider(),
                         ListTile(
                           leading: const Icon(Icons.code),
-                          title: const Text('Source Code'),
-                          subtitle: const Text('View the source code on GitHub'),
+                          title: Text(l10n.sourceCodeLabel),
+                          subtitle: Text(l10n.sourceCodeDescription),
                           onTap: () {
                             // Open GitHub repository
                           },
@@ -180,8 +233,8 @@ class SettingsScreen extends ConsumerWidget {
                         const Divider(),
                         ListTile(
                           leading: const Icon(Icons.bug_report_outlined),
-                          title: const Text('Report an Issue'),
-                          subtitle: const Text('Report bugs or request features'),
+                          title: Text(l10n.reportIssueLabel),
+                          subtitle: Text(l10n.reportIssueDescription),
                           onTap: () {
                             // Open issue reporting page
                           },

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../models/qa_pair.dart';
 import '../providers/qa_provider.dart';
 import '../widgets/qa_pair_card.dart';
@@ -23,10 +24,11 @@ class _QAScreenState extends ConsumerState<QAScreen> {
   }
   
   void _showCreateQAPairDialog() {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Create Q&A Pair'),
+        title: Text(l10n.createQAPairTitle),
         content: SizedBox(
           width: 600,
           child: QAPairForm(
@@ -41,10 +43,11 @@ class _QAScreenState extends ConsumerState<QAScreen> {
   }
   
   void _showEditQAPairDialog(QAPair qaPair) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Edit Q&A Pair'),
+        title: Text(l10n.editQAPairTitle),
         content: SizedBox(
           width: 600,
           child: QAPairForm(
@@ -60,15 +63,16 @@ class _QAScreenState extends ConsumerState<QAScreen> {
   }
   
   void _showDeleteQAPairDialog(QAPair qaPair) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Q&A Pair'),
-        content: const Text('Are you sure you want to delete this Q&A pair?'),
+        title: Text(l10n.deleteQAPairTitle),
+        content: Text(l10n.deleteQAPairMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancelButton),
           ),
           ElevatedButton(
             onPressed: () {
@@ -78,7 +82,7 @@ class _QAScreenState extends ConsumerState<QAScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
             ),
-            child: const Text('Delete'),
+            child: Text(l10n.deleteButton),
           ),
         ],
       ),
@@ -88,15 +92,16 @@ class _QAScreenState extends ConsumerState<QAScreen> {
   @override
   Widget build(BuildContext context) {
     final qaPairs = ref.watch(filteredQAPairsProvider(_searchQuery));
+    final l10n = AppLocalizations.of(context)!;
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Q&A Pairs'),
+        title: Text(l10n.qaTabLabel),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: _showCreateQAPairDialog,
-            tooltip: 'Create Q&A Pair',
+            tooltip: l10n.createQAPairButton,
           ),
         ],
       ),
@@ -108,7 +113,7 @@ class _QAScreenState extends ConsumerState<QAScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search Q&A pairs',
+                hintText: l10n.searchQAPairsHint,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
@@ -148,8 +153,8 @@ class _QAScreenState extends ConsumerState<QAScreen> {
                         const SizedBox(height: 16),
                         Text(
                           _searchQuery.isEmpty
-                              ? 'No Q&A pairs yet'
-                              : 'No Q&A pairs match your search',
+                              ? l10n.noQAPairsYet
+                              : l10n.noQAPairsMatch,
                           style: const TextStyle(
                             fontSize: 18,
                             color: Colors.grey,
@@ -159,7 +164,7 @@ class _QAScreenState extends ConsumerState<QAScreen> {
                           const SizedBox(height: 16),
                           ElevatedButton(
                             onPressed: _showCreateQAPairDialog,
-                            child: const Text('Create Q&A Pair'),
+                            child: Text(l10n.createQAPairButton),
                           ),
                         ],
                       ],

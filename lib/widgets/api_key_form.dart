@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../utils/theme.dart';
 
 class APIKeyForm extends StatefulWidget {
@@ -39,42 +40,37 @@ class _APIKeyFormState extends State<APIKeyForm> {
   void _saveApiKey() {
     if (_formKey.currentState!.validate()) {
       widget.onSave(_apiKeyController.text);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('API key saved successfully'),
-          backgroundColor: AppTheme.primaryColor,
-        ),
-      );
     }
   }
   
   @override
   Widget build(BuildContext context) {
     final hasApiKey = widget.initialApiKey != null && widget.initialApiKey!.isNotEmpty;
+    final l10n = AppLocalizations.of(context)!;
     
     return Form(
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'OpenAI API Key',
-            style: TextStyle(
+          Text(
+            l10n.apiKeySection,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Your API key is stored securely on your device and is never sent to our servers.',
-            style: TextStyle(fontSize: 14),
+          Text(
+            l10n.apiKeySecureStorage,
+            style: const TextStyle(fontSize: 14),
           ),
           const SizedBox(height: 16),
           TextFormField(
             controller: _apiKeyController,
             decoration: InputDecoration(
-              labelText: 'API Key',
-              hintText: 'Enter your OpenAI API key',
+              labelText: l10n.apiKeyLabel,
+              hintText: l10n.apiKeyHint,
               suffixIcon: IconButton(
                 icon: Icon(
                   _obscureText ? Icons.visibility : Icons.visibility_off,
@@ -89,10 +85,10 @@ class _APIKeyFormState extends State<APIKeyForm> {
             obscureText: _obscureText,
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please enter your API key';
+                return l10n.apiKeyValidationEmpty;
               }
               if (!value.startsWith('sk-')) {
-                return 'Invalid API key format. It should start with "sk-"';
+                return l10n.apiKeyValidationFormat;
               }
               return null;
             },
@@ -111,11 +107,11 @@ class _APIKeyFormState extends State<APIKeyForm> {
                           ? Colors.grey.shade400
                           : Colors.grey.shade700,
                     ),
-                    children: const [
-                      TextSpan(text: 'You can get your API key from '),
+                    children: [
+                      TextSpan(text: '${l10n.apiKeyHelperText} '),
                       TextSpan(
-                        text: 'OpenAI API Keys',
-                        style: TextStyle(
+                        text: l10n.apiKeyHelperLink,
+                        style: const TextStyle(
                           color: AppTheme.primaryColor,
                           decoration: TextDecoration.underline,
                         ),
@@ -136,42 +132,34 @@ class _APIKeyFormState extends State<APIKeyForm> {
                     showDialog(
                       context: context,
                       builder: (context) => AlertDialog(
-                        title: const Text('Delete API Key'),
-                        content: const Text(
-                          'Are you sure you want to delete your API key? '
-                          'You will need to enter it again to use the app.',
-                        ),
+                        title: Text(l10n.deleteApiKeyConfirmTitle),
+                        content: Text(l10n.deleteApiKeyConfirmMessage),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(),
-                            child: const Text('Cancel'),
+                            child: Text(l10n.cancelButton),
                           ),
                           ElevatedButton(
                             onPressed: () {
                               Navigator.of(context).pop();
                               widget.onDelete();
                               _apiKeyController.clear();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('API key deleted'),
-                                ),
-                              );
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.red,
                             ),
-                            child: const Text('Delete'),
+                            child: Text(l10n.deleteButton),
                           ),
                         ],
                       ),
                     );
                   },
-                  child: const Text('Delete Key'),
+                  child: Text(l10n.deleteApiKeyButton),
                 ),
               const SizedBox(width: 16),
               ElevatedButton(
                 onPressed: _saveApiKey,
-                child: const Text('Save Key'),
+                child: Text(l10n.saveApiKeyButton),
               ),
             ],
           ),

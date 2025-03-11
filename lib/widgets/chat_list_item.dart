@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import '../models/chat.dart';
 import '../utils/theme.dart';
@@ -21,6 +22,7 @@ class ChatListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final dateFormat = DateFormat('MMM d, h:mm a');
+    final l10n = AppLocalizations.of(context)!;
     
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -68,7 +70,7 @@ class ChatListItem extends StatelessWidget {
               constraints: const BoxConstraints(),
               onPressed: onDelete,
               color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
-              tooltip: 'Delete chat',
+              tooltip: l10n.deleteChat,
             ),
           ],
         ),

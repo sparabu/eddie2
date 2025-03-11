@@ -1,16 +1,19 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/chat.dart';
 import '../models/message.dart';
 import '../services/storage_service.dart';
 import '../services/openai_service.dart';
 import '../services/file_service.dart';
+import 'locale_provider.dart';
 
 class ChatNotifier extends StateNotifier<List<Chat>> {
   final StorageService _storageService;
   final OpenAIService _openAIService;
   final FileService _fileService;
+  final Ref _ref;
   
-  ChatNotifier(this._storageService, this._openAIService, this._fileService) : super([]) {
+  ChatNotifier(this._storageService, this._openAIService, this._fileService, this._ref) : super([]) {
     _loadChats();
   }
   
@@ -19,8 +22,8 @@ class ChatNotifier extends StateNotifier<List<Chat>> {
     state = chats;
   }
   
-  Future<Chat> createChat() async {
-    final newChat = Chat();
+  Future<Chat> createChat({String? title}) async {
+    final newChat = Chat(title: title);
     state = [...state, newChat];
     await _storageService.saveChat(newChat);
     return newChat;
@@ -79,11 +82,15 @@ class ChatNotifier extends StateNotifier<List<Chat>> {
       state = [...state.sublist(0, chatIndex), updatedChat, ...state.sublist(chatIndex + 1)];
       await _storageService.saveChat(updatedChat);
       
+      // Get the current locale
+      final locale = _ref.read(localeProvider);
+      
       // Send to OpenAI
       try {
         final response = await _openAIService.sendMessage(
           messages: updatedChat.messages,
           filePath: filePath,
+          languageCode: locale.languageCode,
         );
         
         // Add assistant message
@@ -133,7 +140,13 @@ class ChatNotifier extends StateNotifier<List<Chat>> {
         orElse: () => throw Exception('No assistant message found'),
       );
       
-      return await _openAIService.detectQAPairs(lastAssistantMessage.content);
+      // Get the current locale
+      final locale = _ref.read(localeProvider);
+      
+      return await _openAIService.detectQAPairs(
+        lastAssistantMessage.content,
+        languageCode: locale.languageCode,
+      );
     } catch (e) {
       print('Error detecting Q&A pairs: $e');
       return [];
@@ -145,7 +158,7 @@ final chatProvider = StateNotifierProvider<ChatNotifier, List<Chat>>((ref) {
   final storageService = ref.watch(storageServiceProvider);
   final openAIService = ref.watch(openAIServiceProvider);
   final fileService = ref.watch(fileServiceProvider);
-  return ChatNotifier(storageService, openAIService, fileService);
+  return ChatNotifier(storageService, openAIService, fileService, ref);
 });
 
 final storageServiceProvider = Provider<StorageService>((ref) {

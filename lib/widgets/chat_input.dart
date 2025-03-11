@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../services/file_service.dart';
 import '../utils/theme.dart';
 
@@ -47,15 +48,15 @@ class _ChatInputState extends State<ChatInput> {
       } else {
         // File picking was cancelled or failed
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('File picking cancelled or not supported on this platform.'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.filePickingCancelled),
           ),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error picking file: ${e.toString()}'),
+          content: Text(AppLocalizations.of(context)!.filePickingFailed(e.toString())),
           backgroundColor: AppTheme.errorColor,
         ),
       );
@@ -90,6 +91,7 @@ class _ChatInputState extends State<ChatInput> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
     
     return Container(
       padding: const EdgeInsets.all(16),
@@ -146,13 +148,13 @@ class _ChatInputState extends State<ChatInput> {
                       )
                     : const Icon(Icons.attach_file),
                 onPressed: _isAttaching ? null : _pickFile,
-                tooltip: 'Attach file',
+                tooltip: l10n.attachFileButton,
               ),
               Expanded(
                 child: TextField(
                   controller: _controller,
                   decoration: InputDecoration(
-                    hintText: 'Type a message...',
+                    hintText: l10n.typeMessageHint,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24),
                       borderSide: BorderSide.none,
@@ -183,7 +185,7 @@ class _ChatInputState extends State<ChatInput> {
                     : const Icon(Icons.send),
                 onPressed: widget.isLoading ? null : _sendMessage,
                 color: AppTheme.primaryColor,
-                tooltip: 'Send message',
+                tooltip: l10n.sendButton,
               ),
             ],
           ),

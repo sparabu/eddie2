@@ -62,10 +62,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         _scrollToBottom();
       });
     } catch (e) {
-      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l10n.apiError(e.toString())),
+          content: Text('Error: ${e.toString()}'),
           backgroundColor: AppTheme.errorColor,
         ),
       );
@@ -106,10 +105,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         _scrollToBottom();
       });
     } catch (e) {
-      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l10n.apiError(e.toString())),
+          content: Text('Error: ${e.toString()}'),
           backgroundColor: AppTheme.errorColor,
         ),
       );
@@ -121,8 +119,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
   
   Future<void> _createNewChat() async {
-    final l10n = AppLocalizations.of(context)!;
-    final newChat = await ref.read(chatProvider.notifier).createChat(title: l10n.newChatButton);
+    final newChat = await ref.read(chatProvider.notifier).createChat();
     ref.read(selectedChatIdProvider.notifier).state = newChat.id;
   }
   
@@ -249,7 +246,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (selectedChatId != null) {
       selectedChat = chats.firstWhere(
         (chat) => chat.id == selectedChatId,
-        orElse: () => chats.isNotEmpty ? chats.first : null!,
+        orElse: () => chats.isEmpty ? null : chats.first,
       );
     } else if (chats.isNotEmpty) {
       selectedChat = chats.first;
@@ -259,7 +256,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     
     return Scaffold(
       appBar: AppBar(
-        title: Text(selectedChat?.title ?? l10n.newChatButton),
+        title: Text(selectedChat?.title ?? 'New Chat'),
       ),
       body: Row(
         children: [
@@ -335,7 +332,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                l10n.startNewChatMessage,
+                                'Start a new chat',
                                 style: TextStyle(
                                   fontSize: 18,
                                   color: Theme.of(context).textTheme.bodyMedium?.color,
@@ -352,7 +349,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       : selectedChat.messages.isEmpty
                           ? Center(
                               child: Text(
-                                l10n.sendMessageToStartChatting,
+                                'Send a message to start chatting',
                                 style: TextStyle(
                                   color: Theme.of(context).textTheme.bodyMedium?.color,
                                 ),
@@ -366,7 +363,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                 return MessageBubble(
                                   message: message,
                                   onSaveQAPair: message.role == MessageRole.assistant && !message.isError
-                                      ? () => _detectAndSaveQAPairs(selectedChat!.id)
+                                      ? () => _detectAndSaveQAPairs(selectedChat.id)
                                       : null,
                                 );
                               },

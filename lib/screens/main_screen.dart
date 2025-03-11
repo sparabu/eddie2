@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../providers/settings_provider.dart';
 import '../utils/theme.dart';
 import 'chat_screen.dart';
@@ -23,11 +24,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     const SettingsScreen(),
   ];
   
-  final List<String> _titles = [
-    'Chat',
-    'Q&A Pairs',
-    'Settings',
-  ];
+  // We'll get these from localization in the build method
+  late List<String> _titles;
   
   final List<IconData> _icons = [
     Icons.chat_bubble_outline,
@@ -71,6 +69,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final hasApiKey = ref.watch(settingsProvider).hasApiKey;
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 600;
+    final l10n = AppLocalizations.of(context)!;
+    
+    // Initialize titles with localized strings
+    _titles = [
+      l10n.chatTabLabel,
+      l10n.qaTabLabel,
+      l10n.settingsTabLabel,
+    ];
     
     return Scaffold(
       body: Row(
@@ -93,9 +99,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 } else {
                   // Show a message that API key is required
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please add your OpenAI API key in Settings first'),
-                      duration: Duration(seconds: 2),
+                    SnackBar(
+                      content: Text(l10n.apiKeyRequiredForChat),
+                      duration: const Duration(seconds: 2),
                     ),
                   );
                 }
@@ -149,9 +155,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 } else {
                   // Show a message that API key is required
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please add your OpenAI API key in Settings first'),
-                      duration: Duration(seconds: 2),
+                    SnackBar(
+                      content: Text(l10n.apiKeyRequiredForChat),
+                      duration: const Duration(seconds: 2),
                     ),
                   );
                 }

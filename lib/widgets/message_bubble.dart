@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../models/message.dart';
 import '../utils/theme.dart';
 
@@ -17,6 +18,7 @@ class MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final isUser = message.role == MessageRole.user;
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
     
     Color backgroundColor;
     if (message.isError) {
@@ -47,7 +49,7 @@ class MessageBubble extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                isUser ? 'You' : 'Eddie',
+                isUser ? l10n.userLabel : l10n.assistantLabel,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: isUser ? Colors.grey.shade700 : AppTheme.primaryColor,
@@ -58,7 +60,7 @@ class MessageBubble extends StatelessWidget {
                 TextButton.icon(
                   onPressed: onSaveQAPair,
                   icon: const Icon(Icons.save_alt, size: 16),
-                  label: const Text('Save as Q&A'),
+                  label: Text(l10n.saveAsQAButton),
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     minimumSize: Size.zero,
