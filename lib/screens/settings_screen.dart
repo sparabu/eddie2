@@ -1,18 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../providers/settings_provider.dart';
 import '../providers/locale_provider.dart';
 import '../utils/theme.dart';
 import '../widgets/api_key_form.dart';
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({
     Key? key,
   }) : super(key: key);
+
+  @override
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  String _appVersion = '';
   
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    _loadAppVersion();
+  }
+  
+  Future<void> _loadAppVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      _appVersion = packageInfo.version;
+    });
+  }
+  
+  @override
+  Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
     final apiKey = settings.apiKey;
     final isDarkMode = settings.isDarkMode;
@@ -219,7 +240,7 @@ class SettingsScreen extends ConsumerWidget {
                         ListTile(
                           leading: const Icon(Icons.info_outline),
                           title: const Text('Eddie2'),
-                          subtitle: Text('${l10n.versionLabel} 1.0.0'),
+                          subtitle: Text('${l10n.versionLabel} $_appVersion'),
                         ),
                         const Divider(),
                         ListTile(
