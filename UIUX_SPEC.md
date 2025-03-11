@@ -23,28 +23,54 @@ This document defines the UI components, screens, design system, and interaction
 
 ### Navigation Components
 
-#### Navigation Rail
-- **Location**: Left side of the screen (desktop/tablet)
-- **Description**: Primary navigation component for switching between main sections
+#### Sidebar
+- **Location**: Left side of the screen
+- **Description**: Primary navigation component containing chat list, Q&A section, and settings
 - **States**: 
-  - Extended: Shows icons and labels
-  - Collapsed: Shows only icons
+  - Expanded: Shows full sidebar with all sections
+  - Collapsed: Hidden from view
 - **Elements**:
-  - Chat tab
-  - Q&A Pairs tab
-  - Settings tab
-- **Component ID**: `NavigationRail`
+  - Toggle button: Shows/hides the sidebar
+  - Chat section: List of chats with "New Chat" button
+  - Q&A section: List of Q&A pairs with "Create Q&A" button
+  - Settings section: At the bottom of sidebar
+- **Component ID**: `Sidebar`
+
+#### Top App Bar
+- **Location**: Top of the screen
+- **Description**: Contains app title, logo, and sidebar toggle
+- **Elements**:
+  - Sidebar toggle button: Shows/hides the sidebar
+  - App logo: Eddie2 logo
+  - App title: "Eddie2" text
+- **Component ID**: `TopAppBar`
+
+#### Sidebar Section
+- **Location**: Within sidebar
+- **Description**: Collapsible section for organizing sidebar content
+- **Properties**:
+  - Title: Section name (e.g., "Chats", "Q&A Pairs")
+  - Icon: Visual indicator for the section
+  - Children: List of items in the section
+  - Add button: Optional button to add new items
+- **States**:
+  - Expanded: Shows all children
+  - Collapsed: Shows only the header
+- **Component ID**: `SidebarSection`
 
 #### Bottom Navigation Bar
 - **Location**: Bottom of the screen (mobile)
 - **Description**: Alternative navigation for small screens
-- **Elements**: Same as Navigation Rail
+- **Elements**: 
+  - Chat tab
+  - Q&A Pairs tab
+  - Settings tab
 - **Component ID**: `BottomNavigationBar`
 
 ### Chat Components
 
 #### Chat List Item
-- **Location**: Left sidebar
+- **Location**: Chat section in sidebar
 - **Description**: Individual chat entry in the sidebar list
 - **Properties**:
   - Title: Shows chat title (default "New Chat" or localized equivalent)
@@ -106,6 +132,14 @@ This document defines the UI components, screens, design system, and interaction
   - Cancel button
 - **Component ID**: `QAPairForm`
 
+#### Q&A Search Bar
+- **Location**: Top of Q&A screen
+- **Description**: Search input with create button
+- **Elements**:
+  - Search field: For filtering Q&A pairs
+  - Create Q&A button: Opens the Q&A Pair Form
+- **Component ID**: `QASearchBar`
+
 ### Settings Components
 
 #### API Key Form
@@ -140,17 +174,23 @@ This document defines the UI components, screens, design system, and interaction
 ### Main Screen
 - **Purpose**: Container for all main functionality
 - **Structure**:
-  - Left Panel: Navigation Rail or Bottom Navigation
-  - Right Panel: Content Area (changes based on selected tab)
+  - Top Bar: App title, logo, and sidebar toggle
+  - Left Panel: Sidebar (when expanded)
+    - Chat Section
+    - Q&A Section
+    - Settings Section
+  - Content Area: Changes based on selected section
 - **Screen ID**: `MainScreen`
 
 ### Chat Screen
 - **Purpose**: Primary interface for chatting with AI
 - **Structure**:
-  - Left Panel: Chat Sidebar
-    - New Chat Button
-    - Chat List
+  - Left Panel: Sidebar (when expanded)
+    - Chat Section
+      - New Chat Button
       - Chat List Items
+    - Q&A Section
+    - Settings Section
   - Right Panel: Chat Area
     - Chat Header
       - Chat Title
@@ -325,13 +365,28 @@ This document defines the UI components, screens, design system, and interaction
 
 ## 4. Interaction Patterns
 
-### Chat Interactions
+### Sidebar Interactions
+
+#### Toggling Sidebar
+1. User clicks sidebar toggle button in top-left corner
+2. Sidebar slides in or out of view
+3. Content area adjusts to fill available space
+4. App title and logo appear in top bar when sidebar is hidden
 
 #### Creating a New Chat
 1. User clicks "New Chat" button in sidebar
 2. System creates a new chat with default title "New Chat" (or localized equivalent)
 3. Chat input becomes active for first message
 4. New chat is selected automatically
+
+#### Creating a New Q&A Pair from Sidebar
+1. User clicks "+" button in Q&A section of sidebar
+2. Q&A Pair form dialog opens
+3. User fills in question and answer fields
+4. User clicks Save button
+5. New Q&A pair appears in list
+
+### Chat Interactions
 
 #### Sending a Message
 1. User types message in chat input
@@ -359,7 +414,7 @@ This document defines the UI components, screens, design system, and interaction
 ### Q&A Interactions
 
 #### Creating a Q&A Pair Manually
-1. User clicks "Create Q&A Pair" button
+1. User clicks "Create Q&A Pair" button in search bar
 2. Q&A Pair form dialog opens
 3. User fills in question and answer fields
 4. User adds optional tags
@@ -409,6 +464,26 @@ This document defines the UI components, screens, design system, and interaction
 └─────────────┘     └─────────────┘
 ```
 
+### Sidebar Toggle Flow
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  View App   │────▶│ Click Toggle│────▶│Sidebar Shows│
+└─────────────┘     └─────────────┘     └──────┬──────┘
+                                                │
+                                                ▼
+                                        ┌─────────────┐
+                                        │Click Toggle │
+                                        │ Again       │
+                                        └──────┬──────┘
+                                                │
+                                                ▼
+                                        ┌─────────────┐
+                                        │Sidebar Hides│
+                                        │App Title    │
+                                        │Shows in Top │
+                                        └─────────────┘
+```
+
 ### API Key Setup Flow
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
@@ -452,11 +527,13 @@ Used for complex state that requires multiple operations:
 - `qaPairProvider`: Manages the list of Q&A pairs
 - `settingsProvider`: Manages app settings
 - `localeProvider`: Manages the app's locale
+- `sidebarProvider`: Manages sidebar visibility state
 
 #### State Providers
 Used for simple state:
 - `selectedChatIdProvider`: Tracks the currently selected chat
 - `isDarkModeProvider`: Tracks the dark mode setting
+- `isSidebarVisibleProvider`: Tracks whether the sidebar is visible
 
 ### State Flow
 
@@ -610,6 +687,9 @@ Used for simple state:
   - `newChatButton`
   - `sendMessageToStartChatting`
   - `apiKeySavedSuccess`
+  - `createNew`
+  - `qaPairs`
+  - `settings`
 - Context comments should be provided for translators
 - Use placeholders for dynamic content: `qaPairsDetected(count)`
 
@@ -627,16 +707,18 @@ Used for simple state:
 ### Responsive Behavior
 - **Mobile**:
   - Navigation Rail becomes Bottom Navigation
-  - Chat sidebar collapses, accessible via menu button
+  - Sidebar is hidden by default, accessible via toggle button
   - Single column layout for all screens
+  - App title and logo always visible in top bar
 - **Tablet**:
-  - Navigation Rail in collapsed mode
-  - Chat sidebar becomes narrower
-  - Two column layout for Chat screen
+  - Sidebar can be toggled on/off
+  - Two column layout for Chat screen when sidebar is visible
+  - App title and logo visible in top bar when sidebar is hidden
 - **Desktop**:
-  - Navigation Rail in extended mode
-  - Full width chat sidebar
+  - Sidebar can be toggled on/off
+  - Full width sidebar when visible
   - Two column layout with comfortable spacing
+  - App title and logo visible in top bar when sidebar is hidden
 
 ## 10. Accessibility Standards
 
@@ -709,6 +791,7 @@ Used for simple state:
 - **Message Bubble Appearance**: Fade in, slight scale up, 200ms
 - **Loading Indicators**: Three bouncing dots, continuous animation
 - **Button State Changes**: Quick fade, 150ms
+- **Sidebar Toggle**: Slide animation, 250ms
 
 ## 15. Testing & QA Guidelines
 
@@ -717,6 +800,7 @@ Used for simple state:
   - Test on mobile, tablet, and desktop breakpoints
   - Verify layout adjusts appropriately
   - Check touch targets are appropriate for each device
+  - Test sidebar toggle functionality on all screen sizes
 
 - **Accessibility Testing**:
   - Verify keyboard navigation works for all interactive elements

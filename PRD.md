@@ -67,6 +67,8 @@ For teams focused primarily on a web application and wanting to use Tailwind CSS
   - Sidebar for chat history, quick access to saved Q&A pairs, or settings navigation.
   - Main Chat Section to display the ongoing conversation with the AI.
   - Responsive design ensures the sidebar can collapse on smaller screens (mobile) to preserve space.
+  - Completely hideable sidebar with toggle button in the top-left corner ✅
+  - App logo and title in the top bar when sidebar is collapsed ✅
 - Real-time integration with the OpenAI API for user prompts and AI-generated responses ✅
 - Persistent chat history stored locally ✅
 - Automatic identification of potential Q&A pairs with a "Save as Q&A Pair" button ✅
@@ -78,7 +80,6 @@ For teams focused primarily on a web application and wanting to use Tailwind CSS
 - **Advanced Multi-Pane UI**:
   - Additional side panels for analytics, Q&A detail previews, or user notes.
   - Drag-and-drop reordering of panels, or user-customizable layouts.
-  - Optional dark mode toggle for all panels ✅
   - Rich text/HTML-based formatting.
   - Full integration with advanced file-upload features (Section 3.6).
 
@@ -88,9 +89,11 @@ For teams focused primarily on a web application and wanting to use Tailwind CSS
 - **Create** ✅:
   - Q&A pairs generated from AI responses or entered manually via a form
   - One-click save of AI-detected Q&A pairs directly from the chat
+  - Create new Q&A pairs directly from the Q&A screen or sidebar ✅
 - **Read** ✅:
   - Dedicated screen or section displaying all stored Q&A pairs
   - Quick navigation to each Q&A pair from the sidebar in the multi-pane layout
+  - Search functionality to find specific Q&A pairs ✅
 - **Update** ✅:
   - Ability to edit existing Q&A pairs
 - **Delete** ✅:
@@ -144,11 +147,12 @@ For teams focused primarily on a web application and wanting to use Tailwind CSS
 - Visual feedback upon successful/failed operations ✅
 - Configurable file size limits and disclaimers for file uploads ✅
 - Dynamic version display that automatically updates with each release ✅
+- Language selection with immediate UI update ✅
+- Dark mode toggle with immediate theme change ✅
+- AI model selection ✅
 
 #### Full Implementation Requirements (Post-MVP)
 - User profile settings (name, avatar, etc.)
-- Theme customization (including dark mode) ✅
-- Language and localization options ✅
 - Advanced AI parameter configuration
 
 ### 3.6 File Upload Functionality
@@ -179,6 +183,7 @@ For teams focused primarily on a web application and wanting to use Tailwind CSS
   - Support for multiple languages (initially English and Korean)
   - Language selection in the settings screen
   - Localized UI elements, error messages, and tooltips
+  - AI responses in the user's selected language ✅
 - **Localization Infrastructure** ✅:
   - Centralized string management using Flutter's intl package
   - Separation of UI code and text content
@@ -189,24 +194,6 @@ For teams focused primarily on a web application and wanting to use Tailwind CSS
 - Right-to-left (RTL) language support
 - Language detection based on user's system settings
 - Region-specific formatting for dates, numbers, and currencies
-
-### 3.8 UI/UX Documentation
-
-#### MVP Requirements
-- **Comprehensive UI/UX Specifications** ✅:
-  - Detailed documentation of all UI components and their properties
-  - Screen maps showing the structure of each screen
-  - Design system reference including colors, typography, and spacing
-  - Interaction patterns for common user flows
-  - User flow diagrams for key features
-  - State management conventions
-  - API integration points
-  - Localization guidelines
-  - Responsive behavior specifications
-  - Accessibility standards
-  - Error handling, empty states, and loading states
-  - Animation and transition guidelines
-  - Testing and QA guidelines
 
 ## 4. Non-Functional Requirements
 
@@ -239,34 +226,13 @@ For teams focused primarily on a web application and wanting to use Tailwind CSS
 - Advanced caching for frequently accessed data or Q&A sets
 - Background processing for resource-intensive operations
 
-### 4.3 Usability & UI/UX Design
-
-#### MVP Requirements
-- **Multi-Pane Layout & Modern Design** ✅:
-  - Inspired by ChatGPT's UI: a sidebar for chat navigation/Q&A lists, a main panel for conversation, and a fluid layout that adapts to different screen sizes.
-- **Custom Material 3 Theming in Flutter** ✅:
-  - Use neutral or minimal color palettes, reduce heavy shadows, and keep the UI uncluttered to mimic ChatGPT's style.
-- Clear, actionable error messages and visible loading indicators ✅
-- Collapsible sidebar on smaller screens ✅
-- Straightforward file-attachment flow with an obvious "Attach File" or "Upload" button ✅
-- Simple settings screen with logical navigation ✅
-
-#### Full Implementation Requirements (Post-MVP)
-- **Advanced Layout & Customization**:
-  - Additional panels for analytics, user notes, or data insights
-  - Drag-and-drop repositioning of UI elements, user-customizable layout
-  - Dark Mode Toggle with fully themed panels ✅
-  - Additional layout options and advanced text formatting in chat
-  - Accessibility features (font sizes, screen reader compatibility)
-  - More robust file management interfaces
-
 ## 5. Version Control
 
 ### Implementation Status
 Eddie2 has been successfully set up with Git version control and is hosted on GitHub:
 
 - **Repository**: https://github.com/sparabu/eddie2
-- **Current Version**: v1.2.1 (UI/UX documentation and dynamic version display)
+- **Current Version**: v1.3.0 (UI improvements and bug fixes)
 - **Branching Strategy**:
   - Main branch contains the production-ready code
   - Feature branches will be created for new features and improvements
@@ -306,6 +272,18 @@ Eddie2 has been successfully set up with Git version control and is hosted on Gi
   - Added design tokens, user flow diagrams, and API integration details
   - Included animation guidelines and testing/QA criteria
 
+- **v1.3.0**: UI improvements and bug fixes:
+  - Redesigned sidebar with completely hideable functionality
+  - Added toggle button in top-left corner to show/hide sidebar
+  - Moved app logo and title to top bar when sidebar is collapsed
+  - Improved Q&A management with direct creation from sidebar
+  - Added "+" button to Q&A section in sidebar
+  - Moved Settings to bottom of sidebar with separate panel
+  - Adjusted font sizes and spacing for better readability
+  - Fixed localization issues with missing strings
+  - Improved responsive design for different screen sizes
+  - Enhanced overall UI consistency
+
 ### Version Control Strategy
 To maintain a consistent, collaborative, and traceable development workflow, Eddie2 uses a structured Git-based version control strategy:
 
@@ -332,6 +310,8 @@ To maintain a consistent, collaborative, and traceable development workflow, Edd
   - Dark mode support with custom theming
   - Improved first-time user experience showing the sidebar even when API key is not set
   - Comprehensive UI/UX specifications document
+  - Completely hideable sidebar with toggle button
+  - Redesigned navigation with app logo and title in top bar
   
 - **Core Functionality**:
   - Chat interface with OpenAI API integration
@@ -339,6 +319,7 @@ To maintain a consistent, collaborative, and traceable development workflow, Edd
   - File attachment support
   - Settings management with secure API key storage
   - Dynamic version display
+  - Direct Q&A pair creation from sidebar
   
 - **Error Handling**:
   - Improved error handling for file picking failures
