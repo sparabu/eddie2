@@ -3,7 +3,7 @@
   
   "@@locale": "en",
   
-  "chatTabLabel": "Chat",
+  "chatTabLabel": "Recent Chats",
   "qaTabLabel": "Q&A Pairs",
   "settingsTabLabel": "Settings",
   
@@ -13,9 +13,18 @@
   "saveAsQAButton": "Save as Q&A",
   "sendButton": "Send",
   "attachFileButton": "Attach File",
-  "typeMessageHint": "Type a message...",
+  "typeMessageHint": "Ask Eddie to create...",
+  "chatWelcomeTitle": "What can I help you learn?",
   "startNewChatMessage": "Start a new chat",
   "sendMessageToStartChatting": "Send a message to start chatting",
+  "noMessagesYet": "No messages yet",
+  "createNew": "Create new",
+  "collapseSidebar": "Collapse sidebar",
+  "expandSidebar": "Expand sidebar",
+  "noChatsYet": "No chats yet",
+  "deleteQAPair": "Delete Q&A pair",
+  "selectQAPair": "Select a Q&A pair",
+  "editQAPair": "Edit Q&A pair",
   
   "noQAPairsDetected": "No Q&A pairs detected in this message",
   "qaPairsDetected": "{count, plural, =1{Saved 1 Q&A pair} other{Saved {count} Q&A pairs}}",
@@ -128,5 +137,6 @@
   "noQAPairsMatch": "No Q&A pairs match your search",
   "noQAPairsDetectedMessage": "No Q&A pairs were automatically detected in this message. Would you like to:",
   "userLabel": "You",
-  "assistantLabel": "Eddie"
+  "assistantLabel": "Eddie",
+  "viewAll": "View All"
 } 

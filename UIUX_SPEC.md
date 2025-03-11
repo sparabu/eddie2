@@ -25,16 +25,30 @@ This document defines the UI components, screens, design system, and interaction
 
 #### Sidebar
 - **Location**: Left side of the screen
-- **Description**: Primary navigation component containing chat list, Q&A section, and settings
+- **Description**: Primary navigation component containing recent chats, Q&A section, and settings
 - **States**: 
   - Expanded: Shows full sidebar with all sections
   - Collapsed: Hidden from view
 - **Elements**:
   - Toggle button: Shows/hides the sidebar
-  - Chat section: List of chats with "New Chat" button
+  - Recent Chats section: List of 5 most recent chats with "New Chat" button above
+  - "View All" link for Recent Chats: Shows all chats in the main content area
   - Q&A section: List of Q&A pairs with "Create Q&A" button
+  - "View All" link for Q&A Pairs: Shows all Q&A pairs in the main content area
   - Settings section: At the bottom of sidebar
 - **Component ID**: `Sidebar`
+
+#### Sidebar Divider
+- **Location**: Between sidebar and main content area
+- **Description**: Vertical divider that acts as a toggle for the sidebar
+- **Properties**:
+  - Width: 1px
+  - Height: Full height of the screen
+  - Color: Very dark gray (almost black) in dark mode, light gray in light mode
+- **Behavior**:
+  - When clicked, toggles the sidebar between expanded and collapsed states
+  - Shows a resize cursor on hover to indicate it's interactive
+- **Component ID**: `SidebarDivider`
 
 #### Top App Bar
 - **Location**: Top of the screen
@@ -49,10 +63,11 @@ This document defines the UI components, screens, design system, and interaction
 - **Location**: Within sidebar
 - **Description**: Collapsible section for organizing sidebar content
 - **Properties**:
-  - Title: Section name (e.g., "Chats", "Q&A Pairs")
-  - Icon: Visual indicator for the section
+  - Title: Section name (e.g., "Recent Chats", "Q&A Pairs")
+  - Icon: Visual indicator for the section (optional, used only for Settings)
   - Children: List of items in the section
-  - Add button: Optional button to add new items
+  - Add button: Optional button to add new items (used only for Q&A section)
+  - View All link: Optional link to show all items in the main content area
 - **States**:
   - Expanded: Shows all children
   - Collapsed: Shows only the header
@@ -70,7 +85,7 @@ This document defines the UI components, screens, design system, and interaction
 ### Chat Components
 
 #### Chat List Item
-- **Location**: Chat section in sidebar
+- **Location**: Recent Chats section in sidebar
 - **Description**: Individual chat entry in the sidebar list
 - **Properties**:
   - Title: Shows chat title (default "New Chat" or localized equivalent)
@@ -98,7 +113,7 @@ This document defines the UI components, screens, design system, and interaction
 - **Location**: Bottom of chat area
 - **Description**: Input field for typing messages
 - **Elements**:
-  - Text field: For typing messages
+  - Text field: For typing messages with placeholder "Ask Eddie to create..."
   - Attach File button: For uploading files
   - Send button: For sending messages
 - **States**:
@@ -169,6 +184,17 @@ This document defines the UI components, screens, design system, and interaction
   - AI Model selector
 - **Component ID**: `SettingsDropdown`
 
+### View All Link
+- **Location**: Bottom of sidebar sections
+- **Description**: Link to view all items in a section
+- **Properties**:
+  - Text: "View All" (localized)
+  - Icon: Chevron right
+- **States**:
+  - Default: Regular text color
+  - Hover: Slightly darker text color
+- **Component ID**: `ViewAllLink`
+
 ## 2. Screen Map
 
 ### Main Screen
@@ -176,11 +202,30 @@ This document defines the UI components, screens, design system, and interaction
 - **Structure**:
   - Top Bar: App title, logo, and sidebar toggle
   - Left Panel: Sidebar (when expanded)
-    - Chat Section
+    - New Chat Button
+    - Recent Chats Section (5 most recent chats)
+    - View All link for Recent Chats
     - Q&A Section
+    - View All link for Q&A Pairs
     - Settings Section
   - Content Area: Changes based on selected section
 - **Screen ID**: `MainScreen`
+
+### All Chats Screen
+- **Purpose**: Display all chats when "View All" is clicked in Recent Chats section
+- **Structure**:
+  - Header: "Recent Chats" title
+  - List of all chats sorted by most recent first
+  - Each chat item shows title, preview, and delete button
+- **Screen ID**: `AllChatsScreen`
+
+### All Q&A Pairs Screen
+- **Purpose**: Display all Q&A pairs when "View All" is clicked in Q&A Pairs section
+- **Structure**:
+  - Header: "Q&A Pairs" title
+  - List of all Q&A pairs
+  - Each Q&A pair item shows question, preview of answer, and delete button
+- **Screen ID**: `AllQAPairsScreen`
 
 ### Chat Screen
 - **Purpose**: Primary interface for chatting with AI
@@ -197,8 +242,9 @@ This document defines the UI components, screens, design system, and interaction
     - Message List
       - User Message Bubbles
       - Assistant Message Bubbles
+    - Empty State: Large welcome message "What can I help you learn?"
     - Chat Input Area
-      - Message Input Field
+      - Message Input Field with placeholder "Ask Eddie to create..."
       - Attach File Button
       - Send Button
 - **Screen ID**: `ChatScreen`
@@ -368,7 +414,7 @@ This document defines the UI components, screens, design system, and interaction
 ### Sidebar Interactions
 
 #### Toggling Sidebar
-1. User clicks sidebar toggle button in top-left corner
+1. User clicks sidebar toggle button in top-left corner or the vertical divider bar
 2. Sidebar slides in or out of view
 3. Content area adjusts to fill available space
 4. App title and logo appear in top bar when sidebar is hidden
@@ -385,6 +431,18 @@ This document defines the UI components, screens, design system, and interaction
 3. User fills in question and answer fields
 4. User clicks Save button
 5. New Q&A pair appears in list
+
+#### Viewing All Chats
+1. User clicks "View All" link in Recent Chats section
+2. Main content area changes to show All Chats Screen
+3. All chats are displayed in a list, sorted by most recent first
+4. User can select a chat to view or delete chats from this screen
+
+#### Viewing All Q&A Pairs
+1. User clicks "View All" link in Q&A Pairs section
+2. Main content area changes to show All Q&A Pairs Screen
+3. All Q&A pairs are displayed in a list
+4. User can select a Q&A pair to view or delete Q&A pairs from this screen
 
 ### Chat Interactions
 
@@ -754,7 +812,7 @@ Used for simple state:
 ### Chat Empty State
 - **New User**: Shows welcome message and suggestion to start a chat
 - **No Selected Chat**: Shows prompt to select a chat or create a new one
-- **Empty Chat**: Shows prompt to send first message
+- **Empty Chat**: Shows large, bold welcome message "What can I help you learn?" centered in the chat area
 
 ### Q&A Empty State
 - **No Q&A Pairs**: Shows message that no pairs exist yet

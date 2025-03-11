@@ -16,6 +16,11 @@ Eddie2 is an AI-driven education-focused application that helps users interact w
 - **API Key Storage**: Secure management of user-provided API keys ✅
 - **Selectable Text**: Allows copy/paste of chat messages ✅
 - **File Upload**: Basic single-file attachment within the chat, supporting any file type allowed by OpenAI ✅
+- **Recent Chats**: Display of the 5 most recent chats in the sidebar, sorted chronologically ✅
+- **View All Links**: "View All" links for both Recent Chats and Q&A Pairs sections to show all items ✅
+- **Sidebar Divider**: Vertical divider bar that acts as a toggle for the sidebar ✅
+- **Welcome Message**: Clear welcome message "What can I help you learn?" in new chats ✅
+- **Guided Input**: Input field placeholder "Ask Eddie to create..." to guide users ✅
 
 ### Full Implementation Scope (Post-MVP)
 - **User Authentication**: Multi-user support and secure login
@@ -64,11 +69,18 @@ For teams focused primarily on a web application and wanting to use Tailwind CSS
 
 #### MVP Requirements
 - **Multi-Pane Layout Inspired by ChatGPT** ✅:
-  - Sidebar for chat history, quick access to saved Q&A pairs, or settings navigation.
+  - Sidebar for recent chats, quick access to saved Q&A pairs, or settings navigation.
   - Main Chat Section to display the ongoing conversation with the AI.
   - Responsive design ensures the sidebar can collapse on smaller screens (mobile) to preserve space.
   - Completely hideable sidebar with toggle button in the top-left corner ✅
+  - Vertical divider bar between sidebar and main content that acts as a toggle ✅
   - App logo and title in the top bar when sidebar is collapsed ✅
+  - Recent Chats section showing the 5 most recent chats, sorted chronologically ✅
+  - "View All" links for both Recent Chats and Q&A Pairs sections to show all items ✅
+- **Welcoming User Experience** ✅:
+  - Large, bold welcome message "What can I help you learn?" in empty chats
+  - Input field with helpful placeholder "Ask Eddie to create..." to guide users
+  - Clean, focused interface with only essential controls (attach and send buttons)
 - Real-time integration with the OpenAI API for user prompts and AI-generated responses ✅
 - Persistent chat history stored locally ✅
 - Automatic identification of potential Q&A pairs with a "Save as Q&A Pair" button ✅

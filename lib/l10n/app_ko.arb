@@ -3,7 +3,7 @@
   
   "@@locale": "ko",
   
-  "chatTabLabel": "채팅",
+  "chatTabLabel": "최근 채팅",
   "qaTabLabel": "Q&A 쌍",
   "settingsTabLabel": "설정",
   
@@ -13,9 +13,18 @@
   "saveAsQAButton": "Q&A로 저장",
   "sendButton": "보내기",
   "attachFileButton": "파일 첨부",
-  "typeMessageHint": "메시지를 입력하세요...",
+  "typeMessageHint": "Eddie에게 생성을 요청하세요...",
+  "chatWelcomeTitle": "무엇을 도와드릴까요?",
   "startNewChatMessage": "새 채팅 시작하기",
   "sendMessageToStartChatting": "채팅을 시작하려면 메시지를 보내세요",
+  "noMessagesYet": "아직 메시지가 없습니다",
+  "createNew": "새로 만들기",
+  "collapseSidebar": "사이드바 접기",
+  "expandSidebar": "사이드바 펼치기",
+  "noChatsYet": "아직 채팅이 없습니다",
+  "deleteQAPair": "Q&A 쌍 삭제",
+  "selectQAPair": "Q&A 쌍 선택",
+  "editQAPair": "Q&A 쌍 편집",
   
   "noQAPairsDetected": "이 메시지에서 Q&A 쌍이 감지되지 않았습니다",
   "qaPairsDetected": "{count}개의 Q&A 쌍이 저장되었습니다",
@@ -93,5 +102,6 @@
   "noQAPairsMatch": "검색과 일치하는 Q&A 쌍이 없습니다",
   "noQAPairsDetectedMessage": "이 메시지에서 Q&A 쌍이 자동으로 감지되지 않았습니다. 다음을 수행하시겠습니까:",
   "userLabel": "사용자",
-  "assistantLabel": "Eddie"
+  "assistantLabel": "Eddie",
+  "viewAll": "모두 보기"
 } 
