@@ -271,7 +271,7 @@ For teams focused primarily on a web application and wanting to use Tailwind CSS
 Eddie2 has been successfully set up with Git version control and is hosted on GitHub:
 
 - **Repository**: https://github.com/sparabu/eddie2
-- **Current Version**: v1.5.0 (User Authentication)
+- **Current Version**: v1.7.0 (Enhanced Authentication and Firestore Integration)
 - **Branching Strategy**:
   - Main branch contains the production-ready code
   - Feature branches will be created for new features and improvements
@@ -340,6 +340,33 @@ Eddie2 has been successfully set up with Git version control and is hosted on Gi
   - Implemented secure authentication state management
   - Added logout functionality
   - Updated documentation to reflect authentication features
+  - Added Google Sign-in functionality
+  - Implemented account deletion feature
+
+- **v1.6.0**: Enhanced Profile Management:
+  - Added comprehensive profile management in settings screen
+  - Implemented profile picture upload functionality
+  - Added support for username and display name customization
+  - Enhanced user profile UI with avatar and editable fields
+  - Improved profile data storage in Firestore
+  - Added real-time profile updates across the application
+  - Enhanced authentication flow with profile setup
+  - Improved error handling for profile operations
+  - Updated localization for profile management features
+  - Added support for both web and mobile platforms
+
+- **v1.7.0**: Google Sign-In and Firestore Integration:
+  - Implemented Google Sign-In functionality for web
+  - Added Google logo SVG for sign-in buttons
+  - Enhanced authentication flow with Google credentials
+  - Integrated Firestore database for user data storage
+  - Improved error handling for authentication operations
+  - Added retry logic for Firestore operations during network issues
+  - Enhanced account management with better deletion confirmation
+  - Updated UI components for Google Sign-In
+  - Improved offline support with Firestore persistence
+  - Added detailed logging for authentication and database operations
+  - Updated documentation to reflect new authentication methods
 
 ### Version Control Strategy
 To maintain a consistent, collaborative, and traceable development workflow, Eddie2 uses a structured Git-based version control strategy:
@@ -390,9 +417,21 @@ To maintain a consistent, collaborative, and traceable development workflow, Edd
   - AI responses in the user's chosen language
   - Consistent language experience throughout the app
 
+- **Authentication & User Management**:
+  - Email and password-based authentication
+  - Google Sign-In integration
+  - Account deletion with confirmation
+  - Profile management with display name and profile picture
+  - Firestore integration for user data persistence
+  - Offline support with error handling
+  - Enhanced authentication state management
+  - Improved error handling and user feedback
+
 ### 6.2 Known Issues
 - File picker package shows warnings about missing implementations for desktop platforms
 - These warnings don't affect web functionality but should be addressed for desktop deployment
+- Firestore connectivity may experience intermittent issues in certain network environments
+- Google Sign-In shows deprecation warnings for the `signIn` method which will need to be addressed in a future update
 
 ### 6.3 Next Steps
 - Address file picker warnings for better desktop platform support
@@ -402,6 +441,11 @@ To maintain a consistent, collaborative, and traceable development workflow, Edd
 - Add support for additional languages
 - Implement localization best practices for all future features
 - Consider implementing cloud synchronization for multi-device support
+- Migrate Google Sign-In to use the recommended `renderButton` approach
+- Enhance Firestore offline persistence capabilities
+- Implement additional authentication methods (Apple, GitHub, etc.)
+- Add user profile picture upload from camera (for mobile)
+- Implement real-time synchronization for multi-device support
 
 ### 6.4 Localization Guidelines
 For all future development, the following localization guidelines should be followed:

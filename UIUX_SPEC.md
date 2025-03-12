@@ -209,6 +209,48 @@ This document defines the UI components, screens, design system, and interaction
   - Confirm button: Proceeds with the action (styled in red for destructive actions)
 - **Component ID**: `ConfirmationDialog`
 
+#### Enhanced Sign Up Link
+- **Location**: Bottom of login screen
+- **Description**: Button-like link that navigates to the signup screen
+- **Properties**:
+  - Text: "Sign Up" (localized)
+  - Font Size: 16px
+  - Font Weight: Bold
+  - Padding: 8px vertical, 16px horizontal
+  - Border Radius: 8px
+- **States**:
+  - Dark Mode: 
+    - Text Color: White
+    - Background: Primary color with 30% opacity
+    - Border: 1.5px primary color
+  - Light Mode:
+    - Text Color: Primary color
+    - Background: None
+    - Border: None
+  - Disabled: When login is in progress
+- **Component ID**: `EnhancedSignUpLink`
+
+#### Google Sign-In Button
+- **Location**: Login and Signup screens
+- **Description**: Button for authenticating with Google credentials
+- **Properties**:
+  - Height: 40px
+  - Border Radius: 4px
+  - Border: 1px solid light gray
+  - Background: White
+  - Text Color: Dark gray
+  - Font Size: 14px
+  - Font Weight: Medium
+  - Padding: 8px 16px
+  - Icon: Google logo SVG (16x16px)
+  - Icon Spacing: 8px from text
+- **States**:
+  - Default: White background with Google logo and text
+  - Hover: Slight shadow and darker border
+  - Loading: Shows loading indicator, button disabled
+  - Disabled: Grayed out when authentication is in progress
+- **Component ID**: `GoogleSignInButton`
+
 ### View All Link
 - **Location**: Bottom of sidebar sections
 - **Description**: Link to view all items in a section
@@ -288,9 +330,13 @@ This document defines the UI components, screens, design system, and interaction
 ### Settings Screen
 - **Purpose**: Interface for configuring the application
 - **Structure**:
-  - Authentication Section
-    - User Profile Information
+  - Profile Section (when authenticated)
+    - Profile Picture with Upload Button
+    - Display Name Field
+    - Username Field
+    - Email Display (read-only)
     - Email Verification Status
+    - Save Changes Button
     - Delete Account Button
     - Logout Button
   - API Key Section
@@ -319,7 +365,9 @@ This document defines the UI components, screens, design system, and interaction
   - **Password Field**: Secure input field for password
   - **Forgot Password Link**: Link to reset password
   - **Login Button**: Primary button to submit credentials
-  - **Sign Up Link**: Link to navigate to the signup screen
+  - **Sign Up Link**: Enhanced button-like link to navigate to the signup screen
+    - Dark Mode: White text on semi-transparent primary color background with primary color border
+    - Light Mode: Primary color text with no background
 - **States**:
   - **Default**: Shows the login form
   - **Loading**: Shows a loading indicator while authenticating
@@ -329,6 +377,8 @@ This document defines the UI components, screens, design system, and interaction
   - **Improved Authentication Flow**: Clears existing auth state before login
   - **Detailed Error Handling**: Shows specific error messages for different authentication issues
   - **State Refresh**: Forces auth state refresh after successful login
+  - **Enter Key Support**: Pressing Enter in the password field triggers login
+  - **Keyboard Navigation**: Tab and Enter keys can be used to navigate the form
 
 #### Signup Screen (SignupScreen)
 - **Location**: Accessed from the login screen
@@ -549,6 +599,16 @@ This document defines the UI components, screens, design system, and interaction
 5. System attempts to delete account
 6. If successful, user is logged out and redirected to login screen
 7. If unsuccessful, error message is displayed
+
+#### Google Sign-In
+1. User clicks "Sign in with Google" or "Sign up with Google" button
+2. Loading indicator appears on button
+3. Google authentication popup opens
+4. User selects Google account and grants permissions
+5. Popup closes and system processes authentication
+6. If successful, user is redirected to main screen
+7. If unsuccessful, error message is displayed
+8. If offline, system shows appropriate error message and retry options
 
 ### Chat Interactions
 
@@ -837,6 +897,45 @@ Used for simple state:
 - **Data Format**: JSON object with settings properties
 - **UI Components**: Settings toggles and dropdowns
 
+### Firebase Authentication Integration
+
+#### Email Authentication
+- **Endpoints**: Firebase Authentication API
+- **Methods**: createUserWithEmailAndPassword, signInWithEmailAndPassword
+- **UI Components**: `LoginScreen`, `SignupScreen`
+- **Loading State**: Progress indicator on submit buttons
+- **Error Handling**: Specific error messages for different authentication issues
+
+#### Google Authentication
+- **Endpoints**: Google Identity Services via Firebase Authentication
+- **Methods**: signInWithCredential using GoogleAuthProvider
+- **UI Components**: `GoogleSignInButton` on login and signup screens
+- **Loading State**: Progress indicator on button
+- **Error Handling**: 
+  - Network errors: "Unable to connect to authentication service"
+  - Permission errors: "Permission to access Google account was denied"
+  - General errors: Specific Firebase error messages
+
+### Firestore Integration
+
+#### User Profile Data
+- **Collection**: users
+- **Document ID**: User's Firebase UID
+- **Fields**:
+  - uid: String - User's Firebase UID
+  - email: String - User's email address
+  - displayName: String - User's display name
+  - photoURL: String - URL to user's profile picture
+  - username: String - User's username (optional)
+  - createdAt: Timestamp - When the account was created
+  - lastLoginAt: Timestamp - When the user last logged in
+- **UI Components**: Profile section in Settings screen
+- **Loading State**: Progress indicators on profile components
+- **Error Handling**: 
+  - Offline errors: "Changes will be saved when you're back online"
+  - Permission errors: "You don't have permission to update this profile"
+  - Validation errors: Specific messages for invalid inputs
+
 ## 8. Localization Guidelines
 
 ### Text Guidelines
@@ -906,12 +1005,17 @@ Used for simple state:
 - **Validation Errors**: Invalid input from users
 - **Network Errors**: Connection issues
 - **File Errors**: Problems with file uploads
+- **Authentication Errors**: Issues with user login, signup, or account management
+- **Database Errors**: Problems with Firestore operations
+- **Offline Errors**: Issues when the device is offline
 
 ### Error Display
 - **Snackbars**: For transient errors that don't block workflow
 - **Dialog Alerts**: For critical errors requiring acknowledgment
 - **Inline Errors**: For form validation issues
 - **Error Messages**: Should be clear, helpful, and suggest solutions
+- **Retry Mechanisms**: For operations that can be retried (e.g., Firestore operations when offline)
+- **Fallback Behavior**: Graceful degradation when services are unavailable
 
 ## 12. Empty States
 
@@ -990,4 +1094,37 @@ For each UI component or feature, the following criteria should be met:
 3. Handles all possible states (empty, loading, error)
 4. Accessible via keyboard and screen readers
 5. Properly localized in all supported languages
-6. Animations and transitions are smooth and consistent 
+6. Animations and transitions are smooth and consistent
+
+### Profile Management Components
+
+#### Profile Picture Component
+- **Location**: Top of Profile Section in Settings Screen
+- **Description**: Circular avatar with upload functionality
+- **Properties**:
+  - Size: 100px diameter
+  - Border: 2px solid primary color
+  - Background: Light gray when no image
+- **Elements**:
+  - Avatar: Displays user's profile picture or default icon
+  - Upload Button: Camera icon in a circular button at bottom-right of avatar
+- **States**:
+  - Default: Shows current profile picture or default icon
+  - Loading: Shows loading indicator during upload
+  - Error: Shows error indicator if upload fails
+- **Component ID**: `ProfilePictureComponent`
+
+#### Profile Form
+- **Location**: Profile Section in Settings Screen
+- **Description**: Form for editing profile information
+- **Elements**:
+  - Display Name Field: Input for user's display name
+  - Username Field: Input for user's unique username
+  - Helper Text: Explains username requirements
+  - Save Changes Button: Primary button to submit changes
+- **States**:
+  - Default: Shows current profile information
+  - Editing: Shows form with editable fields
+  - Loading: Shows loading indicator during save
+  - Error: Shows error messages for validation issues
+- **Component ID**: `ProfileForm` 

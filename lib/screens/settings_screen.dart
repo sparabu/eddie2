@@ -1,12 +1,16 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../providers/settings_provider.dart';
 import '../providers/locale_provider.dart';
 import '../services/auth_service.dart';
+import '../screens/login_screen.dart';
 import '../utils/theme.dart';
 import '../widgets/api_key_form.dart';
+import 'package:image_picker/image_picker.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({
@@ -18,20 +22,170 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  String _appVersion = '';
+  final _apiKeyController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _displayNameController = TextEditingController();
+  bool _isLoading = false;
   bool _isDeleting = false;
+  bool _isUpdatingProfile = false;
+  bool _isUploadingImage = false;
+  String? _errorMessage;
+  String? _versionInfo;
+  File? _imageFile;
+  Uint8List? _webImageBytes;
+  String? _webImageName;
   
   @override
   void initState() {
     super.initState();
-    _loadAppVersion();
+    _loadApiKey();
+    _loadVersionInfo();
+    _loadUserProfile();
   }
   
-  Future<void> _loadAppVersion() async {
-    final packageInfo = await PackageInfo.fromPlatform();
+  @override
+  void dispose() {
+    _apiKeyController.dispose();
+    _usernameController.dispose();
+    _displayNameController.dispose();
+    super.dispose();
+  }
+  
+  Future<void> _loadApiKey() async {
+    final apiKey = await ref.read(settingsProvider.notifier).getApiKey();
+    if (apiKey != null && mounted) {
+      setState(() {
+        _apiKeyController.text = apiKey;
+      });
+    }
+  }
+  
+  Future<void> _loadVersionInfo() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() {
+          _versionInfo = 'v${packageInfo.version}';
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading version info: $e');
+    }
+  }
+  
+  Future<void> _loadUserProfile() async {
+    try {
+      final user = await ref.read(authServiceProvider).getCurrentUser();
+      if (user != null && mounted) {
+        setState(() {
+          _displayNameController.text = user.displayName;
+          _usernameController.text = user.username ?? '';
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user profile: $e');
+    }
+  }
+  
+  Future<void> _saveApiKey() async {
     setState(() {
-      _appVersion = packageInfo.version;
+      _isLoading = true;
+      _errorMessage = null;
     });
+
+    try {
+      await ref.read(settingsProvider.notifier).setApiKey(_apiKeyController.text);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.apiKeySaved),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+  
+  Future<void> _deleteApiKey() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await ref.read(settingsProvider.notifier).deleteApiKey();
+      if (mounted) {
+        setState(() {
+          _apiKeyController.text = '';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.apiKeyDeleted),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+  
+  Future<void> _toggleDarkMode() async {
+    await ref.read(settingsProvider.notifier).toggleDarkMode();
+  }
+  
+  Future<void> _changeLanguage(String languageCode) async {
+    await ref.read(localeProvider.notifier).setLocale(Locale(languageCode));
+  }
+  
+  Future<void> _setModel(String model) async {
+    await ref.read(settingsProvider.notifier).setSelectedModel(model);
+  }
+  
+  Future<void> _logout() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await ref.read(authServiceProvider).signOut();
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed(LoginScreen.routeName);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error signing out: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
   
   Future<void> _deleteAccount(BuildContext context) async {
@@ -41,7 +195,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(l10n.deleteAccountTitle ?? 'Delete Account'),
+        title: Text(l10n.deleteAccount ?? 'Delete Account'),
         content: Text(l10n.deleteAccountConfirmation ?? 'Are you sure you want to delete your account? This action cannot be undone.'),
         actions: [
           TextButton(
@@ -63,11 +217,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     
     setState(() {
       _isDeleting = true;
+      _errorMessage = null;
     });
     
     try {
+      debugPrint('User confirmed account deletion, proceeding...');
+      
+      // Actually delete the account
       await ref.read(authServiceProvider).deleteAccount();
+      
       if (mounted) {
+        Navigator.of(context).pushReplacementNamed(LoginScreen.routeName);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.accountDeletedSuccess ?? 'Your account has been deleted successfully.'),
@@ -76,10 +236,107 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         );
       }
     } catch (e) {
+      debugPrint('Error during account deletion process: $e');
+      if (mounted) {
+        setState(() {
+          _isDeleting = false;
+        });
+        
+        // Show a more user-friendly error message
+        String errorMessage = 'Error deleting account. Please try again later.';
+        
+        if (e.toString().contains('requires-recent-login') || 
+            e.toString().contains('sign out and sign in again')) {
+          errorMessage = 'For security reasons, please sign out and sign in again before deleting your account.';
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    }
+  }
+  
+  Future<void> _pickImage() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+      
+      if (image != null) {
+        if (kIsWeb) {
+          // For web platform
+          final bytes = await image.readAsBytes();
+          setState(() {
+            _webImageBytes = bytes;
+            _webImageName = image.name;
+          });
+        } else {
+          // For mobile platforms
+          setState(() {
+            _imageFile = File(image.path);
+          });
+        }
+        
+        // Upload the image
+        await _uploadProfilePicture();
+      }
+    } catch (e) {
+      debugPrint('Error picking image: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString()),
+            content: Text('Error selecting image: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+  
+  Future<void> _uploadProfilePicture() async {
+    if ((_imageFile == null && _webImageBytes == null) || (_isUploadingImage)) {
+      return;
+    }
+
+    setState(() {
+      _isUploadingImage = true;
+    });
+
+    try {
+      String? downloadURL;
+      
+      if (kIsWeb && _webImageBytes != null && _webImageName != null) {
+        // Upload for web
+        downloadURL = await ref.read(authServiceProvider).uploadProfilePictureWeb(
+          _webImageBytes!,
+          _webImageName!,
+        );
+      } else if (_imageFile != null) {
+        // Upload for mobile
+        downloadURL = await ref.read(authServiceProvider).uploadProfilePicture(_imageFile!);
+      }
+      
+      if (downloadURL != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Profile picture updated successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Refresh auth state to update UI
+        ref.refresh(authStateProvider);
+      }
+    } catch (e) {
+      debugPrint('Error uploading profile picture: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error uploading profile picture: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -87,7 +344,57 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     } finally {
       if (mounted) {
         setState(() {
-          _isDeleting = false;
+          _isUploadingImage = false;
+          _imageFile = null;
+          _webImageBytes = null;
+          _webImageName = null;
+        });
+      }
+    }
+  }
+  
+  Future<void> _updateProfile() async {
+    if (_isUpdatingProfile) {
+      return;
+    }
+
+    setState(() {
+      _isUpdatingProfile = true;
+    });
+
+    try {
+      await ref.read(authServiceProvider).updateProfile(
+        displayName: _displayNameController.text.trim(),
+        username: _usernameController.text.trim().isNotEmpty 
+            ? _usernameController.text.trim() 
+            : null,
+      );
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Profile updated successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Refresh auth state to update UI
+        ref.refresh(authStateProvider);
+      }
+    } catch (e) {
+      debugPrint('Error updating profile: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating profile: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUpdatingProfile = false;
         });
       }
     }
@@ -106,336 +413,378 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final l10n = AppLocalizations.of(context)!;
     
     return Scaffold(
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // Authentication Section
-          authState.when(
-            data: (user) => Card(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.authSection,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    if (user != null) ...[
-                      // User is logged in
-                      ListTile(
-                        leading: const Icon(Icons.person),
-                        title: Text(user.displayName.isNotEmpty 
-                          ? user.displayName 
-                          : user.email),
-                        subtitle: Text(user.email),
-                      ),
-                      const Divider(),
-                      ListTile(
-                        leading: const Icon(Icons.verified_user),
-                        title: Text(l10n.emailVerificationStatus),
-                        subtitle: Text(user.isEmailVerified 
-                          ? l10n.emailVerified 
-                          : l10n.emailNotVerified),
-                        trailing: user.isEmailVerified 
-                          ? const Icon(Icons.check_circle, color: Colors.green)
-                          : TextButton(
-                              onPressed: () async {
-                                try {
-                                  await ref.read(authServiceProvider).sendEmailVerification();
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(l10n.verifyEmailSent),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
-                                  }
-                                } catch (e) {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(e.toString()),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
-                              child: Text(l10n.verifyEmailButton),
+      body: authState.when(
+        data: (user) => _buildSettingsContent(context, user, settings, currentLocale, l10n),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) => Center(
+          child: Text('Error: ${error.toString()}'),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildSettingsContent(
+    BuildContext context,
+    user,
+    settings,
+    locale,
+    AppLocalizations localizations,
+  ) {
+    // Extract the language code from the Locale object
+    final String currentLanguageCode = locale?.languageCode ?? 'en';
+    
+    return ListView(
+      padding: const EdgeInsets.all(16.0),
+      children: [
+        if (user != null) ...[
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    localizations.profile,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 50,
+                          backgroundColor: Colors.grey[300],
+                          backgroundImage: user.photoURL != null
+                              ? NetworkImage(user.photoURL!)
+                              : null,
+                          child: user.photoURL == null
+                              ? const Icon(Icons.person, size: 50)
+                              : null,
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).primaryColor,
+                              shape: BoxShape.circle,
                             ),
-                      ),
-                      const Divider(),
-                      // Delete Account Button
-                      ListTile(
-                        leading: const Icon(Icons.delete_forever, color: Colors.red),
-                        title: Text(l10n.deleteAccountButton ?? 'Delete Account'),
-                        subtitle: Text(l10n.deleteAccountDescription ?? 'Permanently delete your account and all associated data'),
-                        onTap: _isDeleting ? null : () => _deleteAccount(context),
-                        trailing: _isDeleting 
+                            child: IconButton(
+                              icon: _isUploadingImage
+                                  ? const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.camera_alt,
+                                      color: Colors.white,
+                                    ),
+                              onPressed: _isUploadingImage ? null : _pickImage,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: _displayNameController,
+                    decoration: InputDecoration(
+                      labelText: localizations.displayName,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _usernameController,
+                    decoration: InputDecoration(
+                      labelText: localizations.username,
+                      border: const OutlineInputBorder(),
+                      helperText: localizations.usernameHelperText,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isUpdatingProfile ? null : _updateProfile,
+                      child: _isUpdatingProfile
                           ? const SizedBox(
-                              width: 20, 
-                              height: 20, 
-                              child: CircularProgressIndicator(strokeWidth: 2)
-                            )
-                          : null,
-                      ),
-                      const Divider(),
-                      ListTile(
-                        leading: const Icon(Icons.logout),
-                        title: Text(l10n.logoutButton),
-                        onTap: () async {
-                          await ref.read(authServiceProvider).signOut();
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(l10n.logoutSuccess),
-                                backgroundColor: Colors.green,
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
                               ),
-                            );
-                          }
-                        },
+                            )
+                          : Text(localizations.saveChanges),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ListTile(
+                    title: Text(localizations.email),
+                    subtitle: Text(user.email),
+                    leading: const Icon(Icons.email),
+                  ),
+                  ListTile(
+                    title: Text(localizations.emailVerification),
+                    subtitle: Text(
+                      user.isEmailVerified
+                          ? localizations.verified
+                          : localizations.notVerified,
+                    ),
+                    leading: Icon(
+                      user.isEmailVerified
+                          ? Icons.verified_user
+                          : Icons.warning,
+                      color: user.isEmailVerified ? Colors.green : Colors.orange,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ListTile(
+                    title: Text(
+                      localizations.deleteAccount,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                    subtitle: Text(localizations.deleteAccountDescription),
+                    leading: const Icon(
+                      Icons.delete_forever,
+                      color: Colors.red,
+                    ),
+                    onTap: _isDeleting ? null : () => _deleteAccount(context),
+                    trailing: _isDeleting
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : null,
+                  ),
+                  ListTile(
+                    title: Text(localizations.logout),
+                    leading: const Icon(Icons.logout),
+                    onTap: _isLoading ? null : _logout,
+                    trailing: _isLoading
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : null,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+        
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  localizations.apiKey,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 16),
+                if (_errorMessage != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      _errorMessage!,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                TextField(
+                  controller: _apiKeyController,
+                  decoration: InputDecoration(
+                    labelText: localizations.apiKey,
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        setState(() {
+                          _apiKeyController.clear();
+                        });
+                      },
+                    ),
+                  ),
+                  obscureText: true,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _saveApiKey,
+                      child: Text(localizations.save),
+                    ),
+                    OutlinedButton(
+                      onPressed: _isLoading ? null : _deleteApiKey,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
                       ),
-                    ] else ...[
-                      // User is not logged in - this should not happen as the auth wrapper
-                      // should redirect to login screen, but just in case
-                      const Center(
-                        child: Text("You are not logged in"),
-                      ),
-                    ],
+                      child: Text(localizations.delete),
+                    ),
                   ],
                 ),
-              ),
+              ],
             ),
-            loading: () => const Card(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Center(
-                  child: CircularProgressIndicator(),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  localizations.appearance,
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
-              ),
-            ),
-            error: (error, _) => Card(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Center(
-                  child: Text("Error: $error"),
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  title: Text(localizations.darkMode),
+                  value: settings.isDarkMode,
+                  onChanged: (value) => _toggleDarkMode(),
                 ),
-              ),
+              ],
             ),
           ),
-          
-          // API Key Section
-          Card(
-            margin: const EdgeInsets.only(bottom: 24),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.apiKeySection,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  localizations.language,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: currentLanguageCode,
+                  decoration: InputDecoration(
+                    labelText: localizations.selectLanguage,
+                    border: const OutlineInputBorder(),
+                  ),
+                  items: [
+                    DropdownMenuItem(
+                      value: 'en',
+                      child: Text(localizations.english),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  APIKeyForm(
-                    initialApiKey: apiKey,
-                    onSave: (newApiKey) {
-                      ref.read(settingsProvider.notifier).setApiKey(newApiKey);
-                      // Show success message
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(l10n.apiKeySavedSuccess),
-                          backgroundColor: AppTheme.primaryColor,
-                        ),
-                      );
-                    },
-                    onDelete: () {
-                      ref.read(settingsProvider.notifier).deleteApiKey();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(l10n.apiKeyDeletedSuccess),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
+                    DropdownMenuItem(
+                      value: 'ko',
+                      child: Text(localizations.korean),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      _changeLanguage(value);
+                    }
+                  },
+                ),
+              ],
             ),
           ),
-          
-          // Appearance Section
-          Card(
-            margin: const EdgeInsets.only(bottom: 24),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.appearanceSection,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  localizations.aiModel,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: settings.selectedModel,
+                  decoration: InputDecoration(
+                    labelText: localizations.selectModel,
+                    border: const OutlineInputBorder(),
                   ),
-                  const SizedBox(height: 16),
-                  SwitchListTile(
-                    title: Text(l10n.darkModeLabel),
-                    subtitle: Text(l10n.darkModeDescription),
-                    value: isDarkMode,
-                    onChanged: (value) {
-                      ref.read(settingsProvider.notifier).toggleDarkMode();
-                    },
-                    secondary: Icon(
-                      isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                  items: [
+                    DropdownMenuItem(
+                      value: 'gpt-4o',
+                      child: Text('GPT-4o'),
                     ),
-                  ),
-                ],
-              ),
+                    DropdownMenuItem(
+                      value: 'gpt-4-turbo',
+                      child: Text('GPT-4 Turbo'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'gpt-3.5-turbo',
+                      child: Text('GPT-3.5 Turbo'),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      _setModel(value);
+                    }
+                  },
+                ),
+              ],
             ),
           ),
-          
-          // Language Section
-          Card(
-            margin: const EdgeInsets.only(bottom: 24),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.languageSection,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    value: currentLocale.languageCode,
-                    decoration: InputDecoration(
-                      labelText: l10n.languageLabel,
-                    ),
-                    items: [
-                      DropdownMenuItem(
-                        value: 'en',
-                        child: Text(l10n.englishLanguage),
-                      ),
-                      DropdownMenuItem(
-                        value: 'ko',
-                        child: Text(l10n.koreanLanguage),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) {
-                        ref.read(localeProvider.notifier).setLocale(Locale(value));
-                      }
-                    },
-                  ),
-                ],
-              ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  localizations.about,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  title: Text(localizations.version),
+                  subtitle: Text(_versionInfo ?? 'Unknown'),
+                ),
+                ListTile(
+                  title: Text(localizations.sourceCode),
+                  subtitle: const Text('https://github.com/sparabu/eddie2'),
+                  onTap: () {
+                    // Open source code URL
+                  },
+                ),
+                ListTile(
+                  title: Text(localizations.reportIssue),
+                  subtitle: const Text('https://github.com/sparabu/eddie2/issues'),
+                  onTap: () {
+                    // Open issue reporting URL
+                  },
+                ),
+              ],
             ),
           ),
-          
-          // Model Selection Section
-          Card(
-            margin: const EdgeInsets.only(bottom: 24),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.aiModelSection,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    value: settings.selectedModel,
-                    decoration: InputDecoration(
-                      labelText: l10n.aiModelLabel,
-                      hintText: l10n.aiModelHint,
-                    ),
-                    items: [
-                      DropdownMenuItem(
-                        value: 'gpt-4o',
-                        child: Text(l10n.gpt4oModel),
-                      ),
-                      DropdownMenuItem(
-                        value: 'gpt-4-turbo',
-                        child: Text(l10n.gpt4TurboModel),
-                      ),
-                      DropdownMenuItem(
-                        value: 'gpt-3.5-turbo',
-                        child: Text(l10n.gpt35TurboModel),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) {
-                        ref.read(settingsProvider.notifier).setSelectedModel(value);
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          // About Section
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.aboutSection,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ListTile(
-                    leading: const Icon(Icons.info_outline),
-                    title: const Text('Eddie2'),
-                    subtitle: Text('${l10n.versionLabel} $_appVersion'),
-                  ),
-                  const Divider(),
-                  ListTile(
-                    leading: const Icon(Icons.code),
-                    title: Text(l10n.sourceCodeLabel),
-                    subtitle: Text(l10n.sourceCodeDescription),
-                    onTap: () {
-                      // Open GitHub repository
-                    },
-                  ),
-                  const Divider(),
-                  ListTile(
-                    leading: const Icon(Icons.bug_report_outlined),
-                    title: Text(l10n.reportIssueLabel),
-                    subtitle: Text(l10n.reportIssueDescription),
-                    onTap: () {
-                      // Open issue reporting page
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 } 

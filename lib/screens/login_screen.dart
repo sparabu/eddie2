@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:eddie2/services/auth_service.dart';
 import 'package:eddie2/screens/signup_screen.dart';
 import 'package:eddie2/widgets/app_logo.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   static const routeName = '/login';
@@ -19,6 +21,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
   String? _errorMessage;
 
   @override
@@ -81,6 +84,53 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isGoogleLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Clear any existing auth state first
+      await ref.read(authServiceProvider).signOut();
+      
+      // Attempt to sign in with Google
+      final user = await ref.read(authServiceProvider).signInWithGoogle();
+      
+      if (user != null) {
+        debugPrint('Google login successful for user: ${user.email}');
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.loginSuccess),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+        
+        // Force refresh the auth state
+        ref.refresh(authStateProvider);
+      } else {
+        // User canceled the sign-in flow
+        debugPrint('Google sign-in canceled by user');
+      }
+      
+      // Navigation will be handled by the auth state listener in main.dart
+    } catch (e) {
+      debugPrint('Google login error: $e');
+      setState(() {
+        _errorMessage = e.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGoogleLoading = false;
         });
       }
     }
@@ -192,6 +242,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             }
                             return null;
                           },
+                          onEditingComplete: () => FocusScope.of(context).nextFocus(),
+                          textInputAction: TextInputAction.next,
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
@@ -210,6 +262,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             }
                             return null;
                           },
+                          onEditingComplete: _isLoading ? null : _login,
+                          textInputAction: TextInputAction.done,
                         ),
                         const SizedBox(height: 8),
                         Align(
@@ -245,6 +299,68 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   ),
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Divider(
+                                color: isDarkMode ? Colors.white54 : Colors.black54,
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text(
+                                'OR',
+                                style: TextStyle(
+                                  color: isDarkMode ? Colors.white54 : Colors.black54,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Divider(
+                                color: isDarkMode ? Colors.white54 : Colors.black54,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: OutlinedButton.icon(
+                            onPressed: _isGoogleLoading ? null : _signInWithGoogle,
+                            icon: _isGoogleLoading
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : SvgPicture.asset(
+                                    'assets/images/google_logo.svg',
+                                    height: 24,
+                                    width: 24,
+                                  ),
+                            label: Text(
+                              'Sign in with Google',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: isDarkMode ? Colors.white : Colors.black87,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(
+                                color: isDarkMode ? Colors.white70 : Colors.black54,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -254,12 +370,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     children: [
                       Text(localizations.dontHaveAccount),
                       TextButton(
-                        onPressed: _isLoading ? null : _navigateToSignup,
+                        onPressed: _isLoading || _isGoogleLoading ? null : _navigateToSignup,
+                        style: TextButton.styleFrom(
+                          foregroundColor: isDarkMode ? Colors.white : Theme.of(context).primaryColor,
+                          backgroundColor: isDarkMode ? Theme.of(context).primaryColor.withOpacity(0.3) : null,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: isDarkMode ? BorderSide(color: Theme.of(context).primaryColor, width: 1.5) : BorderSide.none,
+                          ),
+                        ),
                         child: Text(
                           localizations.signUp,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Theme.of(context).primaryColor,
+                            fontSize: 16,
+                            color: isDarkMode ? Colors.white : Theme.of(context).primaryColor,
                           ),
                         ),
                       ),
