@@ -81,4 +81,6 @@ final filteredQAPairsProvider = Provider.family<List<QAPair>, String>((ref, filt
            pair.answer.toLowerCase().contains(lowerCaseFilter) ||
            pair.tags.any((tag) => tag.toLowerCase().contains(lowerCaseFilter));
   }).toList();
-}); 
+});
+
+final selectedQAPairIdProvider = StateProvider<String?>((ref) => null); 

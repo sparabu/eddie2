@@ -8,7 +8,7 @@ part of 'chat.dart';
 
 Chat _$ChatFromJson(Map<String, dynamic> json) => Chat(
       id: json['id'] as String?,
-      title: json['title'] as String?,
+      title: json['title'] as String,
       createdAt: json['createdAt'] == null
           ? null
           : DateTime.parse(json['createdAt'] as String),

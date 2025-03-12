@@ -23,7 +23,7 @@ Eddie2 is an AI-driven education-focused application that helps users interact w
 - **Guided Input**: Input field placeholder "Ask Eddie to create..." to guide users ✅
 
 ### Full Implementation Scope (Post-MVP)
-- **User Authentication**: Multi-user support and secure login
+- **User Authentication**: Multi-user support and secure login ✅
 - **Cloud Database**: Storage of Q&A pairs and chat history in the cloud
 - **Cross-Platform Support**: Native builds for Windows, Mac, Linux, tablets, and mobile
 - **Advanced File Handling**: Multiple file uploads, drag-and-drop, advanced previews, etc.
@@ -57,10 +57,10 @@ Eddie2 is an AI-driven education-focused application that helps users interact w
 For teams focused primarily on a web application and wanting to use Tailwind CSS or shadcn/ui, a React/Next.js stack could be used instead of Flutter. However, this would forgo the single codebase benefit for mobile/desktop.
 
 ### Full Implementation Technology Stack (Post-MVP)
-- **Backend**: Firebase for user authentication and real-time database
-- **Database**: Firestore for storing Q&A pairs and user data
-- **Authentication**: Firebase Authentication (Email/Password, Google, Apple)
-- **File Handling**: Firebase Cloud Storage for large files and multi-file support
+- **Backend**: Firebase for user authentication and real-time database ✅
+- **Database**: Firestore for storing Q&A pairs and user data ✅
+- **Authentication**: Firebase Authentication (Email/Password, Google, Apple) ✅
+- **File Handling**: Firebase Cloud Storage for large files and multi-file support ✅
 - **MVP Technologies**: All components above remain in use and are extended
 
 ## 3. Features & Functional Requirements
@@ -207,6 +207,32 @@ For teams focused primarily on a web application and wanting to use Tailwind CSS
 - Language detection based on user's system settings
 - Region-specific formatting for dates, numbers, and currencies
 
+### 3.8 User Authentication
+
+#### Requirements
+- **User Registration** ✅:
+  - Email and password-based registration
+  - Optional display name
+  - Email verification
+- **User Login** ✅:
+  - Secure login with email and password
+  - Password reset functionality
+  - Enhanced authentication flow with proper state management ✅
+  - Detailed error handling and user feedback ✅
+- **User Profile** ✅:
+  - Display user information in settings
+  - Email verification status
+  - Logout functionality
+- **Authentication State Management** ✅:
+  - Persistent login state
+  - Automatic redirection based on authentication status
+  - Secure access to user-specific data
+  - Robust handling of authentication state transitions ✅
+- **Account Management** ✅:
+  - Account deletion functionality
+  - Confirmation dialogs for destructive actions
+  - Proper error handling for authentication operations
+
 ## 4. Non-Functional Requirements
 
 ### 4.1 Security & Privacy
@@ -219,10 +245,11 @@ For teams focused primarily on a web application and wanting to use Tailwind CSS
 - Uploaded files are used only for the immediate AI request and are not permanently stored ✅
 
 #### Full Implementation Requirements (Post-MVP)
-- Full user authentication with secure password policies
-- Token-based authentication for external API calls
+- Full user authentication with secure password policies ✅
+- Token-based authentication for external API calls ✅
 - Compliance with privacy regulations (GDPR, CCPA, etc.)
 - End-to-end encryption for file transfers and data at rest
+- Secure account deletion with proper data cleanup ✅
 
 ### 4.2 Performance
 
@@ -244,7 +271,7 @@ For teams focused primarily on a web application and wanting to use Tailwind CSS
 Eddie2 has been successfully set up with Git version control and is hosted on GitHub:
 
 - **Repository**: https://github.com/sparabu/eddie2
-- **Current Version**: v1.3.0 (UI improvements and bug fixes)
+- **Current Version**: v1.5.0 (User Authentication)
 - **Branching Strategy**:
   - Main branch contains the production-ready code
   - Feature branches will be created for new features and improvements
@@ -295,6 +322,24 @@ Eddie2 has been successfully set up with Git version control and is hosted on Gi
   - Fixed localization issues with missing strings
   - Improved responsive design for different screen sizes
   - Enhanced overall UI consistency
+
+- **v1.4.0**: Enhanced user experience:
+  - Added "View All" links for Recent Chats and Q&A Pairs sections
+  - Created dedicated screens for viewing all chats and Q&A pairs
+  - Added vertical divider bar that acts as a toggle for the sidebar
+  - Implemented welcome message "What can I help you learn?" in new chats
+  - Added guided input placeholder "Ask Eddie to create..." to help users
+  - Improved overall UI consistency and user guidance
+
+- **v1.5.0**: User Authentication:
+  - Implemented Firebase Authentication for secure user management
+  - Added email and password-based user registration
+  - Created login screen with password reset functionality
+  - Added email verification for new accounts
+  - Updated settings screen to display user profile information
+  - Implemented secure authentication state management
+  - Added logout functionality
+  - Updated documentation to reflect authentication features
 
 ### Version Control Strategy
 To maintain a consistent, collaborative, and traceable development workflow, Eddie2 uses a structured Git-based version control strategy:

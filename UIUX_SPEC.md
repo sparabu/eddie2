@@ -184,6 +184,31 @@ This document defines the UI components, screens, design system, and interaction
   - AI Model selector
 - **Component ID**: `SettingsDropdown`
 
+### Authentication Components
+
+#### Delete Account Button
+- **Location**: Settings screen, Authentication section
+- **Description**: Button to permanently delete the user's account
+- **Properties**:
+  - Icon: Delete forever icon (red)
+  - Text: "Delete Account"
+  - Subtitle: Explains the consequences of account deletion
+- **States**:
+  - Default: Clickable button
+  - Loading: Shows loading indicator while processing deletion
+  - Disabled: When deletion is in progress
+- **Component ID**: `DeleteAccountButton`
+
+#### Confirmation Dialog
+- **Location**: Modal overlay
+- **Description**: Dialog to confirm destructive actions like account deletion
+- **Elements**:
+  - Title: Action being confirmed (e.g., "Delete Account")
+  - Content: Description of consequences
+  - Cancel button: Dismisses dialog without action
+  - Confirm button: Proceeds with the action (styled in red for destructive actions)
+- **Component ID**: `ConfirmationDialog`
+
 ### View All Link
 - **Location**: Bottom of sidebar sections
 - **Description**: Link to view all items in a section
@@ -263,6 +288,11 @@ This document defines the UI components, screens, design system, and interaction
 ### Settings Screen
 - **Purpose**: Interface for configuring the application
 - **Structure**:
+  - Authentication Section
+    - User Profile Information
+    - Email Verification Status
+    - Delete Account Button
+    - Logout Button
   - API Key Section
     - API Key Form
   - Appearance Section
@@ -276,6 +306,47 @@ This document defines the UI components, screens, design system, and interaction
     - Source Code Link
     - Report Issue Link
 - **Screen ID**: `SettingsScreen`
+
+### Authentication Screens
+
+#### Login Screen (LoginScreen)
+- **Location**: Displayed when the user is not authenticated
+- **Description**: Allows users to log in with email and password
+- **Components**:
+  - **AppLogo**: Displays the Eddie logo at the top
+  - **Title**: "Login to Eddie" text
+  - **Email Field**: Input field for email with validation
+  - **Password Field**: Secure input field for password
+  - **Forgot Password Link**: Link to reset password
+  - **Login Button**: Primary button to submit credentials
+  - **Sign Up Link**: Link to navigate to the signup screen
+- **States**:
+  - **Default**: Shows the login form
+  - **Loading**: Shows a loading indicator while authenticating
+  - **Error**: Displays error messages for invalid credentials
+- **Component ID**: `LoginScreen`
+- **Enhanced Features**:
+  - **Improved Authentication Flow**: Clears existing auth state before login
+  - **Detailed Error Handling**: Shows specific error messages for different authentication issues
+  - **State Refresh**: Forces auth state refresh after successful login
+
+#### Signup Screen (SignupScreen)
+- **Location**: Accessed from the login screen
+- **Description**: Allows users to create a new account
+- **Components**:
+  - **AppLogo**: Displays the Eddie logo at the top
+  - **Title**: "Create Account" text
+  - **Name Field**: Optional input for display name
+  - **Email Field**: Input field for email with validation
+  - **Password Field**: Secure input field for password with strength requirements
+  - **Confirm Password Field**: Field to confirm password with matching validation
+  - **Sign Up Button**: Primary button to create account
+  - **Login Link**: Link to navigate back to login screen
+- **States**:
+  - **Default**: Shows the signup form
+  - **Loading**: Shows a loading indicator while creating account
+  - **Error**: Displays error messages for validation issues or existing email
+- **Component ID**: `SignupScreen`
 
 ## 3. Design System Reference
 
@@ -293,6 +364,7 @@ This document defines the UI components, screens, design system, and interaction
 | `colorSuccess` | #4CAF50 | #66BB6A | Success states |
 | `colorWarning` | #FF9800 | #FFA726 | Warning states |
 | `colorInfo` | #2196F3 | #42A5F5 | Information states |
+| `colorDanger` | #F44336 | #EF5350 | Destructive actions |
 
 #### Spacing Tokens
 | Token Name | Value | Usage |
@@ -346,6 +418,8 @@ This document defines the UI components, screens, design system, and interaction
 - **Success**: #4CAF50
 - **Warning**: #FF9800
 - **Info**: #2196F3
+- **Danger**: #F44336
+  - Used for: Delete buttons, destructive actions
 
 ### Typography
 
@@ -402,6 +476,11 @@ This document defines the UI components, screens, design system, and interaction
 - **Icon Button**:
   - Size: 40px x 40px
   - Border Radius: 20px (circular)
+- **Danger Button**:
+  - Background: Danger color
+  - Text: White
+  - Border Radius: 4px
+  - Padding: 8px 16px
 
 #### Input Fields
 - **Border**: 1px solid (Light: #E0E0E0, Dark: #424242)
@@ -443,6 +522,33 @@ This document defines the UI components, screens, design system, and interaction
 2. Main content area changes to show All Q&A Pairs Screen
 3. All Q&A pairs are displayed in a list
 4. User can select a Q&A pair to view or delete Q&A pairs from this screen
+
+### Authentication Interactions
+
+#### Logging In
+1. User enters email and password
+2. User clicks Login button
+3. Loading indicator appears on button
+4. System attempts to authenticate user
+5. If successful, user is redirected to main screen
+6. If unsuccessful, error message is displayed
+
+#### Signing Up
+1. User enters email, password, and optional display name
+2. User clicks Sign Up button
+3. Loading indicator appears on button
+4. System attempts to create account
+5. If successful, verification email is sent and success message is displayed
+6. If unsuccessful, error message is displayed
+
+#### Deleting Account
+1. User navigates to Settings screen
+2. User clicks "Delete Account" button in Authentication section
+3. Confirmation dialog appears with warning about permanent data loss
+4. If user confirms, loading indicator appears
+5. System attempts to delete account
+6. If successful, user is logged out and redirected to login screen
+7. If unsuccessful, error message is displayed
 
 ### Chat Interactions
 

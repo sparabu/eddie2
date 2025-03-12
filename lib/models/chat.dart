@@ -4,9 +4,6 @@ import 'message.dart';
 
 part 'chat.g.dart';
 
-// Default title constant that will be replaced with localized string
-const String DEFAULT_CHAT_TITLE = 'New Chat';
-
 @JsonSerializable()
 class Chat {
   final String id;
@@ -17,12 +14,11 @@ class Chat {
 
   Chat({
     String? id,
-    String? title,
+    required this.title,
     DateTime? createdAt,
     DateTime? updatedAt,
     List<Message>? messages,
   })  : id = id ?? const Uuid().v4(),
-        title = title ?? DEFAULT_CHAT_TITLE,
         createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now(),
         messages = messages ?? [];
@@ -56,7 +52,7 @@ class Chat {
 
   String get lastMessagePreview {
     if (messages.isEmpty) {
-      return 'No messages';
+      return '';
     }
     final lastMessage = messages.last;
     final preview = lastMessage.content.length > 50

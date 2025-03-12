@@ -22,7 +22,7 @@ class ChatNotifier extends StateNotifier<List<Chat>> {
     state = chats;
   }
   
-  Future<Chat> createChat({String? title}) async {
+  Future<Chat> createChat({required String title}) async {
     final newChat = Chat(title: title);
     state = [...state, newChat];
     await _storageService.saveChat(newChat);

@@ -1,5 +1,6 @@
 import 'dart:io';
-import 'package:file_picker/file_picker.dart';
+// Temporarily disabled due to web build issues
+// import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -7,6 +8,11 @@ class FileService {
   static const int maxFileSizeBytes = 20 * 1024 * 1024; // 20MB limit
   
   Future<Map<String, dynamic>?> pickFile() async {
+    // Temporarily disabled due to web build issues
+    debugPrint('File picking is temporarily disabled.');
+    return null;
+    
+    /* Original implementation:
     try {
       // Check if we're on a platform where file_picker might not be fully supported
       if (!kIsWeb && (Platform.isLinux || Platform.isMacOS || Platform.isWindows)) {
@@ -56,6 +62,7 @@ class FileService {
       // Instead of rethrowing, we'll return null and let the UI handle it
       return null;
     }
+    */
   }
   
   Future<String> saveTemporaryFile(List<int> bytes, String fileName) async {
