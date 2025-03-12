@@ -89,8 +89,6 @@ This document defines the UI components, screens, design system, and interaction
 - **Description**: Individual chat entry in the sidebar list
 - **Properties**:
   - Title: Shows chat title (default "New Chat" or localized equivalent)
-  - Subtitle: Preview of the last message
-  - Timestamp: Shows when the chat was last updated
   - Delete button: Removes the chat
 - **States**:
   - Selected: Highlighted with primary color

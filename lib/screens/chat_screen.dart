@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:file_picker/file_picker.dart';
 import '../models/chat.dart';
 import '../models/message.dart';
+import '../models/qa_pair.dart';
 import '../providers/chat_provider.dart';
 import '../providers/qa_provider.dart';
 import '../utils/theme.dart';
 import '../widgets/chat_input.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/qa_pair_form.dart';
-import '../models/qa_pair.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({Key? key}) : super(key: key);
@@ -53,6 +55,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         final newChat = await ref.read(chatProvider.notifier).createChat(title: l10n.newChatButton);
         ref.read(selectedChatIdProvider.notifier).state = newChat.id;
         await ref.read(chatProvider.notifier).sendMessage(newChat.id, message);
+        
+        // Force a rebuild to ensure the chat screen updates properly
+        if (mounted) {
+          setState(() {});
+        }
       } else {
         await ref.read(chatProvider.notifier).sendMessage(selectedChatId, message);
       }
@@ -94,6 +101,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           message,
           filePath: filePath,
         );
+        
+        // Force a rebuild to ensure the chat screen updates properly
+        if (mounted) {
+          setState(() {});
+        }
       } else {
         await ref.read(chatProvider.notifier).sendMessage(
           selectedChatId, 
@@ -236,7 +248,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         selectedChat = chats.firstWhere((chat) => chat.id == selectedChatId);
       } catch (e) {
         // Chat not found, leave selectedChat as null
+        if (kDebugMode) {
+          print('Chat not found: $selectedChatId');
+        }
       }
+    }
+    
+    // If we have a selected chat ID but couldn't find the chat, it might be because
+    // the chat was just created but not yet added to the state. Force a rebuild.
+    if (selectedChatId != null && selectedChat == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {});
+        }
+      });
     }
     
     return Scaffold(

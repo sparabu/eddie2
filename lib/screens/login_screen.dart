@@ -112,10 +112,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               backgroundColor: Colors.green,
             ),
           );
+          
+          // Force refresh the auth state
+          ref.refresh(authStateProvider);
+          
+          // Add a small delay to allow the auth state to propagate
+          await Future.delayed(const Duration(milliseconds: 500));
+          
+          // Check if we're still mounted after the delay
+          if (mounted) {
+            // Navigate to the main screen
+            Navigator.of(context).pushReplacementNamed('/');
+          }
         }
-        
-        // Force refresh the auth state
-        ref.refresh(authStateProvider);
       } else {
         // User canceled the sign-in flow
         debugPrint('Google sign-in canceled by user');

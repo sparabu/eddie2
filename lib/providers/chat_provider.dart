@@ -23,6 +23,7 @@ class ChatNotifier extends StateNotifier<List<Chat>> {
   }
   
   Future<Chat> createChat({required String title}) async {
+    // Create a new chat and immediately add it to the state
     final newChat = Chat(title: title);
     state = [...state, newChat];
     await _storageService.saveChat(newChat);
@@ -50,25 +51,32 @@ class ChatNotifier extends StateNotifier<List<Chat>> {
   }
   
   Future<void> addMessageToChat(String chatId, Message message) async {
-    state = state.map((chat) {
-      if (chat.id == chatId) {
-        final updatedChat = chat.addMessage(message);
-        _storageService.saveChat(updatedChat);
-        return updatedChat;
-      }
-      return chat;
-    }).toList();
+    state = state.map((chat) => chat.addMessage(message)).toList();
+    await _storageService.saveChat(state.firstWhere((chat) => chat.id == chatId));
   }
   
   Future<void> sendMessage(String chatId, String content, {String? filePath}) async {
     try {
-      // Get the chat
+      // Check if this is a new chat (not yet in state)
       final chatIndex = state.indexWhere((chat) => chat.id == chatId);
-      if (chatIndex == -1) {
-        throw Exception('Chat not found');
-      }
+      final isNewChat = chatIndex == -1;
       
-      final chat = state[chatIndex];
+      Chat chat;
+      if (isNewChat) {
+        // This is a new chat that wasn't found in the state
+        // This shouldn't normally happen since createChat now adds the chat to the state
+        // But we'll handle it just in case
+        final title = content.length > 30 ? '${content.substring(0, 30)}...' : content;
+        chat = Chat(id: chatId, title: title);
+      } else {
+        chat = state[chatIndex];
+        
+        // If this is the first message, update the chat title to be the first message
+        if (chat.messages.isEmpty) {
+          final title = content.length > 30 ? '${content.substring(0, 30)}...' : content;
+          chat = chat.copyWith(title: title);
+        }
+      }
       
       // Add user message
       final userMessage = Message(
@@ -79,7 +87,16 @@ class ChatNotifier extends StateNotifier<List<Chat>> {
       );
       
       final updatedChat = chat.addMessage(userMessage);
-      state = [...state.sublist(0, chatIndex), updatedChat, ...state.sublist(chatIndex + 1)];
+      
+      if (isNewChat) {
+        // Add the new chat to state
+        state = [...state, updatedChat];
+      } else {
+        // Update existing chat in state
+        state = [...state.sublist(0, chatIndex), updatedChat, ...state.sublist(chatIndex + 1)];
+      }
+      
+      // Save the chat
       await _storageService.saveChat(updatedChat);
       
       // Get the current locale
@@ -99,8 +116,11 @@ class ChatNotifier extends StateNotifier<List<Chat>> {
           content: response,
         );
         
+        // Find the updated index (it might have changed if this was a new chat)
+        final updatedIndex = state.indexWhere((chat) => chat.id == updatedChat.id);
+        
         final finalChat = updatedChat.addMessage(assistantMessage);
-        state = [...state.sublist(0, chatIndex), finalChat, ...state.sublist(chatIndex + 1)];
+        state = [...state.sublist(0, updatedIndex), finalChat, ...state.sublist(updatedIndex + 1)];
         await _storageService.saveChat(finalChat);
         
         // Clean up temporary file if needed
@@ -115,8 +135,11 @@ class ChatNotifier extends StateNotifier<List<Chat>> {
           isError: true,
         );
         
+        // Find the updated index (it might have changed if this was a new chat)
+        final updatedIndex = state.indexWhere((chat) => chat.id == updatedChat.id);
+        
         final errorChat = updatedChat.addMessage(errorMessage);
-        state = [...state.sublist(0, chatIndex), errorChat, ...state.sublist(chatIndex + 1)];
+        state = [...state.sublist(0, updatedIndex), errorChat, ...state.sublist(updatedIndex + 1)];
         await _storageService.saveChat(errorChat);
         
         // Clean up temporary file if needed

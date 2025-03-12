@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:intl/intl.dart';
 import '../models/chat.dart';
 import '../utils/theme.dart';
 
@@ -37,68 +36,42 @@ class ChatListItem extends StatelessWidget {
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(6),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          margin: const EdgeInsets.symmetric(vertical: 1, horizontal: 8),
           child: Row(
             children: [
               Icon(
                 Icons.chat_bubble_outline,
-                size: 16,
+                size: 14,
                 color: isSelected
                     ? (isDarkMode ? Colors.white : Colors.black)
                     : (isDarkMode ? AppTheme.darkSecondaryTextColor : Colors.grey.shade700),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      chat.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
-                        color: isSelected
-                            ? (isDarkMode ? Colors.white : Colors.black)
-                            : (isDarkMode ? AppTheme.darkSecondaryTextColor : Colors.grey.shade700),
-                      ),
-                    ),
-                    if (chat.lastMessagePreview.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        chat.lastMessagePreview,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
-                        ),
-                      ),
-                    ] else ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        l10n.noMessagesYet,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontStyle: FontStyle.italic,
-                          color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ],
+                child: Text(
+                  chat.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
+                    color: isSelected
+                        ? (isDarkMode ? Colors.white : Colors.black)
+                        : (isDarkMode ? AppTheme.darkSecondaryTextColor : Colors.grey.shade700),
+                  ),
                 ),
               ),
+              const SizedBox(width: 4),
               IconButton(
-                icon: const Icon(Icons.close, size: 14),
+                icon: const Icon(Icons.close, size: 12),
                 onPressed: onDelete,
                 tooltip: l10n.deleteChat,
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
+                constraints: const BoxConstraints(
+                  minWidth: 20,
+                  minHeight: 20,
+                ),
                 color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
               ),
             ],

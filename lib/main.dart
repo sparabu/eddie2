@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:logging/logging.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
+import 'dart:async';
 import 'firebase_options.dart';
 import 'providers/settings_provider.dart';
 import 'providers/locale_provider.dart';
@@ -12,33 +19,146 @@ import 'screens/signup_screen.dart';
 import 'services/auth_service.dart';
 import 'utils/theme.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+// Global error handler for uncaught errors
+void _handleError(Object error, StackTrace stack) {
+  debugPrint('Global error handler caught: $error');
+  debugPrint('Stack trace: $stack');
   
-  // Initialize Firebase
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    debugPrint('Firebase initialized successfully with DefaultFirebaseOptions');
-  } catch (e) {
-    debugPrint('Failed to initialize Firebase with DefaultFirebaseOptions: $e');
-    // Fallback to web-only initialization if needed
-    if (e.toString().contains('web')) {
-      try {
-        await Firebase.initializeApp();
-        debugPrint('Firebase initialized with default web configuration');
-      } catch (e) {
-        debugPrint('Failed to initialize Firebase with default web configuration: $e');
-      }
+  // Log to Crashlytics if available
+  if (Firebase.apps.isNotEmpty && !kIsWeb) {
+    try {
+      FirebaseCrashlytics.instance.recordError(error, stack);
+    } catch (e) {
+      debugPrint('Error recording to Crashlytics: $e');
     }
   }
+}
+
+// Initialize logging
+void _setupLogging() {
+  Logger.root.level = kDebugMode ? Level.ALL : Level.INFO;
+  Logger.root.onRecord.listen((record) {
+    debugPrint('${record.level.name}: ${record.time}: ${record.message}');
+    if (record.error != null) {
+      debugPrint('Error: ${record.error}');
+      debugPrint('Stack trace: ${record.stackTrace}');
+    }
+  });
+}
+
+void main() {
+  // Ensure Flutter is initialized first
+  WidgetsFlutterBinding.ensureInitialized();
   
-  runApp(
-    const ProviderScope(
-      child: MyApp(),
-    ),
-  );
+  // Set up logging
+  _setupLogging();
+  final log = Logger('main');
+  log.info('Starting Eddie2 application');
+  
+  // Set up global error handlers
+  FlutterError.onError = (FlutterErrorDetails details) {
+    log.severe('Flutter error: ${details.exception}');
+    log.severe('Stack trace: ${details.stack}');
+    
+    // Log to Crashlytics if available and not on web
+    if (Firebase.apps.isNotEmpty && !kIsWeb) {
+      try {
+        FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+      } catch (e) {
+        log.severe('Error recording to Crashlytics: $e');
+      }
+    }
+  };
+  
+  // Handle uncaught async errors
+  PlatformDispatcher.instance.onError = (error, stack) {
+    _handleError(error, stack);
+    return true;
+  };
+  
+  // Use a single zone for the entire app
+  runZonedGuarded(() async {
+    try {
+      // Initialize Firebase
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      log.info('Firebase initialized successfully with DefaultFirebaseOptions');
+      
+      // Initialize Firebase Analytics
+      final analytics = FirebaseAnalytics.instance;
+      log.info('Firebase Analytics initialized');
+      
+      // Initialize Firebase Crashlytics (only for non-web platforms)
+      if (!kIsWeb) {
+        await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
+        log.info('Firebase Crashlytics initialized');
+      }
+      
+      // Configure Firestore settings
+      // Note: For web, persistence is configured in index.html
+      if (!kIsWeb) {
+        FirebaseFirestore.instance.settings = const Settings(
+          persistenceEnabled: true,
+          cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+        );
+        log.info('Firestore configured with persistence enabled');
+      } else {
+        log.info('Firestore persistence for web configured in index.html');
+      }
+      
+      // Initialize Sentry
+      if (kReleaseMode) {
+        await SentryFlutter.init(
+          (options) {
+            options.dsn = ''; // Add your Sentry DSN here if you have one
+            options.tracesSampleRate = 1.0;
+            options.enableAutoSessionTracking = true;
+          },
+        );
+        log.info('Sentry initialized');
+      }
+      
+      // Run the app
+      runApp(
+        const ProviderScope(
+          child: MyApp(),
+        ),
+      );
+    } catch (e, stack) {
+      log.severe('Error during app initialization: $e');
+      log.severe('Stack trace: $stack');
+      _handleError(e, stack);
+      
+      // Show a minimal error app if initialization fails
+      runApp(MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                const SizedBox(height: 16),
+                Text('Initialization Error: $e'),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    // Restart the app
+                    main();
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ));
+    }
+  }, (error, stack) {
+    log.severe('Uncaught error in zone: $error');
+    log.severe('Stack trace: $stack');
+    _handleError(error, stack);
+  });
 }
 
 class MyApp extends ConsumerWidget {

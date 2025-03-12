@@ -213,11 +213,31 @@ class AuthService {
         }
       }
       
+      // Force a reload of the Firebase user to ensure we have the latest data
+      await firebaseUser.reload();
+      final refreshedUser = _firebaseAuth.currentUser;
+      
+      // Update the user object with the refreshed data if available
+      if (refreshedUser != null) {
+        user = app_models.User.fromFirebase(refreshedUser);
+        debugPrint('User data refreshed after Google sign-in: ${user.email}');
+      }
+      
+      // Manually notify listeners about the auth state change
+      _notifyAuthStateListeners();
+      
       return user;
     } catch (e) {
       debugPrint('Error during Google sign-in: $e');
       rethrow;
     }
+  }
+
+  // Helper method to manually trigger auth state listeners
+  void _notifyAuthStateListeners() {
+    debugPrint('Manually notifying auth state listeners');
+    // This will cause Firebase Auth to emit a new auth state event
+    _firebaseAuth.currentUser?.getIdToken(true);
   }
 
   // Create user with email and password

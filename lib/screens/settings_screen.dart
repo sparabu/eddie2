@@ -41,6 +41,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _loadApiKey();
     _loadVersionInfo();
     _loadUserProfile();
+    
+    // Add enhanced error logging
+    if (kDebugMode) {
+      debugPrint('SettingsScreen initialized');
+      // Set up global error handler for Flutter errors
+      FlutterError.onError = (FlutterErrorDetails details) {
+        debugPrint('Flutter error in SettingsScreen: ${details.exception}');
+        debugPrint('Stack trace: ${details.stack}');
+      };
+    }
   }
   
   @override

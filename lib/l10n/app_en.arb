@@ -1,10 +1,11 @@
 {
   "appTitle": "Eddie2",
+  "welcomeMessage": "What can I help you learn?",
   
   "@@locale": "en",
   
   "chatTabLabel": "Recent Chats",
-  "qaTabLabel": "Q&A Pairs",
+  "qaTabLabel": "Recent Q&A Pairs",
   "settingsTabLabel": "Settings",
   
   "newChatButton": "New Chat",

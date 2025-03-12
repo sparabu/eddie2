@@ -76,6 +76,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         _showAllChats = false;
         _showAllQAPairs = false;
       });
+    } else {
+      // Force a rebuild even if we're already on the chat screen
+      setState(() {});
     }
   }
   

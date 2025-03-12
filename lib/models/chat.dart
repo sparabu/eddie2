@@ -54,10 +54,14 @@ class Chat {
     if (messages.isEmpty) {
       return '';
     }
-    final lastMessage = messages.last;
-    final preview = lastMessage.content.length > 50
-        ? '${lastMessage.content.substring(0, 50)}...'
-        : lastMessage.content;
-    return preview;
+    
+    // Find the first user message
+    final firstUserMessage = messages.firstWhere(
+      (message) => message.role == MessageRole.user,
+      orElse: () => messages.first,
+    );
+    
+    // Don't show any preview text, as per requirements
+    return '';
   }
 } 

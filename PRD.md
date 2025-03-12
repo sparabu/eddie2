@@ -271,7 +271,7 @@ For teams focused primarily on a web application and wanting to use Tailwind CSS
 Eddie2 has been successfully set up with Git version control and is hosted on GitHub:
 
 - **Repository**: https://github.com/sparabu/eddie2
-- **Current Version**: v1.7.0 (Enhanced Authentication and Firestore Integration)
+- **Current Version**: v1.8.0 (UI and UX Enhancements)
 - **Branching Strategy**:
   - Main branch contains the production-ready code
   - Feature branches will be created for new features and improvements
@@ -368,6 +368,16 @@ Eddie2 has been successfully set up with Git version control and is hosted on Gi
   - Added detailed logging for authentication and database operations
   - Updated documentation to reflect new authentication methods
 
+- **v1.8.0**: UI and UX Enhancements:
+  - Simplified chat list items to show only titles in a single row
+  - Improved new chat creation workflow
+  - Enhanced chat state management for better user experience
+  - Fixed issue with chat dialogue not appearing after submitting first message
+  - Optimized chat list item appearance with reduced vertical spacing
+  - Improved chat provider to immediately add new chats to state
+  - Updated documentation to reflect UI changes
+  - Enhanced error handling in chat creation process
+
 ### Version Control Strategy
 To maintain a consistent, collaborative, and traceable development workflow, Eddie2 uses a structured Git-based version control strategy:
 
@@ -396,6 +406,8 @@ To maintain a consistent, collaborative, and traceable development workflow, Edd
   - Comprehensive UI/UX specifications document
   - Completely hideable sidebar with toggle button
   - Redesigned navigation with app logo and title in top bar
+  - Simplified chat list items with optimized single-row layout
+  - Enhanced new chat creation workflow
   
 - **Core Functionality**:
   - Chat interface with OpenAI API integration
@@ -404,7 +416,8 @@ To maintain a consistent, collaborative, and traceable development workflow, Edd
   - Settings management with secure API key storage
   - Dynamic version display
   - Direct Q&A pair creation from sidebar
-  
+  - Improved chat state management for better user experience
+
 - **Error Handling**:
   - Improved error handling for file picking failures
   - Enhanced Q&A detection with fallback to manual creation
