@@ -7,12 +7,14 @@ class ChatInput extends StatefulWidget {
   final Function(String) onSendMessage;
   final Function(String, String) onSendMessageWithFile;
   final bool isLoading;
+  final String? hintText;
   
   const ChatInput({
     Key? key,
     required this.onSendMessage,
     required this.onSendMessageWithFile,
     this.isLoading = false,
+    this.hintText,
   }) : super(key: key);
   
   @override
@@ -154,7 +156,7 @@ class _ChatInputState extends State<ChatInput> {
                 child: TextField(
                   controller: _controller,
                   decoration: InputDecoration(
-                    hintText: l10n.typeMessageHint,
+                    hintText: widget.hintText ?? l10n.typeMessageHint,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24),
                       borderSide: BorderSide.none,

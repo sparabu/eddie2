@@ -71,11 +71,16 @@ class ChatNotifier extends StateNotifier<List<Chat>> {
       } else {
         chat = state[chatIndex];
         
+        // We no longer need to update the title for the first message
+        // since we're setting it correctly when creating the chat
+        // Keep this commented out for reference
+        /*
         // If this is the first message, update the chat title to be the first message
         if (chat.messages.isEmpty) {
           final title = content.length > 30 ? '${content.substring(0, 30)}...' : content;
           chat = chat.copyWith(title: title);
         }
+        */
       }
       
       // Add user message

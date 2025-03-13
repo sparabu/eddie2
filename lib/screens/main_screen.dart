@@ -65,9 +65,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
   
   void _createNewChat() async {
-    final l10n = AppLocalizations.of(context)!;
-    final newChat = await ref.read(chatProvider.notifier).createChat(title: l10n.newChatButton);
-    ref.read(selectedChatIdProvider.notifier).state = newChat.id;
+    // Clear the current chat selection
+    ref.read(selectedChatIdProvider.notifier).state = null;
     
     // Switch to chat screen if not already there
     if (_selectedIndex != 0) {
@@ -379,6 +378,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 // App bar with logo, title, and toggle sidebar button
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  height: 56, // Fixed height for the app bar
                   decoration: BoxDecoration(
                     color: Theme.of(context).appBarTheme.backgroundColor,
                     border: Border(
@@ -406,13 +406,126 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                         const SizedBox(width: 16),
                       const AppLogo(size: 24),
                       const SizedBox(width: 8),
-                      Text(
-                        _showAllChats ? l10n.chatTabLabel :
-                        _showAllQAPairs ? l10n.qaTabLabel :
-                        _selectedIndex == 0 ? l10n.chatTabLabel :
-                        _selectedIndex == 1 ? l10n.qaTabLabel : l10n.settingsTabLabel,
-                        style: Theme.of(context).appBarTheme.titleTextStyle,
-                      ),
+                      if (_selectedIndex == 0 && selectedChatId != null)
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Text(
+                                l10n.chatTabLabel,
+                                style: Theme.of(context).appBarTheme.titleTextStyle,
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                child: Icon(
+                                  Icons.chevron_right,
+                                  size: 18,
+                                  color: isDarkMode ? Colors.white70 : Colors.black54,
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  chats.firstWhere((chat) => chat.id == selectedChatId, orElse: () => Chat(title: '')).title,
+                                  style: Theme.of(context).appBarTheme.titleTextStyle?.copyWith(
+                                    fontWeight: FontWeight.w400,
+                                    color: isDarkMode ? Colors.white70 : Colors.black87,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else if (_showAllChats)
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Text(
+                                l10n.chatTabLabel,
+                                style: Theme.of(context).appBarTheme.titleTextStyle,
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                child: Icon(
+                                  Icons.chevron_right,
+                                  size: 18,
+                                  color: isDarkMode ? Colors.white70 : Colors.black54,
+                                ),
+                              ),
+                              Text(
+                                l10n.viewAll,
+                                style: Theme.of(context).appBarTheme.titleTextStyle?.copyWith(
+                                  fontWeight: FontWeight.w400,
+                                  color: isDarkMode ? Colors.white70 : Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else if (_selectedIndex == 1 && selectedQAPairId != null)
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Text(
+                                l10n.qaTabLabel,
+                                style: Theme.of(context).appBarTheme.titleTextStyle,
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                child: Icon(
+                                  Icons.chevron_right,
+                                  size: 18,
+                                  color: isDarkMode ? Colors.white70 : Colors.black54,
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  qaPairs.firstWhere((qa) => qa.id == selectedQAPairId, orElse: () => QAPair(question: '', answer: '')).question,
+                                  style: Theme.of(context).appBarTheme.titleTextStyle?.copyWith(
+                                    fontWeight: FontWeight.w400,
+                                    color: isDarkMode ? Colors.white70 : Colors.black87,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else if (_showAllQAPairs)
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Text(
+                                l10n.qaTabLabel,
+                                style: Theme.of(context).appBarTheme.titleTextStyle,
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                child: Icon(
+                                  Icons.chevron_right,
+                                  size: 18,
+                                  color: isDarkMode ? Colors.white70 : Colors.black54,
+                                ),
+                              ),
+                              Text(
+                                l10n.viewAll,
+                                style: Theme.of(context).appBarTheme.titleTextStyle?.copyWith(
+                                  fontWeight: FontWeight.w400,
+                                  color: isDarkMode ? Colors.white70 : Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        Expanded(
+                          child: Text(
+                            _showAllChats ? l10n.chatTabLabel :
+                            _showAllQAPairs ? l10n.qaTabLabel :
+                            _selectedIndex == 0 ? l10n.chatTabLabel :
+                            _selectedIndex == 1 ? l10n.qaTabLabel : l10n.settingsTabLabel,
+                            style: Theme.of(context).appBarTheme.titleTextStyle,
+                          ),
+                        ),
                     ],
                   ),
                 ),

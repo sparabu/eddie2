@@ -23,6 +23,8 @@ Eddie2 is an AI-driven education-focused application that helps users interact w
 - **Guided Input**: Input field placeholder "Ask Eddie to create..." to guide users ✅
 - **Simplified Chat List**: Chat list items showing only titles in a single row for better space utilization ✅
 - **Improved Chat Creation**: Enhanced workflow for creating and displaying new chats ✅
+- **Breadcrumb Navigation**: Clear breadcrumb navigation in the app bar showing the current section and selected item ✅
+- **Optimized Chat Creation**: New chats are only created after the first message is sent, not when clicking "New Chat" button ✅
 
 ### Full Implementation Scope (Post-MVP)
 - **User Authentication**: Multi-user support and secure login ✅
@@ -401,6 +403,16 @@ Eddie2 has been successfully set up with Git version control and is hosted on Gi
   - Improved authentication state transitions
   - Enhanced offline error handling with retry mechanisms
 
+- **v1.10.0**: Chat Creation Workflow and Navigation Improvements:
+  - Optimized chat creation workflow to only create chats after first message is sent
+  - Added breadcrumb navigation in the app bar showing "Chat > [Chat Title]" format
+  - Improved visual hierarchy with distinct styling for breadcrumb elements
+  - Enhanced user experience by showing empty chat state when clicking "New Chat"
+  - Fixed issue with chat titles not appearing in the app bar
+  - Improved responsive design for the app bar on smaller screens
+  - Added consistent breadcrumb navigation for Q&A section as well
+  - Enhanced visual feedback for current section in the app bar
+
 ### Version Control Strategy
 To maintain a consistent, collaborative, and traceable development workflow, Eddie2 uses a structured Git-based version control strategy:
 
@@ -431,6 +443,8 @@ To maintain a consistent, collaborative, and traceable development workflow, Edd
   - Redesigned navigation with app logo and title in top bar
   - Simplified chat list items with optimized single-row layout
   - Enhanced new chat creation workflow
+  - Breadcrumb navigation in app bar showing current section and selected item
+  - Improved visual hierarchy with distinct styling for navigation elements
   
 - **Core Functionality**:
   - Chat interface with OpenAI API integration
@@ -440,6 +454,7 @@ To maintain a consistent, collaborative, and traceable development workflow, Edd
   - Dynamic version display
   - Direct Q&A pair creation from sidebar
   - Improved chat state management for better user experience
+  - Optimized chat creation workflow that only creates chats after first message is sent
 
 - **Error Handling**:
   - Improved error handling for file picking failures

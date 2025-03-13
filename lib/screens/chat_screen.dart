@@ -50,9 +50,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       final selectedChatId = ref.read(selectedChatIdProvider);
       
       if (selectedChatId == null) {
-        // Create a new chat if none is selected
-        final l10n = AppLocalizations.of(context)!;
-        final newChat = await ref.read(chatProvider.notifier).createChat(title: l10n.newChatButton);
+        // Create a new chat with the first message as the title
+        final title = message.length > 30 ? '${message.substring(0, 30)}...' : message;
+        final newChat = await ref.read(chatProvider.notifier).createChat(title: title);
         ref.read(selectedChatIdProvider.notifier).state = newChat.id;
         await ref.read(chatProvider.notifier).sendMessage(newChat.id, message);
         
@@ -92,9 +92,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       final selectedChatId = ref.read(selectedChatIdProvider);
       
       if (selectedChatId == null) {
-        // Create a new chat if none is selected
-        final l10n = AppLocalizations.of(context)!;
-        final newChat = await ref.read(chatProvider.notifier).createChat(title: l10n.newChatButton);
+        // Create a new chat with the first message as the title
+        final title = message.length > 30 ? '${message.substring(0, 30)}...' : message;
+        final newChat = await ref.read(chatProvider.notifier).createChat(title: title);
         ref.read(selectedChatIdProvider.notifier).state = newChat.id;
         await ref.read(chatProvider.notifier).sendMessage(
           newChat.id, 
@@ -240,6 +240,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final l10n = AppLocalizations.of(context)!;
     final selectedChatId = ref.watch(selectedChatIdProvider);
     final chats = ref.watch(chatProvider);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     
     // Find the selected chat
     Chat? selectedChat;
@@ -248,88 +249,70 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         selectedChat = chats.firstWhere((chat) => chat.id == selectedChatId);
       } catch (e) {
         // Chat not found, leave selectedChat as null
-        if (kDebugMode) {
-          print('Chat not found: $selectedChatId');
-        }
       }
     }
     
-    // If we have a selected chat ID but couldn't find the chat, it might be because
-    // the chat was just created but not yet added to the state. Force a rebuild.
-    if (selectedChatId != null && selectedChat == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() {});
-        }
-      });
-    }
-    
-    return Scaffold(
-      body: Column(
-        children: [
-          // Chat messages
-          Expanded(
-            child: selectedChat == null
-                ? Center(
-                    child: Text(
-                      l10n.startNewChatMessage,
-                      style: TextStyle(
-                        color: Theme.of(context).textTheme.bodyMedium?.color,
-                      ),
-                    ),
-                  )
-                : selectedChat.messages.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              l10n.chatWelcomeTitle,
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).textTheme.bodyLarge?.color,
-                              ),
-                            ),
-                          ],
+    return Column(
+      children: [
+        // Messages area
+        Expanded(
+          child: selectedChat == null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        l10n.chatWelcomeTitle,
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: isDarkMode ? Colors.white : Colors.black87,
                         ),
-                      )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        itemCount: selectedChat.messages.length,
-                        itemBuilder: (context, index) {
-                          final message = selectedChat!.messages[index];
-                          return MessageBubble(
-                            message: message,
-                            onSaveQAPair: message.role == MessageRole.assistant && !message.isError
-                                ? () => _detectAndSaveQAPairs(selectedChat!.id)
-                                : null,
-                          );
-                        },
+                        textAlign: TextAlign.center,
                       ),
-          ),
-          
-          // Loading indicator
-          if (_isLoading)
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              color: Theme.of(context).cardColor,
-              child: const Center(
-                child: SpinKitThreeBounce(
-                  color: AppTheme.primaryColor,
-                  size: 24,
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: selectedChat.messages.length,
+                  itemBuilder: (context, index) {
+                    final message = selectedChat!.messages[index];
+                    return MessageBubble(
+                      message: message,
+                      onSaveQAPair: message.role == MessageRole.assistant && !message.isError
+                          ? () => _detectAndSaveQAPairs(selectedChat!.id)
+                          : null,
+                    );
+                  },
                 ),
+        ),
+        
+        // Loading indicator
+        if (_isLoading)
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            color: Theme.of(context).cardColor,
+            child: const Center(
+              child: SpinKitThreeBounce(
+                color: AppTheme.primaryColor,
+                size: 24,
               ),
             ),
-          
-          // Chat input
-          ChatInput(
+          ),
+        
+        // Chat input
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: ChatInput(
             onSendMessage: _sendMessage,
             onSendMessageWithFile: _sendMessageWithFile,
             isLoading: _isLoading,
+            hintText: l10n.typeMessageHint,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 } 

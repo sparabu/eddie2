@@ -57,7 +57,16 @@ This document defines the UI components, screens, design system, and interaction
 - **Elements**:
   - Sidebar toggle button: Shows/hides the sidebar
   - App logo: Eddie2 logo
-  - App title: "Eddie2" text
+  - Breadcrumb navigation: Shows current section and selected item
+    - Primary section: "Chat" or "Q&A Pairs"
+    - Chevron separator: ">"
+    - Selected item: Chat title or Q&A question
+  - App title: "Eddie2" text (shown when no breadcrumb is active)
+- **Variants**:
+  - Default: Shows app title only
+  - Chat selected: Shows "Chat > [Chat Title]"
+  - Q&A selected: Shows "Q&A Pairs > [Question]"
+  - View All: Shows "Chat > View All" or "Q&A Pairs > View All"
 - **Component ID**: `TopAppBar`
 
 #### Sidebar Section
@@ -350,7 +359,7 @@ This document defines the UI components, screens, design system, and interaction
     - Settings Section
   - Right Panel: Chat Area
     - Chat Header
-      - Chat Title
+      - Breadcrumb Navigation showing "Chat > [Chat Title]"
     - Message List
       - User Message Bubbles
       - Assistant Message Bubbles
@@ -359,6 +368,11 @@ This document defines the UI components, screens, design system, and interaction
       - Message Input Field with placeholder "Ask Eddie to create..."
       - Attach File Button
       - Send Button
+- **Behavior**:
+  - Clicking "New Chat" button clears the current chat selection and shows the empty state
+  - A new chat is only created after the user submits their first message
+  - The first message becomes the title of the new chat
+  - The breadcrumb navigation updates to show the current chat title
 - **Screen ID**: `ChatScreen`
 
 ### Q&A Screen
@@ -370,6 +384,11 @@ This document defines the UI components, screens, design system, and interaction
   - Q&A List
     - Q&A Pair Items
   - Empty State (when no pairs exist)
+  - Header
+    - Breadcrumb Navigation showing "Q&A Pairs > [Question]" when a Q&A pair is selected
+- **Behavior**:
+  - When a Q&A pair is selected, the breadcrumb navigation updates to show the question
+  - When viewing all Q&A pairs, the breadcrumb shows "Q&A Pairs > View All"
 - **Screen ID**: `QAScreen`
 
 ### Settings Screen
@@ -749,20 +768,26 @@ This document defines the UI components, screens, design system, and interaction
 ### Improved Chat Creation Flow
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  Start App  │────▶│ Type Message│────▶│ Send Message│
-└─────────────┘     └─────────────┘     └──────┬──────┘
+│  Start App  │────▶│ Click "New  │────▶│ Empty Chat  │
+└─────────────┘     │ Chat" Button│     │ Screen      │
+                    └─────────────┘     └──────┬──────┘
                                                 │
                                                 ▼
-                                        ┌─────────────┐
-                                        │ New Chat    │
-                                        │ Created     │
-                                        └──────┬──────┘
-                                                │
-                                                ▼
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│ View Response│◀────│ AI Processes│◀────│ Chat Dialogue│
-└──────┬──────┘     └─────────────┘     │ Displayed   │
-       │                                 └─────────────┘
+                                        ┌─────────────┐     ┌─────────────┐
+                                        │ Type Message│────▶│ Send Message│
+                                        └─────────────┘     └──────┬──────┘
+                                                                   │
+                                                                   ▼
+                                                           ┌─────────────┐
+                                                           │ New Chat    │
+                                                           │ Created     │
+                                                           └──────┬──────┘
+                                                                   │
+                                                                   ▼
+┌─────────────┐     ┌─────────────┐                        ┌─────────────┐
+│ View Response│◀────│ AI Processes│◀───────────────────────│ Breadcrumb  │
+└──────┬──────┘     └─────────────┘                        │ Updated     │
+       │                                                    └─────────────┘
        ▼
 ┌─────────────┐     ┌─────────────┐
 │ Save as Q&A │────▶│  Q&A Saved  │
