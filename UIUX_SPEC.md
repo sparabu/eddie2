@@ -18,6 +18,7 @@ This document defines the UI components, screens, design system, and interaction
 13. [Loading States](#13-loading-states)
 14. [Animation & Transition Guidelines](#14-animation--transition-guidelines)
 15. [Testing & QA Guidelines](#15-testing--qa-guidelines)
+16. [Admin Tools](#16-admin-tools)
 
 ## 1. UI Component Glossary
 
@@ -94,6 +95,11 @@ This document defines the UI components, screens, design system, and interaction
   - Selected: Highlighted with primary color
   - Unselected: Regular background
 - **Component ID**: `ChatListItem`
+- **Updated Design**:
+  - Simplified to show only the chat title in a single row
+  - Reduced vertical spacing for better space utilization
+  - Enhanced readability for quick navigation
+  - Optimized appearance for displaying more chats in the sidebar
 
 #### Message Bubble
 - **Location**: Chat area
@@ -259,6 +265,47 @@ This document defines the UI components, screens, design system, and interaction
   - Default: Regular text color
   - Hover: Slightly darker text color
 - **Component ID**: `ViewAllLink`
+
+### Error Handling Components
+
+#### Error Message
+- **Location**: Various locations throughout the application
+- **Description**: Displays error messages to users in a clear, concise manner
+- **Properties**:
+  - Message: The error text (always localized)
+  - Icon: Visual indicator of error type (optional)
+  - Action: Button or link to resolve the error (optional)
+- **Variants**:
+  - Inline Error: Displayed directly beneath form fields
+  - Toast/Snackbar: Temporary notification at the bottom of the screen
+  - Dialog: Modal error for critical issues requiring acknowledgment
+- **States**:
+  - Default: Displayed with error styling
+  - With Action: Includes actionable button or link
+- **Component ID**: `ErrorMessage`
+
+#### Offline Indicator
+- **Location**: Top of screen when network connectivity is lost
+- **Description**: Banner indicating offline status with retry options
+- **Properties**:
+  - Message: "You are offline" or similar text (localized)
+  - Retry Button: Attempts to reconnect or retry failed operations
+- **States**:
+  - Visible: When device is offline
+  - Hidden: When device is online
+- **Component ID**: `OfflineIndicator`
+
+#### Loading State
+- **Location**: Various locations throughout the application
+- **Description**: Visual indicator of ongoing operations
+- **Variants**:
+  - Button Loading: Replaces button text with spinner
+  - Content Loading: Overlay or skeleton UI for content areas
+  - Full Screen Loading: Covers entire screen for initial loading
+- **Properties**:
+  - Size: Small, medium, or large
+  - Message: Optional text explaining the operation
+- **Component ID**: `LoadingIndicator`
 
 ## 2. Screen Map
 
@@ -597,6 +644,9 @@ This document defines the UI components, screens, design system, and interaction
 5. System attempts to delete account
 6. If successful, user is logged out and redirected to login screen
 7. If unsuccessful, error message is displayed
+8. For Firestore permission issues, appropriate error message is shown with retry option
+9. Detailed logs are generated for troubleshooting purposes
+10. If the error is due to requiring recent login, user is prompted to sign out and sign in again
 
 #### Google Sign-In
 1. User clicks "Sign in with Google" or "Sign up with Google" button
@@ -607,6 +657,16 @@ This document defines the UI components, screens, design system, and interaction
 6. If successful, user is redirected to main screen
 7. If unsuccessful, error message is displayed
 8. If offline, system shows appropriate error message and retry options
+
+#### Sign-Out Process
+1. User clicks "Logout" button in Settings screen
+2. Loading indicator appears on button
+3. System attempts to sign out from Google (if applicable)
+4. System signs out from Firebase Authentication
+5. All local authentication state is cleared
+6. User is redirected to login screen
+7. If unsuccessful, error message is displayed with retry option
+8. Detailed logs are generated for troubleshooting purposes
 
 ### Chat Interactions
 
@@ -680,6 +740,29 @@ This document defines the UI components, screens, design system, and interaction
 │ View Response│◀────│ AI Processes│◀────│ Send Message│
 └──────┬──────┘     └─────────────┘     └─────────────┘
        │
+       ▼
+┌─────────────┐     ┌─────────────┐
+│ Save as Q&A │────▶│  Q&A Saved  │
+└─────────────┘     └─────────────┘
+```
+
+### Improved Chat Creation Flow
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  Start App  │────▶│ Type Message│────▶│ Send Message│
+└─────────────┘     └─────────────┘     └──────┬──────┘
+                                                │
+                                                ▼
+                                        ┌─────────────┐
+                                        │ New Chat    │
+                                        │ Created     │
+                                        └──────┬──────┘
+                                                │
+                                                ▼
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│ View Response│◀────│ AI Processes│◀────│ Chat Dialogue│
+└──────┬──────┘     └─────────────┘     │ Displayed   │
+       │                                 └─────────────┘
        ▼
 ┌─────────────┐     ┌─────────────┐
 │ Save as Q&A │────▶│  Q&A Saved  │
@@ -1015,6 +1098,45 @@ Used for simple state:
 - **Retry Mechanisms**: For operations that can be retried (e.g., Firestore operations when offline)
 - **Fallback Behavior**: Graceful degradation when services are unavailable
 
+### Authentication Error Handling
+- **Login Errors**:
+  - Invalid credentials: "Email or password is incorrect"
+  - User not found: "No account found with this email"
+  - Too many attempts: "Too many login attempts. Please try again later"
+- **Registration Errors**:
+  - Email already in use: "An account with this email already exists"
+  - Weak password: "Password must be at least 8 characters with a mix of letters, numbers, and symbols"
+  - Invalid email: "Please enter a valid email address"
+- **Account Deletion Errors**:
+  - Requires recent login: "For security reasons, please sign out and sign in again before deleting your account"
+  - Permission denied: "You don't have permission to delete this account"
+  - Network error: "Unable to delete account due to network issues. Please try again"
+
+### Firestore Error Handling
+- **Permission Errors**:
+  - Access denied: "You don't have permission to access this data"
+  - Quota exceeded: "Database quota exceeded. Please try again later"
+- **Network Errors**:
+  - Offline: "Changes will be saved when you're back online"
+  - Timeout: "Request timed out. Please try again"
+- **Data Errors**:
+  - Invalid data: "Unable to process data. Please check your input"
+  - Document not found: "The requested data could not be found"
+
+### Offline Support
+- **Visual Indicators**: Banner at the top of the screen when offline
+- **Queued Operations**: Changes are queued and applied when back online
+- **Retry Buttons**: Allow users to manually retry failed operations
+- **Sync Status**: Indicate which data is synced and which is pending upload
+- **Graceful Degradation**: App remains functional with limited capabilities when offline
+
+### Error Logging
+- **Client-Side Logging**: Detailed logs for debugging purposes
+- **Error Context**: Include relevant context with each error (user action, screen, etc.)
+- **Stack Traces**: Capture stack traces for unexpected errors
+- **User Feedback**: Option for users to report issues with context
+- **Privacy Considerations**: Never log sensitive information like passwords or API keys
+
 ## 12. Empty States
 
 ### Chat Empty State
@@ -1125,4 +1247,55 @@ For each UI component or feature, the following criteria should be met:
   - Editing: Shows form with editable fields
   - Loading: Shows loading indicator during save
   - Error: Shows error messages for validation issues
-- **Component ID**: `ProfileForm` 
+- **Component ID**: `ProfileForm`
+
+## 16. Admin Tools
+
+### User Management Tools
+
+#### Purpose
+Admin tools provide administrative capabilities for managing user accounts and troubleshooting issues outside the normal application flow.
+
+#### Tools Available
+
+##### Delete User Tool
+- **Description**: Command-line utility to delete user accounts from Firebase
+- **Variants**:
+  - Python Script: `tools/delete_user.py`
+  - Shell Script: `tools/delete_user.sh`
+  - Dart Script: `tools/delete_user.dart`
+- **Usage**: 
+  - Python: `python tools/delete_user.py <email>`
+  - Shell: `./tools/delete_user.sh <email>`
+  - Dart: `dart tools/delete_user.dart <email>`
+- **Requirements**:
+  - Service account key for Firebase Admin SDK (Python/Dart)
+  - Firebase CLI and jq installed (Shell)
+- **Process**:
+  1. Authenticates with Firebase
+  2. Finds user by email
+  3. Deletes user data from Firestore (when possible)
+  4. Deletes user from Firebase Authentication
+  5. Logs the process for verification
+
+##### User Data Management
+- **Description**: Tools for managing user data in Firestore
+- **Capabilities**:
+  - View user data
+  - Modify user permissions
+  - Reset user state
+  - Troubleshoot authentication issues
+- **Access Control**: Limited to administrators with appropriate credentials
+
+### Error Handling in Admin Tools
+- **Validation**: Verify inputs before performing destructive operations
+- **Confirmation**: Require explicit confirmation for account deletion
+- **Logging**: Detailed logging of all administrative actions
+- **Rollback**: Ability to restore from backups when possible
+- **Security**: Strict access controls to prevent unauthorized use
+
+### Admin Tool Documentation
+- **README**: Comprehensive documentation in `tools/README.md`
+- **Usage Examples**: Clear examples of how to use each tool
+- **Security Guidelines**: Best practices for secure use of admin tools
+- **Troubleshooting**: Common issues and their solutions 
