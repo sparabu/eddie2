@@ -13,11 +13,12 @@ import 'dart:async';
 import 'firebase_options.dart';
 import 'providers/settings_provider.dart';
 import 'providers/locale_provider.dart';
-import 'screens/main_screen.dart';
-import 'screens/login_screen.dart';
+import 'screens/main_screen.dart' as main_screen;
+import 'screens/login_screen.dart' as login_screen;
 import 'screens/signup_screen.dart';
 import 'services/auth_service.dart';
-import 'utils/theme.dart';
+import 'theme/eddie_theme.dart';
+import 'theme/theme_provider.dart';
 
 // Global error handler for uncaught errors
 void _handleError(Object error, StackTrace stack) {
@@ -47,9 +48,6 @@ void _setupLogging() {
 }
 
 void main() {
-  // Ensure Flutter is initialized first
-  WidgetsFlutterBinding.ensureInitialized();
-  
   // Set up logging
   _setupLogging();
   final log = Logger('main');
@@ -79,6 +77,9 @@ void main() {
   // Use a single zone for the entire app
   runZonedGuarded(() async {
     try {
+      // Ensure Flutter is initialized first - moved inside the zone
+      WidgetsFlutterBinding.ensureInitialized();
+      
       // Initialize Firebase
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
@@ -170,11 +171,17 @@ class MyApp extends ConsumerWidget {
     final locale = ref.watch(localeProvider);
     final authState = ref.watch(authStateProvider);
     
+    // Instead of updating the theme mode directly in build, use Future.microtask
+    // to schedule the update after the build is complete
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(themeModeProvider.notifier).state = isDarkMode ? ThemeMode.dark : ThemeMode.light;
+    });
+    
     return MaterialApp(
       title: 'Eddie2',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      theme: EddieTheme.lightTheme,
+      darkTheme: EddieTheme.darkTheme,
+      themeMode: ref.watch(themeModeProvider),
       debugShowCheckedModeBanner: false,
       
       // Localization settings
@@ -190,8 +197,8 @@ class MyApp extends ConsumerWidget {
       // Routes
       routes: {
         '/': (context) => const AuthWrapper(),
-        LoginScreen.routeName: (context) => const LoginScreen(),
         SignupScreen.routeName: (context) => const SignupScreen(),
+        login_screen.LoginScreen.routeName: (context) => const login_screen.LoginScreen(),
       },
       initialRoute: '/',
     );
@@ -225,10 +232,10 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
         
         if (user != null) {
           debugPrint('AuthWrapper: Navigating to MainScreen');
-          return const MainScreen();
+          return const main_screen.MainScreen();
         } else {
           debugPrint('AuthWrapper: Navigating to LoginScreen');
-          return const LoginScreen();
+          return const login_screen.LoginScreen();
         }
       },
       loading: () {

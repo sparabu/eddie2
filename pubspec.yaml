@@ -52,7 +52,7 @@ dependencies:
   
   # UI Components
   flutter_markdown: ^0.6.18
-  google_fonts: ^6.1.0
+  google_fonts: ^6.2.1
   flutter_spinkit: ^5.2.0
   flutter_svg: ^2.0.9
   

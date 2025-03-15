@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../theme/eddie_colors.dart';
+import '../theme/eddie_text_styles.dart';
+import '../theme/eddie_theme.dart';
 import '../models/qa_pair.dart';
-import '../utils/theme.dart';
 
 class QAPairCard extends StatelessWidget {
   final QAPair qaPair;
@@ -30,7 +34,7 @@ class QAPairCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.question_answer, size: 20, color: AppTheme.primaryColor),
+                const Icon(Icons.question_answer, size: 20, color: EddieColors.primaryLight),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(

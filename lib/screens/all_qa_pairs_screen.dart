@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../models/qa_pair.dart';
 import '../widgets/qa_list_item.dart';
-import '../utils/theme.dart';
+import '../theme/eddie_theme.dart';
+import '../theme/eddie_text_styles.dart';
+import '../widgets/eddie_logo.dart';
 
 class AllQAPairsScreen extends StatelessWidget {
   final List<QAPair> qaPairs;
@@ -30,18 +32,28 @@ class AllQAPairsScreen extends StatelessWidget {
         children: [
           Text(
             l10n.qaTabLabel,
-            style: Theme.of(context).textTheme.headlineSmall,
+            style: EddieTextStyles.heading2(context),
           ),
           const SizedBox(height: 16),
           Expanded(
             child: qaPairs.isEmpty
                 ? Center(
-                    child: Text(
-                      l10n.noQAPairsYet,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
-                      ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const EddieLogo(size: 64),
+                        const SizedBox(height: 24),
+                        Text(
+                          l10n.noQAPairsYet,
+                          style: EddieTextStyles.heading2(context),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "Create your first Q&A pair to get started.",
+                          style: EddieTextStyles.body2(context),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
                   )
                 : ListView.builder(
@@ -50,11 +62,20 @@ class AllQAPairsScreen extends StatelessWidget {
                       final qaPair = qaPairs[index];
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 8),
-                        child: QAListItem(
-                          qaPair: qaPair,
-                          isSelected: qaPair.id == selectedQAPairId,
-                          onTap: () => onSelectQAPair(qaPair),
-                          onDelete: () => onDeleteQAPair(qaPair.id),
+                        child: Card(
+                          elevation: 1,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: qaPair.id == selectedQAPairId
+                                ? BorderSide(color: EddieTheme.getPrimary(context), width: 2)
+                                : BorderSide.none,
+                          ),
+                          child: QAListItem(
+                            qaPair: qaPair,
+                            isSelected: qaPair.id == selectedQAPairId,
+                            onTap: () => onSelectQAPair(qaPair),
+                            onDelete: () => onDeleteQAPair(qaPair.id),
+                          ),
                         ),
                       );
                     },
@@ -64,4 +85,5 @@ class AllQAPairsScreen extends StatelessWidget {
       ),
     );
   }
-} 
+}
+

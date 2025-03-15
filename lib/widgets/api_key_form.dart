@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import '../utils/theme.dart';
+import '../theme/eddie_colors.dart';
+import '../theme/eddie_text_styles.dart';
+import '../theme/eddie_theme.dart';
+import '../widgets/eddie_text_field.dart';
 
 class APIKeyForm extends StatefulWidget {
   final String? initialApiKey;
@@ -111,8 +114,8 @@ class _APIKeyFormState extends State<APIKeyForm> {
                       TextSpan(text: '${l10n.apiKeyHelperText} '),
                       TextSpan(
                         text: l10n.apiKeyHelperLink,
-                        style: const TextStyle(
-                          color: AppTheme.primaryColor,
+                        style: TextStyle(
+                          color: EddieColors.getPrimary(context),
                           decoration: TextDecoration.underline,
                         ),
                       ),

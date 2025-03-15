@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
-import '../utils/theme.dart';
+import '../theme/eddie_colors.dart';
+import '../theme/eddie_text_styles.dart';
+import '../theme/eddie_theme.dart';
 
 class ViewAllLink extends StatelessWidget {
-  final VoidCallback onTap;
   final String text;
-  
+  final VoidCallback onTap;
+
   const ViewAllLink({
     Key? key,
+    required this.text,
     required this.onTap,
-    this.text = 'View All',
   }) : super(key: key);
-  
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -19,23 +21,22 @@ class ViewAllLink extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(4),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               text,
               style: TextStyle(
-                fontSize: 12,
-                color: isDarkMode ? AppTheme.darkSecondaryTextColor : Colors.grey.shade700,
-                fontWeight: FontWeight.w500,
+                fontSize: 14,
+                color: EddieColors.getTextSecondary(context),
               ),
             ),
             const SizedBox(width: 4),
             Icon(
-              Icons.chevron_right,
+              Icons.arrow_forward,
               size: 16,
-              color: isDarkMode ? AppTheme.darkSecondaryTextColor : Colors.grey.shade700,
+              color: EddieColors.getTextSecondary(context),
             ),
           ],
         ),
