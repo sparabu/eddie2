@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../services/file_service.dart';
-import '../utils/theme.dart';
+import '../theme/eddie_theme.dart';
+import '../theme/eddie_colors.dart';
+import '../theme/eddie_text_styles.dart';
+import '../widgets/eddie_text_field.dart';
 
 class ChatInput extends StatefulWidget {
   final Function(String) onSendMessage;
@@ -59,7 +62,7 @@ class _ChatInputState extends State<ChatInput> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppLocalizations.of(context)!.filePickingFailed(e.toString())),
-          backgroundColor: AppTheme.errorColor,
+          backgroundColor: EddieTheme.errorColor,
         ),
       );
     } finally {
@@ -92,13 +95,14 @@ class _ChatInputState extends State<ChatInput> {
   
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context)!;
     
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDarkMode ? AppTheme.darkChatBackgroundColor : Colors.white,
+        color: isDarkMode ? EddieColors.surfaceDark : EddieColors.surfaceLight,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -106,6 +110,12 @@ class _ChatInputState extends State<ChatInput> {
             offset: const Offset(0, -2),
           ),
         ],
+        border: Border(
+          top: BorderSide(
+            color: isDarkMode ? EddieColors.outlineDark : EddieColors.outlineLight,
+            width: 1,
+          ),
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -115,22 +125,37 @@ class _ChatInputState extends State<ChatInput> {
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+                color: isDarkMode ? EddieColors.surfaceVariantDark : EddieColors.surfaceVariantLight,
                 borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isDarkMode ? EddieColors.outlineDark : EddieColors.outlineLight,
+                  width: 1,
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.attach_file, size: 16),
+                  Icon(
+                    Icons.attach_file, 
+                    size: 16,
+                    color: isDarkMode ? EddieColors.primaryDark : EddieColors.getPrimary(context),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       _attachedFileName!,
-                      style: const TextStyle(fontSize: 14),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDarkMode ? EddieColors.textPrimaryDark : EddieColors.getTextPrimary(context),
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, size: 16),
+                    icon: Icon(
+                      Icons.close, 
+                      size: 14,
+                      color: isDarkMode ? EddieColors.primaryDark : EddieColors.getPrimary(context),
+                    ),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     onPressed: _removeAttachment,
@@ -143,12 +168,18 @@ class _ChatInputState extends State<ChatInput> {
             children: [
               IconButton(
                 icon: _isAttaching
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 24,
                         height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: isDarkMode ? EddieColors.primaryDark : EddieColors.getPrimary(context),
+                        ),
                       )
-                    : const Icon(Icons.attach_file),
+                    : Icon(
+                        Icons.attach_file,
+                        color: isDarkMode ? EddieColors.textSecondaryDark : EddieColors.textSecondaryLight,
+                      ),
                 onPressed: _isAttaching ? null : _pickFile,
                 tooltip: l10n.attachFileButton,
               ),
@@ -159,15 +190,6 @@ class _ChatInputState extends State<ChatInput> {
                     hintText: widget.hintText ?? l10n.typeMessageHint,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: isDarkMode 
-                        ? Colors.grey.shade800 
-                        : Colors.grey.shade200,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
                     ),
                   ),
                   minLines: 1,
@@ -179,14 +201,20 @@ class _ChatInputState extends State<ChatInput> {
               const SizedBox(width: 8),
               IconButton(
                 icon: widget.isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 24,
                         height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: isDarkMode ? EddieColors.primaryDark : EddieColors.getPrimary(context),
+                        ),
                       )
-                    : const Icon(Icons.send),
+                    : Icon(
+                        Icons.send,
+                        size: 20,
+                        color: isDarkMode ? EddieColors.primaryDark : EddieColors.getPrimary(context),
+                      ),
                 onPressed: widget.isLoading ? null : _sendMessage,
-                color: AppTheme.primaryColor,
                 tooltip: l10n.sendButton,
               ),
             ],
@@ -195,4 +223,5 @@ class _ChatInputState extends State<ChatInput> {
       ),
     );
   }
-} 
+}
+

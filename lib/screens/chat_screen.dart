@@ -3,13 +3,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:file_picker/file_picker.dart';
 import '../models/chat.dart';
 import '../models/message.dart';
 import '../models/qa_pair.dart';
 import '../providers/chat_provider.dart';
 import '../providers/qa_provider.dart';
-import '../utils/theme.dart';
+import '../theme/eddie_theme.dart';
+import '../theme/eddie_colors.dart';
+import '../theme/eddie_text_styles.dart';
 import '../widgets/chat_input.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/qa_pair_form.dart';
@@ -73,7 +74,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.apiError(e.toString())),
-          backgroundColor: AppTheme.errorColor,
+          backgroundColor: EddieColors.getColor(context, Colors.red.shade200, Colors.red.shade800),
         ),
       );
     } finally {
@@ -123,7 +124,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.apiError(e.toString())),
-          backgroundColor: AppTheme.errorColor,
+          backgroundColor: EddieColors.getColor(context, Colors.red.shade200, Colors.red.shade800),
         ),
       );
     } finally {
@@ -144,7 +145,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.qaPairsDetected(pairs.length)),
-            backgroundColor: AppTheme.primaryColor,
+            backgroundColor: EddieTheme.getPrimary(context),
           ),
         );
       } else {
@@ -200,7 +201,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(l10n.qaPairCreatedSuccess),
-                                        backgroundColor: AppTheme.primaryColor,
+                                        backgroundColor: EddieTheme.getPrimary(context),
                                       ),
                                     );
                                   },
@@ -229,7 +230,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.errorDetectingQAPairs(e.toString())),
-          backgroundColor: AppTheme.errorColor,
+          backgroundColor: EddieColors.getColor(context, Colors.red.shade200, Colors.red.shade800),
         ),
       );
     }
@@ -261,13 +262,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      Image.asset('assets/images/logo.png', width: 64, height: 64),
+                      const SizedBox(height: 24),
                       Text(
                         l10n.chatWelcomeTitle,
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: isDarkMode ? Colors.white : Colors.black87,
-                        ),
+                        style: EddieTextStyles.heading2(context),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Ask me anything about programming, design, or any topic you're interested in learning about.",
+                        style: EddieTextStyles.body2(context),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -279,11 +283,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   itemCount: selectedChat.messages.length,
                   itemBuilder: (context, index) {
                     final message = selectedChat!.messages[index];
-                    return MessageBubble(
-                      message: message,
-                      onSaveQAPair: message.role == MessageRole.assistant && !message.isError
-                          ? () => _detectAndSaveQAPairs(selectedChat!.id)
-                          : null,
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: MessageBubble(
+                        message: message,
+                        onSaveQAPair: message.role == MessageRole.assistant && !message.isError
+                            ? () => _detectAndSaveQAPairs(selectedChat!.id)
+                            : null,
+                      ),
                     );
                   },
                 ),
@@ -293,10 +300,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         if (_isLoading)
           Container(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            color: Theme.of(context).cardColor,
-            child: const Center(
+            color: EddieTheme.getSurface(context),
+            child: Center(
               child: SpinKitThreeBounce(
-                color: AppTheme.primaryColor,
+                color: EddieTheme.getPrimary(context),
                 size: 24,
               ),
             ),
@@ -315,4 +322,5 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ],
     );
   }
-} 
+}
+

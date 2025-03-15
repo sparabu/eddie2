@@ -537,3 +537,52 @@ For all future development, the following error handling guidelines should be fo
 5. **Offline Support**: Handle offline scenarios gracefully with appropriate user feedback
 6. **Security Considerations**: Never expose sensitive information in error messages
 7. **Localization**: Ensure all error messages are properly localized
+
+### 6.7 Design System Guidelines
+For all future development, the following design system guidelines should be followed:
+
+1. **Single Source of Truth**: Use `EddieColors` as the primary source of truth for all color-related functionality
+2. **Helper Methods**: Always use the helper methods from `EddieColors` (like `getPrimary`, `getBackground`, etc.) rather than direct color constants
+3. **Theme Extension**: For advanced theming needs, use the `EddieThemeExtension` which integrates with Flutter's theming system
+4. **Documentation**: Refer to the `eddie_design_system.dart` file for comprehensive guidelines and best practices
+5. **Deprecation**: Avoid using deprecated methods in `EddieTheme` that duplicate `EddieColors` functionality
+6. **Consistency**: Maintain consistent styling across the application by using the design system components
+7. **Accessibility**: Ensure sufficient color contrast and support for dynamic text sizing
+8. **Examples**: Refer to the `eddie_theme_example.dart` file for examples of how to use the design system
+
+### 6.8 Enhanced Design System Components
+The Eddie2 application now includes a comprehensive design system with the following key components:
+
+1. **EddieColors**: The primary source of truth for all color definitions and color-related functionality
+   - Provides helper methods for accessing theme-aware colors
+   - Includes semantic color definitions for different UI states
+   - Supports both light and dark themes
+
+2. **EddieTextStyles**: Contains all text style definitions and helper methods
+   - Uses Google Fonts (Inter) for consistent typography
+   - Provides helper methods for accessing theme-aware text styles
+   - Includes styles for headings, body text, buttons, and more
+
+3. **EddieConstants**: Provides standardized values for spacing, sizing, animations, and other constants
+   - Includes spacing constants (xxs, xs, sm, md, lg, xl, xxl)
+   - Defines border radius constants for consistent corner rounding
+   - Provides animation duration constants for consistent timing
+   - Includes elevation constants for shadows and depth
+
+4. **Custom Components**: A growing library of reusable UI components
+   - EddieButton: Customizable button with multiple variants and sizes
+   - EddieOutlinedButton: Outlined variant of the button
+   - EddieTextField: Styled text input field
+   - EddieLogo: App logo component with customizable size
+   - SidebarSection: Collapsible section for sidebar content
+   - SidebarItem: Individual item for sidebar lists
+   - ThemeToggle: Dark/light mode toggle switch
+   - ViewAllLink: Link to view all items in a list
+
+5. **Component Guidelines**: Clear guidelines for using components consistently
+   - When to use each button variant
+   - How to structure forms with proper spacing
+   - Consistent patterns for sidebar navigation
+   - Proper usage of spacing and sizing constants
+
+For all future development, refer to the `eddie_design_system.dart` file for comprehensive documentation and best practices.

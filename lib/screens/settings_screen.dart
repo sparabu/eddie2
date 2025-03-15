@@ -8,7 +8,10 @@ import '../providers/settings_provider.dart';
 import '../providers/locale_provider.dart';
 import '../services/auth_service.dart';
 import '../screens/login_screen.dart';
-import '../utils/theme.dart';
+import '../theme/eddie_theme.dart';
+import '../theme/eddie_colors.dart';
+import '../theme/eddie_text_styles.dart';
+import '../widgets/eddie_text_field.dart';
 import '../widgets/api_key_form.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -109,14 +112,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(AppLocalizations.of(context)!.apiKeySaved),
-            backgroundColor: Colors.green,
+            backgroundColor: EddieTheme.getColor(context, EddieColors.successLight, EddieColors.successDark),
           ),
         );
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -141,14 +146,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(AppLocalizations.of(context)!.apiKeyDeleted),
-            backgroundColor: Colors.green,
+            backgroundColor: EddieTheme.getColor(context, EddieColors.successLight, EddieColors.successDark),
           ),
         );
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -178,14 +185,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     try {
       await ref.read(authServiceProvider).signOut();
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed(LoginScreen.routeName);
+        Navigator.of(context).pushReplacementNamed('/login');
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error signing out: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: EddieTheme.getColor(context, EddieColors.errorLight, EddieColors.errorDark),
           ),
         );
       }
@@ -215,7 +222,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
+              foregroundColor: EddieTheme.getColor(context, EddieColors.errorLight, EddieColors.errorDark),
             ),
             child: Text(l10n.delete ?? 'Delete'),
           ),
@@ -237,11 +244,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await ref.read(authServiceProvider).deleteAccount();
       
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed(LoginScreen.routeName);
+        Navigator.of(context).pushReplacementNamed('/login');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.accountDeletedSuccess ?? 'Your account has been deleted successfully.'),
-            backgroundColor: Colors.green,
+            backgroundColor: EddieTheme.getColor(context, EddieColors.successLight, EddieColors.successDark),
           ),
         );
       }
@@ -263,7 +270,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),
-            backgroundColor: Colors.red,
+            backgroundColor: EddieTheme.getColor(context, EddieColors.errorLight, EddieColors.errorDark),
             duration: const Duration(seconds: 5),
           ),
         );
@@ -280,15 +287,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         if (kIsWeb) {
           // For web platform
           final bytes = await image.readAsBytes();
-          setState(() {
-            _webImageBytes = bytes;
-            _webImageName = image.name;
-          });
+          if (mounted) {
+            setState(() {
+              _webImageBytes = bytes;
+              _webImageName = image.name;
+            });
+          }
         } else {
           // For mobile platforms
-          setState(() {
-            _imageFile = File(image.path);
-          });
+          if (mounted) {
+            setState(() {
+              _imageFile = File(image.path);
+            });
+          }
         }
         
         // Upload the image
@@ -300,7 +311,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error selecting image: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: EddieTheme.getColor(context, EddieColors.errorLight, EddieColors.errorDark),
           ),
         );
       }
@@ -312,9 +323,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       return;
     }
 
-    setState(() {
-      _isUploadingImage = true;
-    });
+    if (mounted) {
+      setState(() {
+        _isUploadingImage = true;
+      });
+    }
 
     try {
       String? downloadURL;
@@ -334,7 +347,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Profile picture updated successfully'),
-            backgroundColor: Colors.green,
+            backgroundColor: EddieTheme.getColor(context, EddieColors.successLight, EddieColors.successDark),
           ),
         );
         
@@ -347,7 +360,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error uploading profile picture: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: EddieTheme.getColor(context, EddieColors.errorLight, EddieColors.errorDark),
           ),
         );
       }
@@ -368,9 +381,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       return;
     }
 
-    setState(() {
-      _isUpdatingProfile = true;
-    });
+    if (mounted) {
+      setState(() {
+        _isUpdatingProfile = true;
+      });
+    }
 
     try {
       await ref.read(authServiceProvider).updateProfile(
@@ -384,7 +399,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Profile updated successfully'),
-            backgroundColor: Colors.green,
+            backgroundColor: EddieTheme.getColor(context, EddieColors.successLight, EddieColors.successDark),
           ),
         );
         
@@ -397,7 +412,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error updating profile: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: EddieTheme.getColor(context, EddieColors.errorLight, EddieColors.errorDark),
           ),
         );
       }
@@ -425,9 +440,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Scaffold(
       body: authState.when(
         data: (user) => _buildSettingsContent(context, user, settings, currentLocale, l10n),
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => Center(
+          child: CircularProgressIndicator(
+            color: EddieTheme.getPrimary(context),
+          ),
+        ),
         error: (error, stackTrace) => Center(
-          child: Text('Error: ${error.toString()}'),
+          child: Text(
+            'Error: ${error.toString()}',
+            style: EddieTextStyles.errorText(context),
+          ),
         ),
       ),
     );
@@ -448,6 +470,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       children: [
         if (user != null) ...[
           Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -455,7 +481,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 children: [
                   Text(
                     localizations.profile,
-                    style: Theme.of(context).textTheme.titleLarge,
+                    style: EddieTextStyles.heading2(context),
                   ),
                   const SizedBox(height: 16),
                   Center(
@@ -463,12 +489,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       children: [
                         CircleAvatar(
                           radius: 50,
-                          backgroundColor: Colors.grey[300],
+                          backgroundColor: EddieTheme.getPrimary(context).withOpacity(0.1),
                           backgroundImage: user.photoURL != null
                               ? NetworkImage(user.photoURL!)
                               : null,
                           child: user.photoURL == null
-                              ? const Icon(Icons.person, size: 50)
+                              ? Icon(
+                                  Icons.person,
+                                  size: 50,
+                                  color: EddieTheme.getPrimary(context),
+                                )
                               : null,
                         ),
                         Positioned(
@@ -476,7 +506,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           right: 0,
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Theme.of(context).primaryColor,
+                              color: EddieTheme.getPrimary(context),
                               shape: BoxShape.circle,
                             ),
                             child: IconButton(
@@ -501,21 +531,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  TextField(
+                  EddieTextField(
+                    label: localizations.displayName,
+                    placeholder: 'Your display name',
                     controller: _displayNameController,
-                    decoration: InputDecoration(
-                      labelText: localizations.displayName,
-                      border: const OutlineInputBorder(),
-                    ),
                   ),
                   const SizedBox(height: 16),
-                  TextField(
+                  EddieTextField(
+                    label: localizations.username,
+                    placeholder: 'Your username',
                     controller: _usernameController,
-                    decoration: InputDecoration(
-                      labelText: localizations.username,
-                      border: const OutlineInputBorder(),
-                      helperText: localizations.usernameHelperText,
-                    ),
+                    helperText: localizations.usernameHelperText,
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
@@ -535,57 +561,90 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 8),
                   ListTile(
-                    title: Text(localizations.email),
-                    subtitle: Text(user.email),
-                    leading: const Icon(Icons.email),
+                    title: Text(
+                      localizations.email,
+                      style: EddieTextStyles.body1(context),
+                    ),
+                    subtitle: Text(
+                      user.email,
+                      style: EddieTextStyles.body2(context),
+                    ),
+                    leading: Icon(
+                      Icons.email,
+                      color: EddieTheme.getPrimary(context),
+                    ),
                   ),
                   ListTile(
-                    title: Text(localizations.emailVerification),
+                    title: Text(
+                      localizations.emailVerification,
+                      style: EddieTextStyles.body1(context),
+                    ),
                     subtitle: Text(
                       user.isEmailVerified
                           ? localizations.verified
                           : localizations.notVerified,
+                      style: EddieTextStyles.body2(context).copyWith(
+                        color: user.isEmailVerified
+                            ? EddieTheme.getColor(context, EddieColors.successLight, EddieColors.successDark)
+                            : EddieTheme.getColor(context, EddieColors.warningLight, EddieColors.warningDark),
+                      ),
                     ),
                     leading: Icon(
                       user.isEmailVerified
                           ? Icons.verified_user
                           : Icons.warning,
-                      color: user.isEmailVerified ? Colors.green : Colors.orange,
+                      color: user.isEmailVerified
+                          ? EddieTheme.getColor(context, EddieColors.successLight, EddieColors.successDark)
+                          : EddieTheme.getColor(context, EddieColors.warningLight, EddieColors.warningDark),
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  const Divider(),
                   const SizedBox(height: 8),
                   ListTile(
                     title: Text(
                       localizations.deleteAccount,
-                      style: const TextStyle(color: Colors.red),
+                      style: EddieTextStyles.body1(context).copyWith(
+                        color: EddieTheme.getColor(context, EddieColors.errorLight, EddieColors.errorDark),
+                      ),
                     ),
-                    subtitle: Text(localizations.deleteAccountDescription),
-                    leading: const Icon(
+                    subtitle: Text(
+                      localizations.deleteAccountDescription,
+                      style: EddieTextStyles.body2(context),
+                    ),
+                    leading: Icon(
                       Icons.delete_forever,
-                      color: Colors.red,
+                      color: EddieTheme.getColor(context, EddieColors.errorLight, EddieColors.errorDark),
                     ),
                     onTap: _isDeleting ? null : () => _deleteAccount(context),
                     trailing: _isDeleting
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 24,
                             height: 24,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
+                              color: EddieTheme.getColor(context, EddieColors.errorLight, EddieColors.errorDark),
                             ),
                           )
                         : null,
                   ),
                   ListTile(
-                    title: Text(localizations.logout),
+                    title: Text(
+                      localizations.logout,
+                      style: EddieTextStyles.body1(context),
+                    ),
                     leading: const Icon(Icons.logout),
                     onTap: _isLoading ? null : _logout,
                     trailing: _isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 24,
                             height: 24,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
+                              color: EddieTheme.getPrimary(context),
                             ),
                           )
                         : null,
@@ -598,6 +657,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ],
         
         Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -605,38 +668,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               children: [
                 Text(
                   localizations.apiKey,
-                  style: Theme.of(context).textTheme.titleLarge,
+                  style: EddieTextStyles.heading2(context),
                 ),
                 const SizedBox(height: 16),
                 if (_errorMessage != null) ...[
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
+                      color: EddieTheme.getColor(context, EddieColors.errorLight, EddieColors.errorDark).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(
-                      _errorMessage!,
-                      style: const TextStyle(color: Colors.red),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          color: EddieTheme.getColor(context, EddieColors.errorLight, EddieColors.errorDark),
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _errorMessage!,
+                            style: EddieTextStyles.errorText(context),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 16),
                 ],
-                TextField(
+                EddieTextField(
+                  label: localizations.apiKey,
+                  placeholder: 'Enter your OpenAI API key',
                   controller: _apiKeyController,
-                  decoration: InputDecoration(
-                    labelText: localizations.apiKey,
-                    border: const OutlineInputBorder(),
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        setState(() {
-                          _apiKeyController.clear();
-                        });
-                      },
-                    ),
-                  ),
                   obscureText: true,
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      setState(() {
+                        _apiKeyController.clear();
+                      });
+                    },
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -649,7 +723,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     OutlinedButton(
                       onPressed: _isLoading ? null : _deleteApiKey,
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
+                        foregroundColor: EddieTheme.getColor(context, EddieColors.errorLight, EddieColors.errorDark),
                       ),
                       child: Text(localizations.delete),
                     ),
@@ -661,6 +735,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         const SizedBox(height: 16),
         Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -668,13 +746,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               children: [
                 Text(
                   localizations.appearance,
-                  style: Theme.of(context).textTheme.titleLarge,
+                  style: EddieTextStyles.heading2(context),
                 ),
                 const SizedBox(height: 16),
                 SwitchListTile(
-                  title: Text(localizations.darkMode),
+                  title: Text(
+                    localizations.darkMode,
+                    style: EddieTextStyles.body1(context),
+                  ),
                   value: settings.isDarkMode,
                   onChanged: (value) => _toggleDarkMode(),
+                  activeColor: EddieTheme.getPrimary(context),
                 ),
               ],
             ),
@@ -682,6 +764,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         const SizedBox(height: 16),
         Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -689,7 +775,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               children: [
                 Text(
                   localizations.language,
-                  style: Theme.of(context).textTheme.titleLarge,
+                  style: EddieTextStyles.heading2(context),
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
@@ -697,15 +783,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   decoration: InputDecoration(
                     labelText: localizations.selectLanguage,
                     border: const OutlineInputBorder(),
+                    labelStyle: EddieTextStyles.inputLabel(context),
                   ),
                   items: [
                     DropdownMenuItem(
                       value: 'en',
-                      child: Text(localizations.english),
+                      child: Text(
+                        localizations.english,
+                        style: EddieTextStyles.body1(context),
+                      ),
                     ),
                     DropdownMenuItem(
                       value: 'ko',
-                      child: Text(localizations.korean),
+                      child: Text(
+                        localizations.korean,
+                        style: EddieTextStyles.body1(context),
+                      ),
                     ),
                   ],
                   onChanged: (value) {
@@ -720,6 +813,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         const SizedBox(height: 16),
         Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -727,7 +824,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               children: [
                 Text(
                   localizations.aiModel,
-                  style: Theme.of(context).textTheme.titleLarge,
+                  style: EddieTextStyles.heading2(context),
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
@@ -735,19 +832,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   decoration: InputDecoration(
                     labelText: localizations.selectModel,
                     border: const OutlineInputBorder(),
+                    labelStyle: EddieTextStyles.inputLabel(context),
                   ),
                   items: [
                     DropdownMenuItem(
                       value: 'gpt-4o',
-                      child: Text('GPT-4o'),
+                      child: Text(
+                        'GPT-4o',
+                        style: EddieTextStyles.body1(context),
+                      ),
                     ),
                     DropdownMenuItem(
                       value: 'gpt-4-turbo',
-                      child: Text('GPT-4 Turbo'),
+                      child: Text(
+                        'GPT-4 Turbo',
+                        style: EddieTextStyles.body1(context),
+                      ),
                     ),
                     DropdownMenuItem(
                       value: 'gpt-3.5-turbo',
-                      child: Text('GPT-3.5 Turbo'),
+                      child: Text(
+                        'GPT-3.5 Turbo',
+                        style: EddieTextStyles.body1(context),
+                      ),
                     ),
                   ],
                   onChanged: (value) {
@@ -762,6 +869,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         const SizedBox(height: 16),
         Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -769,23 +880,57 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               children: [
                 Text(
                   localizations.about,
-                  style: Theme.of(context).textTheme.titleLarge,
+                  style: EddieTextStyles.heading2(context),
                 ),
                 const SizedBox(height: 16),
                 ListTile(
-                  title: Text(localizations.version),
-                  subtitle: Text(_versionInfo ?? 'Unknown'),
+                  title: Text(
+                    localizations.version,
+                    style: EddieTextStyles.body1(context),
+                  ),
+                  subtitle: Text(
+                    _versionInfo ?? 'Unknown',
+                    style: EddieTextStyles.body2(context),
+                  ),
+                  leading: Icon(
+                    Icons.info_outline,
+                    color: EddieTheme.getPrimary(context),
+                  ),
                 ),
                 ListTile(
-                  title: Text(localizations.sourceCode),
-                  subtitle: const Text('https://github.com/sparabu/eddie2'),
+                  title: Text(
+                    localizations.sourceCode,
+                    style: EddieTextStyles.body1(context),
+                  ),
+                  subtitle: Text(
+                    'https://github.com/sparabu/eddie2',
+                    style: EddieTextStyles.body2(context).copyWith(
+                      color: EddieTheme.getPrimary(context),
+                    ),
+                  ),
+                  leading: Icon(
+                    Icons.code,
+                    color: EddieTheme.getPrimary(context),
+                  ),
                   onTap: () {
                     // Open source code URL
                   },
                 ),
                 ListTile(
-                  title: Text(localizations.reportIssue),
-                  subtitle: const Text('https://github.com/sparabu/eddie2/issues'),
+                  title: Text(
+                    localizations.reportIssue,
+                    style: EddieTextStyles.body1(context),
+                  ),
+                  subtitle: Text(
+                    'https://github.com/sparabu/eddie2/issues',
+                    style: EddieTextStyles.body2(context).copyWith(
+                      color: EddieTheme.getPrimary(context),
+                    ),
+                  ),
+                  leading: Icon(
+                    Icons.bug_report_outlined,
+                    color: EddieTheme.getPrimary(context),
+                  ),
                   onTap: () {
                     // Open issue reporting URL
                   },
@@ -797,4 +942,5 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ],
     );
   }
-} 
+}
+

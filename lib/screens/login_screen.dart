@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:eddie2/services/auth_service.dart';
-import 'package:eddie2/screens/signup_screen.dart';
-import 'package:eddie2/widgets/app_logo.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../services/auth_service.dart';
+import '../theme/eddie_colors.dart';
+import '../theme/eddie_text_styles.dart';
+import '../theme/eddie_constants.dart';
+import '../widgets/eddie_logo.dart';
+import '../widgets/eddie_text_field.dart';
+import '../widgets/eddie_button.dart';
+import '../widgets/eddie_outlined_button.dart';
+import '../utils/validation_utils.dart';
+import 'signup_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   static const routeName = '/login';
@@ -42,44 +48,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     try {
-      debugPrint('Attempting to sign in with email: ${_emailController.text.trim()}');
-      
-      // Clear any existing auth state first
-      await ref.read(authServiceProvider).signOut();
-      
-      // Attempt to sign in
-      final user = await ref.read(authServiceProvider).signInWithEmailAndPassword(
+      await ref.read(authServiceProvider).signInWithEmailAndPassword(
         _emailController.text.trim(),
         _passwordController.text,
       );
       
-      if (user != null) {
-        debugPrint('Login successful for user: ${user.email}');
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(AppLocalizations.of(context)!.loginSuccess),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-        
-        // Force refresh the auth state
-        ref.refresh(authStateProvider);
-      } else {
-        debugPrint('Login failed: user is null after successful authentication');
-        setState(() {
-          _errorMessage = 'Login failed. Please try again.';
-        });
-      }
-      
       // Navigation will be handled by the auth state listener in main.dart
     } catch (e) {
-      debugPrint('Login error: $e');
       setState(() {
         _errorMessage = e.toString();
       });
+      
+      // Log the error for debugging
+      debugPrint('Login error: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -89,7 +70,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  Future<void> _signInWithGoogle() async {
+  Future<void> _loginWithGoogle() async {
     setState(() {
       _isGoogleLoading = true;
       _errorMessage = null;
@@ -104,38 +85,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       
       if (user != null) {
         debugPrint('Google login successful for user: ${user.email}');
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(AppLocalizations.of(context)!.loginSuccess),
-              backgroundColor: Colors.green,
-            ),
-          );
-          
-          // Force refresh the auth state
-          ref.refresh(authStateProvider);
-          
-          // Add a small delay to allow the auth state to propagate
-          await Future.delayed(const Duration(milliseconds: 500));
-          
-          // Check if we're still mounted after the delay
-          if (mounted) {
-            // Navigate to the main screen
-            Navigator.of(context).pushReplacementNamed('/');
-          }
-        }
       } else {
         // User canceled the sign-in flow
         debugPrint('Google sign-in canceled by user');
       }
       
+      // Force refresh the auth state
+      ref.refresh(authStateProvider);
+      
       // Navigation will be handled by the auth state listener in main.dart
     } catch (e) {
       debugPrint('Google login error: $e');
-      setState(() {
-        _errorMessage = e.toString();
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -149,49 +114,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     Navigator.of(context).pushReplacementNamed(SignupScreen.routeName);
   }
 
-  void _resetPassword() async {
-    final email = _emailController.text.trim();
-    if (email.isEmpty) {
-      setState(() {
-        _errorMessage = 'Please enter your email address to reset your password.';
-      });
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      await ref.read(authServiceProvider).sendPasswordResetEmail(email);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.passwordResetEmailSent),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     
     return Scaffold(
+      backgroundColor: EddieColors.getBackground(context),
       body: Center(
         child: SingleChildScrollView(
           child: Padding(
@@ -202,11 +130,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const AppLogo(size: 80),
+                  const EddieLogo(size: 64, withText: true),
                   const SizedBox(height: 32),
                   Text(
                     localizations.loginToEddie,
-                    style: Theme.of(context).textTheme.headlineMedium,
+                    style: EddieTextStyles.heading1(context),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    localizations.loginWelcomeMessage,
+                    style: EddieTextStyles.body2(context).copyWith(
+                      color: EddieColors.getTextSecondary(context),
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
@@ -214,189 +150,139 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        color: EddieColors.getError(context).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(EddieConstants.borderRadiusMedium),
                       ),
-                      child: Text(
-                        _errorMessage!,
-                        style: TextStyle(
-                          color: Colors.red[700],
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: EddieColors.getError(context),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _errorMessage!,
+                              style: EddieTextStyles.errorText(context),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   const SizedBox(height: 16),
-                  Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        TextFormField(
-                          controller: _emailController,
-                          decoration: InputDecoration(
-                            labelText: localizations.email,
-                            prefixIcon: const Icon(Icons.email_outlined),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: EddieColors.getSurface(context),
+                      borderRadius: BorderRadius.circular(EddieConstants.borderRadiusMedium),
+                      border: Border.all(
+                        color: EddieColors.getOutline(context),
+                        width: 1,
+                      ),
+                    ),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          EddieTextField(
+                            label: localizations.email,
+                            placeholder: localizations.emailPlaceholder,
+                            controller: _emailController,
+                            prefixIcon: Icon(
+                              Icons.email_outlined,
+                              color: EddieColors.getTextSecondary(context),
+                              size: 20,
                             ),
+                            keyboardType: TextInputType.emailAddress,
+                            errorText: _emailController.text.isEmpty ? null : 
+                              !ValidationUtils.isValidEmail(_emailController.text) ? 
+                              localizations.invalidEmail : null,
                           ),
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return localizations.emailRequired;
-                            }
-                            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                                .hasMatch(value)) {
-                              return localizations.invalidEmail;
-                            }
-                            return null;
-                          },
-                          onEditingComplete: () => FocusScope.of(context).nextFocus(),
-                          textInputAction: TextInputAction.next,
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _passwordController,
-                          decoration: InputDecoration(
-                            labelText: localizations.password,
-                            prefixIcon: const Icon(Icons.lock_outline),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                          const SizedBox(height: 16),
+                          EddieTextField(
+                            label: localizations.password,
+                            placeholder: '••••••••',
+                            controller: _passwordController,
+                            prefixIcon: Icon(
+                              Icons.lock_outline,
+                              color: EddieColors.getTextSecondary(context),
+                              size: 20,
                             ),
+                            obscureText: true,
                           ),
-                          obscureText: true,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return localizations.passwordRequired;
-                            }
-                            return null;
-                          },
-                          onEditingComplete: _isLoading ? null : _login,
-                          textInputAction: TextInputAction.done,
-                        ),
-                        const SizedBox(height: 8),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: _isLoading ? null : _resetPassword,
-                            child: Text(localizations.forgotPassword),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _login,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(context).primaryColor,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () {
+                                // TODO: Implement forgot password
+                              },
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
-                            ),
-                            child: _isLoading
-                                ? const CircularProgressIndicator(
-                                    color: Colors.white,
-                                  )
-                                : Text(
-                                    localizations.login,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Divider(
-                                color: isDarkMode ? Colors.white54 : Colors.black54,
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
                               child: Text(
-                                'OR',
-                                style: TextStyle(
-                                  color: isDarkMode ? Colors.white54 : Colors.black54,
-                                  fontWeight: FontWeight.bold,
+                                localizations.forgotPassword,
+                                style: EddieTextStyles.link(context, fontSize: 12, underline: false),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          EddieButton(
+                            text: localizations.login,
+                            onPressed: _login,
+                            isLoading: _isLoading,
+                            fullWidth: true,
+                            size: EddieButtonSize.medium,
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Divider(
+                                  color: EddieColors.getOutline(context),
                                 ),
                               ),
-                            ),
-                            Expanded(
-                              child: Divider(
-                                color: isDarkMode ? Colors.white54 : Colors.black54,
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: Text(
+                                  localizations.or,
+                                  style: EddieTextStyles.caption(context),
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: OutlinedButton.icon(
-                            onPressed: _isGoogleLoading ? null : _signInWithGoogle,
-                            icon: _isGoogleLoading
-                                ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : SvgPicture.asset(
-                                    'assets/images/google_logo.svg',
-                                    height: 24,
-                                    width: 24,
-                                  ),
-                            label: Text(
-                              'Sign in with Google',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: isDarkMode ? Colors.white : Colors.black87,
+                              Expanded(
+                                child: Divider(
+                                  color: EddieColors.getOutline(context),
+                                ),
                               ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(
-                                color: isDarkMode ? Colors.white70 : Colors.black54,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
+                            ],
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 16),
+                          // Custom implementation for Google sign-in button to handle SVG icon
+                          _buildGoogleSignInButton(context, localizations),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(localizations.dontHaveAccount),
-                      TextButton(
-                        onPressed: _isLoading || _isGoogleLoading ? null : _navigateToSignup,
-                        style: TextButton.styleFrom(
-                          foregroundColor: isDarkMode ? Colors.white : Theme.of(context).primaryColor,
-                          backgroundColor: isDarkMode ? Theme.of(context).primaryColor.withOpacity(0.3) : null,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            side: isDarkMode ? BorderSide(color: Theme.of(context).primaryColor, width: 1.5) : BorderSide.none,
-                          ),
-                        ),
-                        child: Text(
-                          localizations.signUp,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: isDarkMode ? Colors.white : Theme.of(context).primaryColor,
-                          ),
-                        ),
+                      Text(
+                        localizations.dontHaveAccount,
+                        style: EddieTextStyles.body2(context),
+                      ),
+                      const SizedBox(width: 8),
+                      EddieOutlinedButton(
+                        text: localizations.signUp,
+                        onPressed: _navigateToSignup,
+                        isLoading: false,
+                        size: EddieButtonSize.small,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       ),
                     ],
                   ),
@@ -408,4 +294,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ),
     );
   }
-} 
+
+  // Custom method to build Google sign-in button with SVG icon
+  Widget _buildGoogleSignInButton(BuildContext context, AppLocalizations localizations) {
+    return EddieOutlinedButton(
+      text: "Sign in with Google", // Hardcoded for now until localization is updated
+      onPressed: _loginWithGoogle,
+      isLoading: _isGoogleLoading,
+      fullWidth: true,
+      size: EddieButtonSize.medium,
+      leadingIconWidget: SvgPicture.asset(
+        'assets/images/google_logo.svg',
+        height: 20,
+        width: 20,
+        placeholderBuilder: (BuildContext context) => Icon(
+          Icons.account_circle,
+          size: 20,
+          color: EddieColors.getTextPrimary(context),
+        ),
+      ),
+    );
+  }
+}
+

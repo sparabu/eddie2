@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../models/chat.dart';
-import '../utils/theme.dart';
+import '../theme/eddie_theme.dart';
+import '../theme/eddie_colors.dart';
+import '../theme/eddie_text_styles.dart';
 
 class ChatListItem extends StatelessWidget {
   final Chat chat;
@@ -19,60 +21,69 @@ class ChatListItem extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context)!;
     
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        hoverColor: isDarkMode ? AppTheme.hoverColor : Colors.grey.shade200,
+        hoverColor: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
         splashColor: Colors.transparent,
         highlightColor: Colors.transparent,
         child: Container(
           decoration: BoxDecoration(
             color: isSelected 
-                ? (isDarkMode ? AppTheme.selectedItemColor : Colors.grey.shade200) 
+                ? (isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200) 
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(8),
+            border: isSelected
+                ? Border.all(
+                    color: isDarkMode ? EddieColors.primaryDark : EddieColors.getPrimary(context),
+                    width: 1,
+                  )
+                : null,
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          margin: const EdgeInsets.symmetric(vertical: 1, horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
           child: Row(
             children: [
               Icon(
                 Icons.chat_bubble_outline,
-                size: 14,
+                size: 16,
                 color: isSelected
-                    ? (isDarkMode ? Colors.white : Colors.black)
-                    : (isDarkMode ? AppTheme.darkSecondaryTextColor : Colors.grey.shade700),
+                    ? (isDarkMode ? EddieColors.primaryDark : EddieColors.getPrimary(context))
+                    : (isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   chat.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
+                  style: (isSelected ? TextStyle(fontWeight: FontWeight.w500, fontSize: 14) : TextStyle(fontSize: 14)).copyWith(
                     color: isSelected
-                        ? (isDarkMode ? Colors.white : Colors.black)
-                        : (isDarkMode ? AppTheme.darkSecondaryTextColor : Colors.grey.shade700),
+                        ? (isDarkMode ? EddieColors.primaryDark : EddieColors.getPrimary(context))
+                        : (isDarkMode ? Colors.white : Colors.black87),
                   ),
                 ),
               ),
               const SizedBox(width: 4),
               IconButton(
-                icon: const Icon(Icons.close, size: 12),
+                icon: Icon(
+                  Icons.close, 
+                  size: 14,
+                  color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                ),
                 onPressed: onDelete,
                 tooltip: l10n.deleteChat,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(
-                  minWidth: 20,
-                  minHeight: 20,
+                  minWidth: 24,
+                  minHeight: 24,
                 ),
-                color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
+                hoverColor: isDarkMode ? Colors.red.shade800.withOpacity(0.1) : Colors.red.shade200.withOpacity(0.1),
               ),
             ],
           ),
@@ -80,4 +91,5 @@ class ChatListItem extends StatelessWidget {
       ),
     );
   }
-} 
+}
+

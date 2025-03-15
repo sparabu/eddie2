@@ -6,8 +6,11 @@ import '../models/qa_pair.dart';
 import '../providers/chat_provider.dart';
 import '../providers/qa_provider.dart';
 import '../providers/settings_provider.dart';
-import '../utils/theme.dart';
-import '../widgets/app_logo.dart';
+import '../theme/eddie_theme.dart';
+import '../theme/eddie_colors.dart';
+import '../theme/eddie_text_styles.dart';
+import '../widgets/eddie_logo.dart';
+import '../widgets/theme_toggle.dart';
 import '../widgets/chat_list_item.dart';
 import '../widgets/new_chat_button.dart';
 import '../widgets/qa_list_item.dart';
@@ -212,7 +215,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           if (!isSmallScreen && _isSidebarExpanded)
             Container(
               width: 260,
-              color: isDarkMode ? AppTheme.darkSidebarColor : AppTheme.sidebarColor,
+              color: EddieTheme.getSurface(context),
               child: Column(
                 children: [
                   // Toggle sidebar button (moved to top left)
@@ -230,15 +233,26 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                           tooltip: l10n.collapseSidebar,
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
-                          color: isDarkMode ? Colors.white : Colors.black,
+                          color: EddieTheme.getTextPrimary(context),
                         ),
                         const Spacer(),
+                        const ThemeToggle(),
                       ],
                     ),
                   ),
                   
                   // New Chat button
-                  NewChatButton(onPressed: _createNewChat),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: OutlinedButton.icon(
+                      onPressed: _createNewChat,
+                      icon: const Icon(Icons.add_circle_outline),
+                      label: Text(l10n.newChatButton ?? "New Chat"),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(40),
+                      ),
+                    ),
+                  ),
                   
                   // Navigation sections
                   Expanded(
@@ -246,84 +260,217 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                       padding: EdgeInsets.zero,
                       children: [
                         // Chat section
-                        SidebarSection(
-                          title: l10n.chatTabLabel,
-                          children: chats.isEmpty
-                              ? [
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                    child: Text(
-                                      l10n.noChatsYet,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
-                                      ),
-                                    ),
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                l10n.chatTabLabel,
+                                style: EddieTextStyles.body2(context).copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              if (chats.isEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  child: Text(
+                                    l10n.noChatsYet,
+                                    style: EddieTextStyles.caption(context),
                                   ),
-                                ]
-                              : [
-                                  ...(() {
-                                    // Sort chats by updatedAt (most recent first)
-                                    final sortedChats = List<Chat>.from(chats)
-                                      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-                                    
-                                    // Take only the 5 most recent chats
-                                    final recentChats = sortedChats.take(5).toList();
-                                    
-                                    return recentChats.map((chat) {
-                                      return ChatListItem(
-                                        chat: chat,
-                                        isSelected: chat.id == selectedChatId && _selectedIndex == 0 && !_showAllQAPairs,
-                                        onTap: () => _selectChat(chat.id),
-                                        onDelete: () => _deleteChat(chat.id),
-                                      );
-                                    }).toList();
-                                  })(),
-                                  if (chats.length > 5)
-                                    ViewAllLink(
-                                      onTap: _viewAllChats,
-                                      text: l10n.viewAll,
-                                    ),
-                                ],
+                                )
+                              else
+                                ...(() {
+                                  // Sort chats by updatedAt (most recent first)
+                                  final sortedChats = List<Chat>.from(chats)
+                                    ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+                                  
+                                  // Take only the 5 most recent chats
+                                  final recentChats = sortedChats.take(5).toList();
+                                  
+                                  return recentChats.map((chat) {
+                                    return InkWell(
+                                      onTap: () => _selectChat(chat.id),
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.chat_bubble_outline,
+                                              size: 16,
+                                              color: chat.id == selectedChatId && _selectedIndex == 0 && !_showAllQAPairs
+                                                  ? EddieTheme.getPrimary(context)
+                                                  : EddieTheme.getTextSecondary(context),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                chat.title,
+                                                style: EddieTextStyles.body2(context).copyWith(
+                                                  color: chat.id == selectedChatId && _selectedIndex == 0 && !_showAllQAPairs
+                                                      ? EddieTheme.getPrimary(context)
+                                                      : EddieTheme.getTextPrimary(context),
+                                                  fontWeight: chat.id == selectedChatId && _selectedIndex == 0 && !_showAllQAPairs
+                                                      ? FontWeight.bold
+                                                      : FontWeight.normal,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            if (chat.id == selectedChatId && _selectedIndex == 0 && !_showAllQAPairs)
+                                              Icon(
+                                                Icons.check,
+                                                size: 16,
+                                                color: EddieTheme.getPrimary(context),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  }).toList();
+                                })(),
+                              if (chats.length > 5)
+                                TextButton(
+                                  onPressed: _viewAllChats,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        l10n.viewAll,
+                                        style: EddieTextStyles.caption(context).copyWith(
+                                          color: EddieTheme.getPrimary(context),
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.chevron_right,
+                                        size: 14,
+                                        color: EddieTheme.getPrimary(context),
+                                      ),
+                                    ],
+                                  ),
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 4),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                         
                         // Q&A section
-                        SidebarSection(
-                          title: l10n.qaTabLabel,
-                          onAddPressed: _createNewQAPair,
-                          children: qaPairs.isEmpty
-                              ? [
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                    child: Text(
-                                      l10n.noQAPairsYet,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
-                                      ),
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    l10n.qaTabLabel,
+                                    style: EddieTextStyles.body2(context).copyWith(
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                ]
-                              : [
-                                  ...(() {
-                                    // Take only the first 5 QA pairs
-                                    final recentQAPairs = qaPairs.take(5).toList();
-                                    
-                                    return recentQAPairs.map((qaPair) {
-                                      return QAListItem(
-                                        qaPair: qaPair,
-                                        isSelected: qaPair.id == selectedQAPairId && _selectedIndex == 1 && !_showAllChats,
-                                        onTap: () => _selectQAPair(qaPair),
-                                        onDelete: () => _deleteQAPair(qaPair.id),
-                                      );
-                                    }).toList();
-                                  })(),
-                                  if (qaPairs.length > 5)
-                                    ViewAllLink(
-                                      onTap: _viewAllQAPairs,
-                                      text: l10n.viewAll,
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.add,
+                                      size: 18,
+                                      color: EddieTheme.getTextSecondary(context),
                                     ),
+                                    onPressed: _createNewQAPair,
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    tooltip: l10n.createQAPairButton,
+                                  ),
                                 ],
+                              ),
+                              const SizedBox(height: 8),
+                              if (qaPairs.isEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  child: Text(
+                                    l10n.noQAPairsYet,
+                                    style: EddieTextStyles.caption(context),
+                                  ),
+                                )
+                              else
+                                ...(() {
+                                  // Take only the first 5 QA pairs
+                                  final recentQAPairs = qaPairs.take(5).toList();
+                                  
+                                  return recentQAPairs.map((qaPair) {
+                                    return InkWell(
+                                      onTap: () => _selectQAPair(qaPair),
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.question_answer_outlined,
+                                              size: 16,
+                                              color: qaPair.id == selectedQAPairId && _selectedIndex == 1 && !_showAllChats
+                                                  ? EddieTheme.getPrimary(context)
+                                                  : EddieTheme.getTextSecondary(context),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                qaPair.question,
+                                                style: EddieTextStyles.body2(context).copyWith(
+                                                  color: qaPair.id == selectedQAPairId && _selectedIndex == 1 && !_showAllChats
+                                                      ? EddieTheme.getPrimary(context)
+                                                      : EddieTheme.getTextPrimary(context),
+                                                  fontWeight: qaPair.id == selectedQAPairId && _selectedIndex == 1 && !_showAllChats
+                                                      ? FontWeight.bold
+                                                      : FontWeight.normal,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            if (qaPair.id == selectedQAPairId && _selectedIndex == 1 && !_showAllChats)
+                                              Icon(
+                                                Icons.check,
+                                                size: 16,
+                                                color: EddieTheme.getPrimary(context),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  }).toList();
+                                })(),
+                              if (qaPairs.length > 5)
+                                TextButton(
+                                  onPressed: _viewAllQAPairs,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        l10n.viewAll,
+                                        style: EddieTextStyles.caption(context).copyWith(
+                                          color: EddieTheme.getPrimary(context),
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.chevron_right,
+                                        size: 14,
+                                        color: EddieTheme.getPrimary(context),
+                                      ),
+                                    ],
+                                  ),
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 4),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -334,22 +481,40 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                     decoration: BoxDecoration(
                       border: Border(
                         top: BorderSide(
-                          color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300,
+                          color: EddieTheme.getColor(context, EddieColors.outlineLight, EddieColors.outlineDark),
                           width: 1,
                         ),
                       ),
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: SidebarItem(
-                        title: l10n.settingsTabLabel,
-                        icon: Icons.settings_outlined,
-                        isSelected: _selectedIndex == 2,
-                        onTap: () => setState(() {
-                          _selectedIndex = 2;
-                          _showAllChats = false;
-                          _showAllQAPairs = false;
-                        }),
+                    child: InkWell(
+                      onTap: () => setState(() {
+                        _selectedIndex = 2;
+                        _showAllChats = false;
+                        _showAllQAPairs = false;
+                      }),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.settings_outlined,
+                              size: 16,
+                              color: _selectedIndex == 2
+                                  ? EddieTheme.getPrimary(context)
+                                  : EddieTheme.getTextSecondary(context),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              l10n.settingsTabLabel,
+                              style: EddieTextStyles.body2(context).copyWith(
+                                color: _selectedIndex == 2
+                                    ? EddieTheme.getPrimary(context)
+                                    : EddieTheme.getTextPrimary(context),
+                                fontWeight: _selectedIndex == 2 ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -366,7 +531,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 child: Container(
                   width: 1,
                   height: double.infinity,
-                  color: isDarkMode ? Colors.grey.shade900 : Colors.grey.shade300,
+                  color: EddieTheme.getColor(context, EddieColors.outlineLight, EddieColors.outlineDark),
                 ),
               ),
             ),
@@ -380,10 +545,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   height: 56, // Fixed height for the app bar
                   decoration: BoxDecoration(
-                    color: Theme.of(context).appBarTheme.backgroundColor,
+                    color: EddieTheme.getSurface(context),
                     border: Border(
                       bottom: BorderSide(
-                        color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+                        color: EddieTheme.getColor(context, EddieColors.outlineLight, EddieColors.outlineDark),
                         width: 1,
                       ),
                     ),
@@ -400,11 +565,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                           tooltip: l10n.expandSidebar,
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
-                          color: isDarkMode ? Colors.white : Colors.black,
+                          color: EddieTheme.getTextPrimary(context),
                         ),
                       if (!_isSidebarExpanded)
                         const SizedBox(width: 16),
-                      const AppLogo(size: 24),
+                      const EddieLogo(size: 24, withText: true),
                       const SizedBox(width: 8),
                       if (_selectedIndex == 0 && selectedChatId != null)
                         Expanded(
@@ -412,23 +577,22 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                             children: [
                               Text(
                                 l10n.chatTabLabel,
-                                style: Theme.of(context).appBarTheme.titleTextStyle,
+                                style: EddieTextStyles.body1(context).copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
                                 child: Icon(
                                   Icons.chevron_right,
                                   size: 18,
-                                  color: isDarkMode ? Colors.white70 : Colors.black54,
+                                  color: EddieTheme.getTextSecondary(context),
                                 ),
                               ),
                               Expanded(
                                 child: Text(
                                   chats.firstWhere((chat) => chat.id == selectedChatId, orElse: () => Chat(title: '')).title,
-                                  style: Theme.of(context).appBarTheme.titleTextStyle?.copyWith(
-                                    fontWeight: FontWeight.w400,
-                                    color: isDarkMode ? Colors.white70 : Colors.black87,
-                                  ),
+                                  style: EddieTextStyles.body1(context),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
@@ -441,22 +605,21 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                             children: [
                               Text(
                                 l10n.chatTabLabel,
-                                style: Theme.of(context).appBarTheme.titleTextStyle,
+                                style: EddieTextStyles.body1(context).copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
                                 child: Icon(
                                   Icons.chevron_right,
                                   size: 18,
-                                  color: isDarkMode ? Colors.white70 : Colors.black54,
+                                  color: EddieTheme.getTextSecondary(context),
                                 ),
                               ),
                               Text(
                                 l10n.viewAll,
-                                style: Theme.of(context).appBarTheme.titleTextStyle?.copyWith(
-                                  fontWeight: FontWeight.w400,
-                                  color: isDarkMode ? Colors.white70 : Colors.black87,
-                                ),
+                                style: EddieTextStyles.body1(context),
                               ),
                             ],
                           ),
@@ -467,23 +630,22 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                             children: [
                               Text(
                                 l10n.qaTabLabel,
-                                style: Theme.of(context).appBarTheme.titleTextStyle,
+                                style: EddieTextStyles.body1(context).copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
                                 child: Icon(
                                   Icons.chevron_right,
                                   size: 18,
-                                  color: isDarkMode ? Colors.white70 : Colors.black54,
+                                  color: EddieTheme.getTextSecondary(context),
                                 ),
                               ),
                               Expanded(
                                 child: Text(
                                   qaPairs.firstWhere((qa) => qa.id == selectedQAPairId, orElse: () => QAPair(question: '', answer: '')).question,
-                                  style: Theme.of(context).appBarTheme.titleTextStyle?.copyWith(
-                                    fontWeight: FontWeight.w400,
-                                    color: isDarkMode ? Colors.white70 : Colors.black87,
-                                  ),
+                                  style: EddieTextStyles.body1(context),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
@@ -496,22 +658,21 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                             children: [
                               Text(
                                 l10n.qaTabLabel,
-                                style: Theme.of(context).appBarTheme.titleTextStyle,
+                                style: EddieTextStyles.body1(context).copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
                                 child: Icon(
                                   Icons.chevron_right,
                                   size: 18,
-                                  color: isDarkMode ? Colors.white70 : Colors.black54,
+                                  color: EddieTheme.getTextSecondary(context),
                                 ),
                               ),
                               Text(
                                 l10n.viewAll,
-                                style: Theme.of(context).appBarTheme.titleTextStyle?.copyWith(
-                                  fontWeight: FontWeight.w400,
-                                  color: isDarkMode ? Colors.white70 : Colors.black87,
-                                ),
+                                style: EddieTextStyles.body1(context),
                               ),
                             ],
                           ),
@@ -523,9 +684,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                             _showAllQAPairs ? l10n.qaTabLabel :
                             _selectedIndex == 0 ? l10n.chatTabLabel :
                             _selectedIndex == 1 ? l10n.qaTabLabel : l10n.settingsTabLabel,
-                            style: Theme.of(context).appBarTheme.titleTextStyle,
+                            style: EddieTextStyles.body1(context).copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
+                      if (_isSidebarExpanded)
+                        const ThemeToggle(),
                     ],
                   ),
                 ),
@@ -580,4 +745,5 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           : null,
     );
   }
-} 
+}
+

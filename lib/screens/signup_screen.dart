@@ -2,9 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:eddie2/services/auth_service.dart';
 import 'package:eddie2/screens/login_screen.dart';
-import 'package:eddie2/widgets/app_logo.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../theme/eddie_theme.dart';
+import '../theme/eddie_colors.dart';
+import '../theme/eddie_text_styles.dart';
+import '../theme/eddie_constants.dart';
+import '../widgets/eddie_logo.dart';
+import '../widgets/eddie_text_field.dart';
+import '../widgets/eddie_button.dart';
+import '../widgets/eddie_outlined_button.dart';
+import '../utils/validation_utils.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   static const routeName = '/signup';
@@ -73,7 +82,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(AppLocalizations.of(context)!.accountCreatedSuccess),
-                backgroundColor: Colors.green,
+                backgroundColor: EddieColors.getColor(context, Colors.green.shade200, Colors.green.shade800),
               ),
             );
           }
@@ -86,7 +95,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(AppLocalizations.of(context)!.accountCreatedSuccess),
-                backgroundColor: Colors.green,
+                backgroundColor: EddieColors.getColor(context, Colors.green.shade200, Colors.green.shade800),
               ),
             );
           }
@@ -95,9 +104,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       
       // Navigation will be handled by the auth state listener in main.dart
     } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+        });
+      }
       
       // Log the error for debugging
       debugPrint('Signup error: $e');
@@ -130,7 +141,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(AppLocalizations.of(context)!.accountCreatedSuccess),
-              backgroundColor: Colors.green,
+              backgroundColor: EddieColors.getColor(context, Colors.green.shade200, Colors.green.shade800),
             ),
           );
         }
@@ -145,9 +156,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       // Navigation will be handled by the auth state listener in main.dart
     } catch (e) {
       debugPrint('Google signup error: $e');
-      setState(() {
-        _errorMessage = e.toString();
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -158,15 +171,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   void _navigateToLogin() {
-    Navigator.of(context).pushReplacementNamed(LoginScreen.routeName);
+    Navigator.of(context).pushReplacementNamed('/login');
   }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     
     return Scaffold(
+      backgroundColor: EddieColors.getBackground(context),
       body: Center(
         child: SingleChildScrollView(
           child: Padding(
@@ -177,215 +190,171 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const AppLogo(size: 80),
-                  const SizedBox(height: 32),
+                  const EddieLogo(size: 64, withText: true),
+                  const SizedBox(height: 24), // Reduced spacing
                   Text(
                     localizations.createAccount,
-                    style: Theme.of(context).textTheme.headlineMedium,
+                    style: EddieTextStyles.heading1(context),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 8),
+                  Text(
+                    localizations.createAccountSubtitle,
+                    style: EddieTextStyles.body2(context).copyWith(
+                      color: EddieColors.getTextSecondary(context),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24), // Reduced spacing
                   if (_errorMessage != null)
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        color: EddieColors.getError(context).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(EddieConstants.borderRadiusMedium),
                       ),
-                      child: Text(
-                        _errorMessage!,
-                        style: TextStyle(
-                          color: Colors.red[700],
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: EddieColors.getError(context),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _errorMessage!,
+                              style: EddieTextStyles.errorText(context),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   const SizedBox(height: 16),
-                  Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        TextFormField(
-                          controller: _nameController,
-                          decoration: InputDecoration(
-                            labelText: localizations.name,
-                            prefixIcon: const Icon(Icons.person_outline),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: EddieColors.getSurface(context),
+                      borderRadius: BorderRadius.circular(EddieConstants.borderRadiusMedium),
+                      border: Border.all(
+                        color: EddieColors.getOutline(context),
+                        width: 1,
+                      ),
+                    ),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          EddieTextField(
+                            label: localizations.name,
+                            labelSuffix: localizations.nameOptional,
+                            placeholder: localizations.namePlaceholder,
+                            controller: _nameController,
+                            prefixIcon: Icon(
+                              Icons.person_outline,
+                              color: EddieColors.getTextSecondary(context),
+                              size: 20,
                             ),
                           ),
-                          textCapitalization: TextCapitalization.words,
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _emailController,
-                          decoration: InputDecoration(
-                            labelText: localizations.email,
-                            prefixIcon: const Icon(Icons.email_outlined),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                          const SizedBox(height: 16),
+                          EddieTextField(
+                            label: localizations.email,
+                            placeholder: localizations.emailPlaceholder,
+                            controller: _emailController,
+                            prefixIcon: Icon(
+                              Icons.email_outlined,
+                              color: EddieColors.getTextSecondary(context),
+                              size: 20,
                             ),
+                            keyboardType: TextInputType.emailAddress,
+                            errorText: _emailController.text.isEmpty ? null : 
+                              !ValidationUtils.isValidEmail(_emailController.text) ? 
+                              localizations.invalidEmail : null,
                           ),
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return localizations.emailRequired;
-                            }
-                            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                                .hasMatch(value)) {
-                              return localizations.invalidEmail;
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _passwordController,
-                          decoration: InputDecoration(
-                            labelText: localizations.password,
-                            prefixIcon: const Icon(Icons.lock_outline),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                          const SizedBox(height: 16),
+                          EddieTextField(
+                            label: localizations.password,
+                            placeholder: '••••••••',
+                            controller: _passwordController,
+                            prefixIcon: Icon(
+                              Icons.lock_outline,
+                              color: EddieColors.getTextSecondary(context),
+                              size: 20,
                             ),
+                            obscureText: true,
+                            errorText: _passwordController.text.isEmpty ? null : 
+                              !ValidationUtils.isValidPassword(_passwordController.text) ? 
+                              localizations.passwordTooShort : null,
                           ),
-                          obscureText: true,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return localizations.passwordRequired;
-                            }
-                            if (value.length < 6) {
-                              return localizations.passwordTooShort;
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _confirmPasswordController,
-                          decoration: InputDecoration(
-                            labelText: localizations.confirmPassword,
-                            prefixIcon: const Icon(Icons.lock_outline),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                          const SizedBox(height: 16),
+                          EddieTextField(
+                            label: localizations.confirmPassword,
+                            placeholder: '••••••••',
+                            controller: _confirmPasswordController,
+                            prefixIcon: Icon(
+                              Icons.lock_outline,
+                              color: EddieColors.getTextSecondary(context),
+                              size: 20,
                             ),
+                            obscureText: true,
+                            errorText: _confirmPasswordController.text.isEmpty ? null : 
+                              !ValidationUtils.doPasswordsMatch(_passwordController.text, _confirmPasswordController.text) ? 
+                              localizations.passwordsDoNotMatch : null,
                           ),
-                          obscureText: true,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return localizations.confirmPasswordRequired;
-                            }
-                            if (value != _passwordController.text) {
-                              return localizations.passwordsDoNotMatch;
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _signup,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(context).primaryColor,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: _isLoading
-                                ? const CircularProgressIndicator(
-                                    color: Colors.white,
-                                  )
-                                : Text(
-                                    localizations.signUp,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
+                          const SizedBox(height: 24),
+                          EddieButton(
+                            text: localizations.signUp,
+                            onPressed: _signup,
+                            isLoading: _isLoading,
+                            fullWidth: true,
+                            size: EddieButtonSize.medium,
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Divider(
-                                color: isDarkMode ? Colors.white54 : Colors.black54,
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              child: Text(
-                                'OR',
-                                style: TextStyle(
-                                  color: isDarkMode ? Colors.white54 : Colors.black54,
-                                  fontWeight: FontWeight.bold,
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Divider(
+                                  color: EddieColors.getOutline(context),
                                 ),
                               ),
-                            ),
-                            Expanded(
-                              child: Divider(
-                                color: isDarkMode ? Colors.white54 : Colors.black54,
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: Text(
+                                  localizations.or,
+                                  style: EddieTextStyles.caption(context),
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: OutlinedButton.icon(
-                            onPressed: _isGoogleLoading ? null : _signUpWithGoogle,
-                            icon: _isGoogleLoading
-                                ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : SvgPicture.asset(
-                                    'assets/images/google_logo.svg',
-                                    height: 24,
-                                    width: 24,
-                                  ),
-                            label: Text(
-                              'Sign up with Google',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: isDarkMode ? Colors.white : Colors.black87,
+                              Expanded(
+                                child: Divider(
+                                  color: EddieColors.getOutline(context),
+                                ),
                               ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(
-                                color: isDarkMode ? Colors.white70 : Colors.black54,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
+                            ],
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 16),
+                          // Custom implementation for Google sign-up button to handle SVG icon
+                          _buildGoogleSignUpButton(context, localizations),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20), // Reduced spacing
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(localizations.alreadyHaveAccount),
-                      TextButton(
-                        onPressed: _isLoading || _isGoogleLoading ? null : _navigateToLogin,
-                        child: Text(
-                          localizations.login,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).primaryColor,
-                          ),
-                        ),
+                      Text(
+                        localizations.alreadyHaveAccount,
+                        style: EddieTextStyles.body2(context),
+                      ),
+                      const SizedBox(width: 8),
+                      EddieOutlinedButton(
+                        text: localizations.login,
+                        onPressed: _navigateToLogin,
+                        isLoading: false,
+                        size: EddieButtonSize.small,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       ),
                     ],
                   ),
@@ -397,4 +366,26 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       ),
     );
   }
-} 
+
+  // Custom method to build Google sign-up button with SVG icon
+  Widget _buildGoogleSignUpButton(BuildContext context, AppLocalizations localizations) {
+    return EddieOutlinedButton(
+      text: "Sign up with Google", // Hardcoded for now until localization is updated
+      onPressed: _signUpWithGoogle,
+      isLoading: _isGoogleLoading,
+      fullWidth: true,
+      size: EddieButtonSize.medium,
+      leadingIconWidget: SvgPicture.asset(
+        'assets/images/google_logo.svg',
+        height: 20,
+        width: 20,
+        placeholderBuilder: (BuildContext context) => Icon(
+          Icons.account_circle,
+          size: 20,
+          color: EddieColors.getTextPrimary(context),
+        ),
+      ),
+    );
+  }
+}
+

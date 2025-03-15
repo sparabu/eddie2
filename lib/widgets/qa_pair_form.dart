@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/qa_pair.dart';
+import '../theme/eddie_colors.dart';
+import '../theme/eddie_text_styles.dart';
+import '../theme/eddie_theme.dart';
 
 class QAPairForm extends StatefulWidget {
   final QAPair? initialQAPair;

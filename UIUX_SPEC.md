@@ -469,89 +469,248 @@ This document defines the UI components, screens, design system, and interaction
 #### Color Tokens
 | Token Name | Light Mode | Dark Mode | Usage |
 |------------|------------|-----------|-------|
-| `colorPrimary` | #5E35B1 | #9162E4 | Primary actions, highlights |
+| `colorPrimary` | #000000 | #FFFFFF | Primary actions, highlights |
 | `colorBackground` | #F5F5F5 | #121212 | App background |
-| `colorSurface` | #FFFFFF | #1E1E1E | Cards, dialogs |
+| `colorSurface` | #FFFFFF | #121212 | Cards, dialogs |
 | `colorTextPrimary` | #212121 | #FFFFFF | Primary text |
 | `colorTextSecondary` | #757575 | #B0B0B0 | Secondary text |
-| `colorError` | #B00020 | #CF6679 | Error states |
-| `colorSuccess` | #4CAF50 | #66BB6A | Success states |
-| `colorWarning` | #FF9800 | #FFA726 | Warning states |
-| `colorInfo` | #2196F3 | #42A5F5 | Information states |
-| `colorDanger` | #F44336 | #EF5350 | Destructive actions |
+| `colorError` | #DC3545 | #FF453A | Error states |
+| `colorSuccess` | #28A745 | #32D74B | Success states |
+| `colorWarning` | #FFC107 | #FFD54F | Warning states |
+| `colorOutline` | #E0E0E0 | #333333 | Borders, dividers |
+| `colorInputBackground` | #F5F5F5 | #1A1A1A | Input field backgrounds |
 
 #### Spacing Tokens
 | Token Name | Value | Usage |
 |------------|-------|-------|
+| `spacingXxs` | 2px | Minimal spacing between tightly related elements |
 | `spacingXs` | 4px | Tight spacing between related elements |
 | `spacingSm` | 8px | Standard spacing between related elements |
 | `spacingMd` | 16px | Standard padding, spacing between components |
 | `spacingLg` | 24px | Section spacing |
 | `spacingXl` | 32px | Major section divisions |
+| `spacingXxl` | 48px | Page-level spacing |
 
 #### Typography Tokens
 | Token Name | Properties | Usage |
 |------------|------------|-------|
-| `textHeading1` | Roboto, 24px, Bold | Screen titles |
-| `textHeading2` | Roboto, 20px, Bold | Section headings |
-| `textBody1` | Roboto, 16px, Regular | Primary content text |
-| `textBody2` | Roboto, 14px, Regular | Secondary content text |
-| `textCaption` | Roboto, 12px, Regular | Timestamps, helper text |
+| `textHeading1` | Inter, 24px, Bold | Screen titles |
+| `textHeading2` | Inter, 20px, Bold | Section headings |
+| `textHeading3` | Inter, 18px, SemiBold | Subsection headings |
+| `textBody1` | Inter, 16px, Regular | Primary content text |
+| `textBody2` | Inter, 14px, Regular | Secondary content text |
+| `textCaption` | Inter, 12px, Regular | Timestamps, helper text |
+| `textButtonText` | Inter, 16px, Medium | Button labels |
+| `textInputLabel` | Inter, 14px, Medium | Input field labels |
 
 #### Border Radius Tokens
 | Token Name | Value | Usage |
 |------------|-------|-------|
-| `radiusXs` | 2px | Small elements |
-| `radiusSm` | 4px | Buttons, input fields |
-| `radiusMd` | 8px | Cards, dialogs |
-| `radiusLg` | 16px | Large components |
-| `radiusCircular` | 50% | Circular elements |
+| `borderRadiusSmall` | 4px | Small elements, buttons |
+| `borderRadiusMedium` | 8px | Cards, input fields |
+| `borderRadiusLarge` | 12px | Large components |
+| `borderRadiusXl` | 16px | Modal dialogs |
+| `borderRadiusRound` | 999px | Circular elements |
+
+#### Animation Duration Tokens
+| Token Name | Value | Usage |
+|------------|-------|-------|
+| `animationShort` | 150ms | Quick transitions (hover states) |
+| `animationMedium` | 300ms | Standard transitions (page changes) |
+| `animationLong` | 500ms | Complex animations (modals) |
+
+### Design System Components
+
+#### EddieColors
+The primary source of truth for all color definitions and color-related functionality in the application.
+
+**Key Features**:
+- Helper methods for accessing theme-aware colors (e.g., `getPrimary(context)`)
+- Semantic color definitions for different UI states
+- Support for both light and dark themes
+
+**Usage Example**:
+```dart
+// Get the primary color based on the current theme
+color: EddieColors.getPrimary(context)
+
+// Get the appropriate background color
+backgroundColor: EddieColors.getBackground(context)
+```
+
+#### EddieTextStyles
+Contains all text style definitions and helper methods for accessing theme-aware text styles.
+
+**Key Features**:
+- Uses Google Fonts (Inter) for consistent typography
+- Helper methods for accessing theme-aware text styles
+- Includes styles for headings, body text, buttons, and more
+
+**Usage Example**:
+```dart
+// Apply heading style
+style: EddieTextStyles.heading1(context)
+
+// Apply body text style
+style: EddieTextStyles.body1(context)
+```
+
+#### EddieConstants
+Provides standardized values for spacing, sizing, animations, and other constants used throughout the application.
+
+**Key Features**:
+- Spacing constants for consistent layout
+- Border radius constants for consistent corner rounding
+- Animation duration constants for consistent timing
+- Elevation constants for shadows and depth
+
+**Usage Example**:
+```dart
+// Apply consistent padding
+padding: EdgeInsets.all(EddieConstants.spacingMd)
+
+// Use standard animation duration
+duration: EddieConstants.animationMedium
+```
+
+#### Custom Components
+
+##### EddieButton
+A customizable button component with multiple variants and sizes.
+
+**Properties**:
+- `text`: Button label text
+- `onPressed`: Callback function when button is pressed
+- `variant`: Button style variant (primary, secondary, danger)
+- `size`: Button size (small, medium, large)
+- `isLoading`: Whether to show loading indicator
+- `leadingIcon`: Optional icon before text
+- `trailingIcon`: Optional icon after text
+
+**Usage Example**:
+```dart
+EddieButton(
+  text: 'Submit',
+  onPressed: handleSubmit,
+  variant: EddieButtonVariant.primary,
+  size: EddieButtonSize.medium,
+)
+```
+
+##### EddieTextField
+A styled text input field component.
+
+**Properties**:
+- `label`: Field label text
+- `placeholder`: Placeholder text
+- `controller`: Text editing controller
+- `errorText`: Optional error message
+- `helperText`: Optional helper text
+- `obscureText`: Whether to hide text (for passwords)
+- `keyboardType`: Type of keyboard to display
+
+**Usage Example**:
+```dart
+EddieTextField(
+  label: 'Email',
+  placeholder: 'Enter your email',
+  controller: emailController,
+  keyboardType: TextInputType.emailAddress,
+)
+```
+
+##### SidebarSection
+A collapsible section component for organizing sidebar content.
+
+**Properties**:
+- `title`: Section title text
+- `children`: List of widgets to display in the section
+- `trailing`: Optional widget to display at the end of the header
+- `isExpanded`: Whether the section is expanded
+- `onToggle`: Callback function when toggle is pressed
+
+**Usage Example**:
+```dart
+SidebarSection(
+  title: 'Recent Chats',
+  children: chatItems,
+  trailing: addButton,
+)
+```
+
+##### SidebarItem
+An individual item component for sidebar lists.
+
+**Properties**:
+- `title`: Item title text
+- `subtitle`: Optional subtitle text
+- `icon`: Optional leading icon
+- `isSelected`: Whether the item is selected
+- `onTap`: Callback function when item is tapped
+- `showTrailing`: Whether to show trailing delete button
+- `onDelete`: Callback function when delete button is pressed
+
+**Usage Example**:
+```dart
+SidebarItem(
+  title: 'Chat Title',
+  icon: Icons.chat_bubble_outline,
+  isSelected: isSelected,
+  onTap: () => selectChat(chatId),
+)
+```
 
 ### Colors
 
 #### Primary Colors
-- **Primary**: #5E35B1 (Deep Purple)
+- **Primary (Light Mode)**: #000000 (Black)
   - Used for: buttons, selected items, highlights
-- **Primary Light**: #9162E4
-  - Used for: hover states, secondary elements
-- **Primary Dark**: #280680
-  - Used for: active states, text on light backgrounds
+- **Primary (Dark Mode)**: #FFFFFF (White)
+  - Used for: buttons, selected items, highlights
 
 #### UI Colors
 - **Background (Light Mode)**: #F5F5F5
 - **Background (Dark Mode)**: #121212
 - **Surface (Light Mode)**: #FFFFFF
-- **Surface (Dark Mode)**: #1E1E1E
-- **Text Primary (Light Mode)**: #212121
+- **Surface (Dark Mode)**: #121212
+- **Text Primary (Light Mode)**: #000000
 - **Text Primary (Dark Mode)**: #FFFFFF
 - **Text Secondary (Light Mode)**: #757575
 - **Text Secondary (Dark Mode)**: #B0B0B0
 
 #### Semantic Colors
-- **Error**: #B00020
-- **Success**: #4CAF50
-- **Warning**: #FF9800
-- **Info**: #2196F3
-- **Danger**: #F44336
-  - Used for: Delete buttons, destructive actions
+- **Error (Light Mode)**: #DC3545
+- **Error (Dark Mode)**: #FF453A
+- **Success (Light Mode)**: #28A745
+- **Success (Dark Mode)**: #32D74B
+- **Warning (Light Mode)**: #FFC107
+- **Warning (Dark Mode)**: #FFD54F
 
 ### Typography
 
 #### Text Styles
-- **Heading 1**: Roboto, 24px, Bold
+- **Heading 1**: Inter, 24px, Bold
   - Used for: Screen titles
-- **Heading 2**: Roboto, 20px, Bold
+- **Heading 2**: Inter, 20px, Bold
   - Used for: Section headings
-- **Body 1**: Roboto, 16px, Regular
+- **Heading 3**: Inter, 18px, SemiBold
+  - Used for: Subsection headings
+- **Body 1**: Inter, 16px, Regular
   - Used for: Primary content text
-- **Body 2**: Roboto, 14px, Regular
+- **Body 2**: Inter, 14px, Regular
   - Used for: Secondary content text
-- **Caption**: Roboto, 12px, Regular
+- **Caption**: Inter, 12px, Regular
   - Used for: Timestamps, helper text
+- **Button Text**: Inter, 16px, Medium
+  - Used for: Button labels
+- **Input Label**: Inter, 14px, Medium
+  - Used for: Input field labels
 
 ### Spacing
 
 #### Standard Spacing
+- **Extra Extra Small**: 2px
+  - Used for: Minimal spacing between tightly related elements
 - **Extra Small**: 4px
   - Used for: Tight spacing between related elements
 - **Small**: 8px
@@ -562,6 +721,8 @@ This document defines the UI components, screens, design system, and interaction
   - Used for: Section spacing
 - **Extra Large**: 32px
   - Used for: Major section divisions
+- **Extra Extra Large**: 48px
+  - Used for: Page-level spacing
 
 ### Component Styles
 

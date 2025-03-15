@@ -6,11 +6,13 @@ import '../models/chat.dart';
 import '../models/message.dart';
 import '../providers/chat_provider.dart';
 import '../providers/qa_provider.dart';
-import '../utils/theme.dart';
+import '../theme/eddie_theme.dart';
+import '../theme/eddie_text_styles.dart';
 import '../widgets/chat_input.dart';
 import '../widgets/chat_list_item.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/qa_pair_form.dart';
+import '../widgets/eddie_logo.dart';
 import '../models/qa_pair.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
@@ -65,7 +67,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: ${e.toString()}'),
-          backgroundColor: AppTheme.errorColor,
+          backgroundColor: EddieTheme.errorColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
     } finally {
@@ -108,7 +112,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: ${e.toString()}'),
-          backgroundColor: AppTheme.errorColor,
+          backgroundColor: EddieTheme.errorColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
     } finally {
@@ -145,7 +151,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.qaPairsDetected(pairs.length)),
-            backgroundColor: AppTheme.primaryColor,
+            backgroundColor: EddieTheme.primaryColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
         );
       } else {
@@ -166,19 +174,34 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
-              title: Text(l10n.noQAPairsDetected),
+              title: Text(
+                l10n.noQAPairsDetected,
+                style: EddieTextStyles.titleLarge,
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(l10n.noQAPairsDetectedMessage),
+                  Text(
+                    l10n.noQAPairsDetectedMessage,
+                    style: EddieTextStyles.bodyMedium,
+                  ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        child: Text(l10n.cancelButton),
+                        style: TextButton.styleFrom(
+                          foregroundColor: EddieTheme.secondaryColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Text(
+                          l10n.cancelButton,
+                          style: EddieTextStyles.labelLarge,
+                        ),
                       ),
                       ElevatedButton(
                         onPressed: () {
@@ -187,7 +210,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           showDialog(
                             context: context,
                             builder: (context) => AlertDialog(
-                              title: Text(l10n.createQAPairTitle),
+                              title: Text(
+                                l10n.createQAPairTitle,
+                                style: EddieTextStyles.titleLarge,
+                              ),
                               content: SizedBox(
                                 width: 600,
                                 child: QAPairForm(
@@ -201,20 +227,46 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(l10n.qaPairCreatedSuccess),
-                                        backgroundColor: AppTheme.primaryColor,
+                                        backgroundColor: EddieTheme.primaryColor,
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
                                       ),
                                     );
                                   },
                                 ),
                               ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
                             ),
                           );
                         },
-                        child: Text(l10n.createManuallyButton),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: EddieTheme.primaryColor,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                        ),
+                        child: Text(
+                          l10n.createManuallyButton,
+                          style: EddieTextStyles.labelLarge.copyWith(
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ],
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
           );
@@ -222,6 +274,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(l10n.noQAPairsDetected),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
           );
         }
@@ -230,7 +286,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.errorDetectingQAPairs(e.toString())),
-          backgroundColor: AppTheme.errorColor,
+          backgroundColor: EddieTheme.errorColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
         ),
       );
     }
@@ -240,6 +300,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Widget build(BuildContext context) {
     final chats = ref.watch(chatProvider);
     final selectedChatId = ref.watch(selectedChatIdProvider);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     
     // Find the selected chat or use the first one if none is selected
     Chat? selectedChat;
@@ -256,7 +317,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     
     return Scaffold(
       appBar: AppBar(
-        title: Text(selectedChat?.title ?? 'New Chat'),
+        title: Text(
+          selectedChat?.title ?? l10n.newChat,
+          style: EddieTextStyles.titleMedium,
+        ),
+        elevation: 0,
+        backgroundColor: isDarkMode 
+            ? EddieTheme.darkSurfaceColor 
+            : EddieTheme.surfaceColor,
+        foregroundColor: isDarkMode 
+            ? EddieTheme.darkTextColor 
+            : EddieTheme.textColor,
       ),
       body: Row(
         children: [
@@ -264,9 +335,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           Container(
             width: 250,
             decoration: BoxDecoration(
+              color: isDarkMode 
+                  ? EddieTheme.darkSurfaceVariantColor 
+                  : EddieTheme.surfaceVariantColor,
               border: Border(
                 right: BorderSide(
-                  color: Theme.of(context).dividerColor,
+                  color: isDarkMode 
+                      ? EddieTheme.darkOutlineColor 
+                      : EddieTheme.outlineColor,
                   width: 1,
                 ),
               ),
@@ -279,9 +355,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   child: OutlinedButton.icon(
                     onPressed: _createNewChat,
                     icon: const Icon(Icons.add),
-                    label: Text(l10n.newChatButton),
+                    label: Text(
+                      l10n.newChatButton,
+                      style: EddieTextStyles.labelLarge,
+                    ),
                     style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(40),
+                      minimumSize: const Size.fromHeight(48),
+                      foregroundColor: EddieTheme.primaryColor,
+                      side: BorderSide(color: EddieTheme.primaryColor),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                     ),
                   ),
                 ),
@@ -290,13 +378,45 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 Expanded(
                   child: chats.isEmpty
                       ? Center(
-                          child: ElevatedButton(
-                            onPressed: _createNewChat,
-                            child: Text(l10n.newChatButton),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                l10n.noChatsYet,
+                                style: EddieTextStyles.bodyMedium.copyWith(
+                                  color: isDarkMode 
+                                      ? EddieTheme.darkSecondaryTextColor 
+                                      : EddieTheme.secondaryTextColor,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: _createNewChat,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: EddieTheme.primaryColor,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                ),
+                                child: Text(
+                                  l10n.newChatButton,
+                                  style: EddieTextStyles.labelLarge.copyWith(
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         )
                       : ListView.builder(
                           itemCount: chats.length,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
                           itemBuilder: (context, index) {
                             final chat = chats[index];
                             return ChatListItem(
@@ -316,84 +436,130 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           
           // Chat messages
           Expanded(
-            child: Column(
-              children: [
-                // Messages area
-                Expanded(
-                  child: selectedChat == null
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.chat_bubble_outline,
-                                size: 64,
-                                color: AppTheme.primaryColor,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Start a new chat',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: Theme.of(context).textTheme.bodyMedium?.color,
+            child: Container(
+              color: isDarkMode 
+                  ? EddieTheme.darkBackgroundColor 
+                  : EddieTheme.backgroundColor,
+              child: Column(
+                children: [
+                  // Messages area
+                  Expanded(
+                    child: selectedChat == null
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const EddieLogo(size: 64),
+                                const SizedBox(height: 24),
+                                Text(
+                                  l10n.startNewChat,
+                                  style: EddieTextStyles.titleMedium,
+                                  textAlign: TextAlign.center,
                                 ),
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: _createNewChat,
-                                child: Text(l10n.newChatButton),
-                              ),
-                            ],
-                          ),
-                        )
-                      : selectedChat.messages.isEmpty
-                          ? Center(
-                              child: Text(
-                                'Send a message to start chatting',
-                                style: TextStyle(
-                                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                                const SizedBox(height: 8),
+                                Text(
+                                  l10n.startNewChatDescription,
+                                  style: EddieTextStyles.bodyMedium.copyWith(
+                                    color: isDarkMode 
+                                        ? EddieTheme.darkSecondaryTextColor 
+                                        : EddieTheme.secondaryTextColor,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
-                              ),
-                            )
-                          : ListView.builder(
-                              controller: _scrollController,
-                              itemCount: selectedChat.messages.length,
-                              itemBuilder: (context, index) {
-                                final message = selectedChat!.messages[index];
-                                return MessageBubble(
-                                  message: message,
-                                  onSaveQAPair: message.role == MessageRole.assistant && !message.isError
-                                      ? () => _detectAndSaveQAPairs(selectedChat.id)
-                                      : null,
-                                );
-                              },
+                                const SizedBox(height: 24),
+                                ElevatedButton(
+                                  onPressed: _createNewChat,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: EddieTheme.primaryColor,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                      vertical: 16,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    l10n.newChatButton,
+                                    style: EddieTextStyles.labelLarge.copyWith(
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                ),
-                
-                // Loading indicator
-                if (_isLoading)
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    color: Theme.of(context).cardColor,
-                    child: const Center(
-                      child: SpinKitThreeBounce(
-                        color: AppTheme.primaryColor,
-                        size: 24,
+                          )
+                        : selectedChat.messages.isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.chat_bubble_outline,
+                                      size: 64,
+                                      color: isDarkMode 
+                                          ? EddieTheme.darkSecondaryTextColor 
+                                          : EddieTheme.secondaryTextColor,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      l10n.sendMessageToStart,
+                                      style: EddieTextStyles.bodyLarge.copyWith(
+                                        color: isDarkMode 
+                                            ? EddieTheme.darkSecondaryTextColor 
+                                            : EddieTheme.secondaryTextColor,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : ListView.builder(
+                                controller: _scrollController,
+                                padding: const EdgeInsets.all(16),
+                                itemCount: selectedChat.messages.length,
+                                itemBuilder: (context, index) {
+                                  final message = selectedChat!.messages[index];
+                                  return MessageBubble(
+                                    message: message,
+                                    onSaveQAPair: message.role == MessageRole.assistant && !message.isError
+                                        ? () => _detectAndSaveQAPairs(selectedChat.id)
+                                        : null,
+                                  );
+                                },
+                              ),
+                  ),
+                  
+                  // Loading indicator
+                  if (_isLoading)
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      color: isDarkMode 
+                          ? EddieTheme.darkSurfaceColor 
+                          : EddieTheme.surfaceColor,
+                      child: Center(
+                        child: SpinKitThreeBounce(
+                          color: EddieTheme.primaryColor,
+                          size: 24,
+                        ),
                       ),
                     ),
+                  
+                  // Chat input
+                  ChatInput(
+                    onSendMessage: _sendMessage,
+                    onSendMessageWithFile: _sendMessageWithFile,
+                    isLoading: _isLoading,
+                    hintText: l10n.typeMessageHint,
                   ),
-                
-                // Chat input
-                ChatInput(
-                  onSendMessage: _sendMessage,
-                  onSendMessageWithFile: _sendMessageWithFile,
-                  isLoading: _isLoading,
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
       ),
     );
   }
-} 
+}
+

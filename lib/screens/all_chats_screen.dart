@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../models/chat.dart';
 import '../widgets/chat_list_item.dart';
-import '../utils/theme.dart';
+import '../theme/eddie_theme.dart';
+import '../theme/eddie_text_styles.dart';
+import '../widgets/eddie_logo.dart';
 
 class AllChatsScreen extends StatelessWidget {
   final List<Chat> chats;
@@ -34,18 +36,28 @@ class AllChatsScreen extends StatelessWidget {
         children: [
           Text(
             l10n.chatTabLabel,
-            style: Theme.of(context).textTheme.headlineSmall,
+            style: EddieTextStyles.heading2(context),
           ),
           const SizedBox(height: 16),
           Expanded(
             child: sortedChats.isEmpty
                 ? Center(
-                    child: Text(
-                      l10n.noChatsYet,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
-                      ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const EddieLogo(size: 64),
+                        const SizedBox(height: 24),
+                        Text(
+                          l10n.noChatsYet,
+                          style: EddieTextStyles.heading2(context),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "Start a new chat to begin a conversation.",
+                          style: EddieTextStyles.body2(context),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
                   )
                 : ListView.builder(
@@ -68,4 +80,5 @@ class AllChatsScreen extends StatelessWidget {
       ),
     );
   }
-} 
+}
+
