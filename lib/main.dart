@@ -9,6 +9,7 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logging/logging.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:async';
 import 'firebase_options.dart';
 import 'providers/settings_provider.dart';
@@ -16,9 +17,11 @@ import 'providers/locale_provider.dart';
 import 'screens/main_screen.dart' as main_screen;
 import 'screens/login_screen.dart' as login_screen;
 import 'screens/signup_screen.dart';
+import 'screens/landing_screen.dart';
 import 'services/auth_service.dart';
 import 'theme/eddie_theme.dart';
 import 'theme/theme_provider.dart';
+import 'providers/auth_provider.dart';
 
 // Global error handler for uncaught errors
 void _handleError(Object error, StackTrace stack) {
@@ -79,6 +82,10 @@ void main() {
     try {
       // Ensure Flutter is initialized first - moved inside the zone
       WidgetsFlutterBinding.ensureInitialized();
+      
+      // Load environment variables from .env file
+      await dotenv.load(fileName: '.env');
+      log.info('Environment variables loaded from .env file');
       
       // Initialize Firebase
       await Firebase.initializeApp(
@@ -199,6 +206,7 @@ class MyApp extends ConsumerWidget {
         '/': (context) => const AuthWrapper(),
         SignupScreen.routeName: (context) => const SignupScreen(),
         login_screen.LoginScreen.routeName: (context) => const login_screen.LoginScreen(),
+        '/landing': (context) => const LandingScreen(),
       },
       initialRoute: '/',
     );
@@ -234,8 +242,9 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
           debugPrint('AuthWrapper: Navigating to MainScreen');
           return const main_screen.MainScreen();
         } else {
-          debugPrint('AuthWrapper: Navigating to LoginScreen');
-          return const login_screen.LoginScreen();
+          // Show LandingScreen instead of LoginScreen
+          debugPrint('AuthWrapper: Navigating to LandingScreen');
+          return const LandingScreen();
         }
       },
       loading: () {

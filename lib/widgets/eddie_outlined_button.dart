@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import '../theme/eddie_colors.dart';
 import '../theme/eddie_text_styles.dart';
 import '../theme/eddie_constants.dart';
-import 'eddie_button.dart';
+import '../widgets/eddie_button.dart';
 
 /// Eddie Outlined Button
 ///
 /// A styled outlined button component for the Eddie app.
 class EddieOutlinedButton extends StatelessWidget {
-  final String text;
+  final String label;
   final VoidCallback? onPressed;
   final bool isLoading;
   final IconData? leadingIcon;
@@ -16,14 +16,13 @@ class EddieOutlinedButton extends StatelessWidget {
   final Widget? leadingIconWidget;
   final Widget? trailingIconWidget;
   final EddieButtonSize size;
-  final bool fullWidth;
+  final bool isExpanded;
   final EdgeInsetsGeometry? padding;
-  final Color? borderColor;
-  final Color? textColor;
+  final ButtonType buttonType;
 
   const EddieOutlinedButton({
     Key? key,
-    required this.text,
+    required this.label,
     this.onPressed,
     this.isLoading = false,
     this.leadingIcon,
@@ -31,10 +30,9 @@ class EddieOutlinedButton extends StatelessWidget {
     this.leadingIconWidget,
     this.trailingIconWidget,
     this.size = EddieButtonSize.medium,
-    this.fullWidth = false,
+    this.isExpanded = false,
     this.padding,
-    this.borderColor,
-    this.textColor,
+    this.buttonType = ButtonType.secondary,
   }) : assert(
          (leadingIcon == null || leadingIconWidget == null) && 
          (trailingIcon == null || trailingIconWidget == null),
@@ -53,37 +51,72 @@ class EddieOutlinedButton extends StatelessWidget {
     // Determine padding based on size and icons
     final EdgeInsetsGeometry buttonPadding = padding ?? _getButtonPadding();
     
-    // Determine colors
-    final Color actualBorderColor = borderColor ?? EddieColors.getPrimary(context);
-    final Color actualTextColor = textColor ?? EddieColors.getPrimary(context);
-    
     return SizedBox(
-      width: fullWidth ? double.infinity : null,
+      width: isExpanded ? double.infinity : null,
       height: buttonHeight,
       child: OutlinedButton(
         onPressed: isLoading ? null : onPressed,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: actualTextColor,
-          side: BorderSide(color: actualBorderColor),
-          padding: buttonPadding,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(EddieConstants.borderRadiusMedium),
-          ),
-        ),
-        child: _buildButtonContent(context, iconSize, actualTextColor),
+        style: _getButtonStyle(context),
+        child: _buildButtonContent(context, iconSize),
       ),
     );
   }
 
+  /// Get button style based on type
+  ButtonStyle _getButtonStyle(BuildContext context) {
+    switch (buttonType) {
+      case ButtonType.primary:
+        return OutlinedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: EddieColors.getPrimary(context),
+          side: BorderSide(color: EddieColors.getPrimary(context)),
+          padding: padding ?? _getButtonPadding(),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(EddieConstants.borderRadiusMedium),
+          ),
+        );
+      case ButtonType.secondary:
+        return OutlinedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: EddieColors.getPrimary(context),
+          side: BorderSide(color: EddieColors.getOutline(context)),
+          padding: padding ?? _getButtonPadding(),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(EddieConstants.borderRadiusMedium),
+          ),
+        );
+      case ButtonType.tertiary:
+        return OutlinedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: EddieColors.getPrimary(context),
+          side: BorderSide.none,
+          padding: padding ?? _getButtonPadding(),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(EddieConstants.borderRadiusMedium),
+          ),
+        );
+      default:
+        return OutlinedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: EddieColors.getPrimary(context),
+          side: BorderSide(color: EddieColors.getOutline(context)),
+          padding: padding ?? _getButtonPadding(),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(EddieConstants.borderRadiusMedium),
+          ),
+        );
+    }
+  }
+
   /// Builds the button content with optional loading indicator, icons, and text
-  Widget _buildButtonContent(BuildContext context, double iconSize, Color textColor) {
+  Widget _buildButtonContent(BuildContext context, double iconSize) {
     if (isLoading) {
       return SizedBox(
         width: iconSize,
         height: iconSize,
         child: CircularProgressIndicator(
           strokeWidth: 2,
-          color: textColor,
+          color: EddieColors.getPrimary(context),
         ),
       );
     }
@@ -96,36 +129,42 @@ class EddieOutlinedButton extends StatelessWidget {
           leadingIconWidget!,
           SizedBox(width: EddieConstants.spacingSm),
         ] else if (leadingIcon != null) ...[
-          Icon(leadingIcon, size: iconSize, color: textColor),
+          Icon(leadingIcon, size: iconSize),
           SizedBox(width: EddieConstants.spacingSm),
         ],
         Text(
-          text,
-          style: _getTextStyle(context, textColor),
+          label,
+          style: _getTextStyle(context),
         ),
         if (trailingIconWidget != null) ...[
           SizedBox(width: EddieConstants.spacingSm),
           trailingIconWidget!,
         ] else if (trailingIcon != null) ...[
           SizedBox(width: EddieConstants.spacingSm),
-          Icon(trailingIcon, size: iconSize, color: textColor),
+          Icon(trailingIcon, size: iconSize),
         ],
       ],
     );
   }
 
   /// Returns the appropriate text style based on button size
-  TextStyle _getTextStyle(BuildContext context, Color textColor) {
-    TextStyle baseStyle = EddieTextStyles.buttonText(context).copyWith(color: textColor);
-    
+  TextStyle _getTextStyle(BuildContext context) {
     switch (size) {
       case EddieButtonSize.small:
-        return baseStyle.copyWith(fontSize: 14);
+        return EddieTextStyles.buttonText(context).copyWith(
+          fontSize: 14,
+          color: EddieColors.getPrimary(context),
+        );
       case EddieButtonSize.large:
-        return baseStyle.copyWith(fontSize: 18);
+        return EddieTextStyles.buttonText(context).copyWith(
+          fontSize: 18,
+          color: EddieColors.getPrimary(context),
+        );
       case EddieButtonSize.medium:
       default:
-        return baseStyle;
+        return EddieTextStyles.buttonText(context).copyWith(
+          color: EddieColors.getPrimary(context),
+        );
     }
   }
 

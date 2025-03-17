@@ -48,12 +48,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     try {
-      await ref.read(authServiceProvider).signInWithEmailAndPassword(
+      final user = await ref.read(authServiceProvider).signInWithEmailAndPassword(
         _emailController.text.trim(),
         _passwordController.text,
       );
       
-      // Navigation will be handled by the auth state listener in main.dart
+      if (user != null && mounted) {
+        // Force refresh the auth state
+        ref.refresh(authStateProvider);
+        
+        // Explicitly navigate to the root, which will trigger the AuthWrapper
+        // to show the main screen because the user is now authenticated
+        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+      }
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();
@@ -85,15 +92,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       
       if (user != null) {
         debugPrint('Google login successful for user: ${user.email}');
+        
+        // Force refresh the auth state
+        ref.refresh(authStateProvider);
+        
+        if (mounted) {
+          // Explicitly navigate to the root, which will trigger the AuthWrapper
+          // to show the main screen because the user is now authenticated
+          Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+        }
       } else {
         // User canceled the sign-in flow
         debugPrint('Google sign-in canceled by user');
       }
-      
-      // Force refresh the auth state
-      ref.refresh(authStateProvider);
-      
-      // Navigation will be handled by the auth state listener in main.dart
     } catch (e) {
       debugPrint('Google login error: $e');
       if (mounted) {
@@ -233,10 +244,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                           const SizedBox(height: 24),
                           EddieButton(
-                            text: localizations.login,
+                            label: localizations.login,
                             onPressed: _login,
                             isLoading: _isLoading,
-                            fullWidth: true,
+                            isExpanded: true,
                             size: EddieButtonSize.medium,
                           ),
                           const SizedBox(height: 16),
@@ -278,7 +289,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       const SizedBox(width: 8),
                       EddieOutlinedButton(
-                        text: localizations.signUp,
+                        label: localizations.signUp,
                         onPressed: _navigateToSignup,
                         isLoading: false,
                         size: EddieButtonSize.small,
@@ -298,10 +309,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   // Custom method to build Google sign-in button with SVG icon
   Widget _buildGoogleSignInButton(BuildContext context, AppLocalizations localizations) {
     return EddieOutlinedButton(
-      text: "Sign in with Google", // Hardcoded for now until localization is updated
+      label: "Sign in with Google", // Hardcoded for now until localization is updated
       onPressed: _loginWithGoogle,
       isLoading: _isGoogleLoading,
-      fullWidth: true,
+      isExpanded: true,
       size: EddieButtonSize.medium,
       leadingIconWidget: SvgPicture.asset(
         'assets/images/google_logo.svg',

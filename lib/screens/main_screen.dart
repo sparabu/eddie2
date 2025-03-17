@@ -236,7 +236,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                           color: EddieTheme.getTextPrimary(context),
                         ),
                         const Spacer(),
-                        const ThemeToggle(),
                       ],
                     ),
                   ),
@@ -689,8 +688,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                             ),
                           ),
                         ),
-                      if (_isSidebarExpanded)
-                        const ThemeToggle(),
                     ],
                   ),
                 ),

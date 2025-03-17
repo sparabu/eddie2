@@ -10,11 +10,18 @@ enum EddieButtonSize {
   large,
 }
 
+/// Button type options
+enum ButtonType {
+  primary,
+  secondary,
+  tertiary,
+}
+
 /// Eddie Button
 ///
 /// A styled button component for the Eddie app.
 class EddieButton extends StatelessWidget {
-  final String text;
+  final String label;
   final VoidCallback? onPressed;
   final bool isLoading;
   final IconData? leadingIcon;
@@ -22,12 +29,13 @@ class EddieButton extends StatelessWidget {
   final Widget? leadingIconWidget;
   final Widget? trailingIconWidget;
   final EddieButtonSize size;
-  final bool fullWidth;
+  final bool isExpanded;
   final EdgeInsetsGeometry? padding;
+  final ButtonType buttonType;
 
   const EddieButton({
     Key? key,
-    required this.text,
+    required this.label,
     this.onPressed,
     this.isLoading = false,
     this.leadingIcon,
@@ -35,8 +43,9 @@ class EddieButton extends StatelessWidget {
     this.leadingIconWidget,
     this.trailingIconWidget,
     this.size = EddieButtonSize.medium,
-    this.fullWidth = false,
+    this.isExpanded = false,
     this.padding,
+    this.buttonType = ButtonType.primary,
   }) : assert(
          (leadingIcon == null || leadingIconWidget == null) && 
          (trailingIcon == null || trailingIconWidget == null),
@@ -55,16 +64,29 @@ class EddieButton extends StatelessWidget {
     // Determine padding based on size and icons
     final EdgeInsetsGeometry buttonPadding = padding ?? _getButtonPadding();
     
+    // Get button style based on type
+    final ButtonStyle style = _getButtonStyle(context);
+    
     return SizedBox(
-      width: fullWidth ? double.infinity : null,
+      width: isExpanded ? double.infinity : null,
       height: buttonHeight,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
-        style: ElevatedButton.styleFrom(
+        style: style,
+        child: _buildButtonContent(context, iconSize),
+      ),
+    );
+  }
+
+  /// Get button style based on type
+  ButtonStyle _getButtonStyle(BuildContext context) {
+    switch (buttonType) {
+      case ButtonType.primary:
+        return ElevatedButton.styleFrom(
           backgroundColor: EddieColors.getPrimary(context),
           foregroundColor: EddieColors.getButtonText(context),
           elevation: 0,
-          padding: buttonPadding,
+          padding: padding ?? _getButtonPadding(),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(EddieConstants.borderRadiusMedium),
           ),
@@ -74,10 +96,37 @@ class EddieButton extends StatelessWidget {
           disabledForegroundColor: Theme.of(context).brightness == Brightness.light
               ? Colors.grey[600]
               : Colors.grey[400],
-        ),
-        child: _buildButtonContent(context, iconSize),
-      ),
-    );
+        );
+      case ButtonType.secondary:
+        return ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: EddieColors.getPrimary(context),
+          elevation: 0,
+          padding: padding ?? _getButtonPadding(),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(EddieConstants.borderRadiusMedium),
+            side: BorderSide(color: EddieColors.getPrimary(context)),
+          ),
+          disabledBackgroundColor: Colors.transparent,
+          disabledForegroundColor: Theme.of(context).brightness == Brightness.light
+              ? Colors.grey[600]
+              : Colors.grey[400],
+        );
+      case ButtonType.tertiary:
+        return ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: EddieColors.getPrimary(context),
+          elevation: 0,
+          padding: padding ?? _getButtonPadding(),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(EddieConstants.borderRadiusMedium),
+          ),
+          disabledBackgroundColor: Colors.transparent,
+          disabledForegroundColor: Theme.of(context).brightness == Brightness.light
+              ? Colors.grey[600]
+              : Colors.grey[400],
+        );
+    }
   }
 
   /// Builds the button content with optional loading indicator, icons, and text
@@ -88,7 +137,9 @@ class EddieButton extends StatelessWidget {
         height: iconSize,
         child: CircularProgressIndicator(
           strokeWidth: 2,
-          color: EddieColors.getButtonText(context),
+          color: buttonType == ButtonType.primary
+              ? EddieColors.getButtonText(context)
+              : EddieColors.getPrimary(context),
         ),
       );
     }
@@ -105,7 +156,7 @@ class EddieButton extends StatelessWidget {
           SizedBox(width: EddieConstants.spacingSm),
         ],
         Text(
-          text,
+          label,
           style: _getTextStyle(context),
         ),
         if (trailingIconWidget != null) ...[

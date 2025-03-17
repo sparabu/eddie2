@@ -4,6 +4,8 @@ import '../models/message.dart';
 import '../theme/eddie_theme.dart';
 import '../theme/eddie_colors.dart';
 import '../theme/eddie_text_styles.dart';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 
 /// Message Bubble
 /// 
@@ -28,6 +30,8 @@ class MessageBubble extends StatelessWidget {
     late final String messageContent;
     late final String messageTimestamp;
     late final bool isUser;
+    String? attachmentPath;
+    String? attachmentName;
     
     if (message is String) {
       messageContent = message as String;
@@ -38,6 +42,8 @@ class MessageBubble extends StatelessWidget {
       messageContent = msg.content;
       messageTimestamp = DateFormat('HH:mm').format(msg.timestamp);
       isUser = msg.role == MessageRole.user;
+      attachmentPath = msg.attachmentPath;
+      attachmentName = msg.attachmentName;
     } else {
       messageContent = "Unsupported message type";
       messageTimestamp = DateFormat('HH:mm').format(DateTime.now());
@@ -80,6 +86,42 @@ class MessageBubble extends StatelessWidget {
                   messageContent,
                   style: EddieTextStyles.body1(context),
                 ),
+                // Display attachment if available
+                if (attachmentPath != null && attachmentName != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: EddieColors.getSurfaceVariant(context),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: EddieColors.getColor(context, EddieColors.outlineLight, EddieColors.outlineDark),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.attach_file,
+                          size: 16,
+                          color: EddieTheme.getTextSecondary(context),
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            attachmentName,
+                            style: EddieTextStyles.caption(context).copyWith(
+                              color: EddieTheme.getTextSecondary(context),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 4),
                 Row(
                   mainAxisSize: MainAxisSize.min,

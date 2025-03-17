@@ -3,30 +3,37 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/message.dart';
 import 'dart:math' as Math;
 
 class OpenAIService {
   static const String _baseUrl = 'https://api.openai.com/v1';
-  static const String _apiKeyStorageKey = 'openai_api_key';
   
   final Dio _dio = Dio();
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   
-  Future<String?> getApiKey() async {
-    return await _secureStorage.read(key: _apiKeyStorageKey);
+  // Get API key from environment variables
+  String? getApiKey() {
+    return dotenv.env['OPENAI_API_KEY'];
+  }
+  
+  // These methods are kept for backward compatibility but don't actually store anything
+  Future<String?> getApiKeyLegacy() async {
+    return getApiKey();
   }
   
   Future<void> saveApiKey(String apiKey) async {
-    await _secureStorage.write(key: _apiKeyStorageKey, value: apiKey);
+    // No longer saving to secure storage since we're using .env file
+    debugPrint('API key management moved to .env file - this method is deprecated');
   }
   
   Future<void> deleteApiKey() async {
-    await _secureStorage.delete(key: _apiKeyStorageKey);
+    // No longer deleting from secure storage since we're using .env file
+    debugPrint('API key management moved to .env file - this method is deprecated');
   }
   
   Future<bool> hasApiKey() async {
-    final apiKey = await getApiKey();
+    final apiKey = getApiKey();
     return apiKey != null && apiKey.isNotEmpty;
   }
   
@@ -37,9 +44,9 @@ class OpenAIService {
     String languageCode = 'en',
   }) async {
     try {
-      final apiKey = await getApiKey();
+      final apiKey = getApiKey();
       if (apiKey == null || apiKey.isEmpty) {
-        throw Exception('API key not found. Please add your OpenAI API key in settings.');
+        throw Exception('API key not found in .env file. Please add your OpenAI API key to the OPENAI_API_KEY variable.');
       }
       
       _dio.options.headers = {
@@ -109,29 +116,56 @@ class OpenAIService {
     String model,
   ) async {
     try {
-      final apiKey = await getApiKey();
-      final file = File(filePath);
-      final fileName = file.path.split('/').last;
-      final bytes = await file.readAsBytes();
-      final base64File = base64Encode(bytes);
+      final apiKey = getApiKey();
       
-      // Add the file content to the messages
-      messages.add({
-        'role': 'user',
-        'content': [
-          {
-            'type': 'text',
-            'text': 'I am sending you a file named $fileName. Please analyze it.'
-          },
-          {
-            'type': 'file_content',
-            'file_content': {
-              'name': fileName,
-              'data': base64File,
+      try {
+        final file = File(filePath);
+        if (!await file.exists()) {
+          throw Exception('File not found at path: $filePath');
+        }
+        
+        final fileName = file.path.split('/').last;
+        final bytes = await file.readAsBytes();
+        
+        // Check if file is readable and not corrupted
+        if (bytes.isEmpty) {
+          throw Exception('File is empty or corrupted');
+        }
+        
+        // Safely encode bytes to base64
+        String base64File;
+        try {
+          base64File = base64Encode(bytes);
+        } catch (e) {
+          debugPrint('Error encoding file to base64: $e');
+          throw Exception('Could not encode file: $e');
+        }
+        
+        // Add the file content to the messages
+        messages.add({
+          'role': 'user',
+          'content': [
+            {
+              'type': 'text',
+              'text': 'I am sending you a file named $fileName. Please analyze it.'
+            },
+            {
+              'type': 'file_content',
+              'file_content': {
+                'name': fileName,
+                'data': base64File,
+              }
             }
-          }
-        ]
-      });
+          ]
+        });
+      } catch (e) {
+        // If there's any error with the file, add a message explaining the issue
+        debugPrint('Error processing file: $e');
+        messages.add({
+          'role': 'user',
+          'content': 'I tried to send you a file, but there was an error: $e'
+        });
+      }
       
       final response = await _dio.post(
         '$_baseUrl/chat/completions',
@@ -155,9 +189,9 @@ class OpenAIService {
   
   Future<List<Map<String, String>>> detectQAPairs(String text, {String languageCode = 'en'}) async {
     try {
-      final apiKey = await getApiKey();
+      final apiKey = getApiKey();
       if (apiKey == null || apiKey.isEmpty) {
-        throw Exception('API key not found. Please add your OpenAI API key in settings.');
+        throw Exception('API key not found in .env file. Please add your OpenAI API key to the OPENAI_API_KEY variable.');
       }
       
       _dio.options.headers = {
@@ -204,69 +238,31 @@ Example output format:
         final content = data['choices'][0]['message']['content'];
         
         try {
-          final jsonData = jsonDecode(content);
-          
-          // Handle the case where the response is a JSON object with a "pairs" key
-          if (jsonData is Map && jsonData.containsKey('pairs')) {
-            final pairs = jsonData['pairs'] as List;
-            return pairs.map<Map<String, String>>((pair) {
-              return {
-                'question': pair['question'] as String,
-                'answer': pair['answer'] as String,
-              };
-            }).toList();
-          } 
-          // Handle the case where the response is a direct array of Q&A pairs
-          else if (jsonData is List) {
-            return jsonData.map<Map<String, String>>((pair) {
-              return {
-                'question': pair['question'] as String,
-                'answer': pair['answer'] as String,
-              };
-            }).toList();
-          }
-          // If no valid format is found but we have text, create a single Q&A pair
-          else if (text.isNotEmpty) {
-            // Create a fallback Q&A pair from the entire message
-            final lines = text.split('\n');
-            String question = '';
-            String answer = '';
-            
-            // Try to find a question in the first few lines
-            for (int i = 0; i < Math.min(5, lines.length); i++) {
-              if (lines[i].trim().endsWith('?')) {
-                question = lines[i].trim();
-                answer = text.substring(text.indexOf(question) + question.length).trim();
-                break;
-              }
-            }
-            
-            // If no question found, use first line as question and rest as answer
-            if (question.isEmpty && lines.isNotEmpty) {
-              question = lines[0].trim();
-              if (lines.length > 1) {
-                answer = lines.sublist(1).join('\n').trim();
-              }
-            }
-            
-            if (question.isNotEmpty) {
-              return [{
-                'question': question,
-                'answer': answer.isEmpty ? text : answer,
-              }];
-            }
-          }
-          
-          debugPrint('No valid Q&A pairs format found in response');
+          final decodedJson = jsonDecode(content);
+          final pairs = decodedJson['pairs'] as List;
+          return pairs.map<Map<String, String>>((pair) {
+            return {
+              'question': pair['question'],
+              'answer': pair['answer'],
+            };
+          }).toList();
         } catch (e) {
-          debugPrint('Error parsing Q&A pairs: $e');
+          debugPrint('Error parsing JSON response: $e');
+          return [];
         }
+      } else {
+        throw Exception('Failed to get response: ${response.statusCode}');
       }
-      
-      return [];
+    } on DioException catch (e) {
+      if (e.response != null) {
+        final errorData = e.response?.data;
+        final errorMessage = errorData?['error']?['message'] ?? 'Unknown API error';
+        throw Exception('API Error: $errorMessage');
+      } else {
+        throw Exception('Network error: ${e.message}');
+      }
     } catch (e) {
-      debugPrint('Error detecting Q&A pairs: $e');
-      return [];
+      throw Exception('Error detecting Q&A pairs: $e');
     }
   }
 } 

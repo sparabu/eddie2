@@ -14,6 +14,7 @@ import '../theme/eddie_text_styles.dart';
 import '../widgets/chat_input.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/qa_pair_form.dart';
+import '../widgets/eddie_logo.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({Key? key}) : super(key: key);
@@ -262,7 +263,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Image.asset('assets/images/logo.png', width: 64, height: 64),
+                      const EddieLogo(size: 64, withText: false),
                       const SizedBox(height: 24),
                       Text(
                         l10n.chatWelcomeTitle,

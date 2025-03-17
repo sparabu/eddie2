@@ -585,4 +585,26 @@ class AuthService {
         return Exception(e.message ?? 'An unknown error occurred.');
     }
   }
+  
+  // Sign in anonymously
+  Future<app_models.User?> signInAnonymously() async {
+    try {
+      debugPrint('Attempting anonymous sign-in');
+      final userCredential = await _firebaseAuth.signInAnonymously();
+      
+      if (userCredential.user != null) {
+        // Ensure user data exists in Firestore
+        await _ensureUserInFirestore(userCredential.user!, 'anonymous');
+        debugPrint('User signed in anonymously: ${userCredential.user?.uid}');
+        return await getCurrentUser();
+      }
+      return null;
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      debugPrint('Firebase Auth Error during anonymous sign-in: ${e.code} - ${e.message}');
+      throw _handleAuthException(e);
+    } catch (e) {
+      debugPrint('Unexpected error during anonymous sign-in: $e');
+      throw Exception('An unexpected error occurred. Please try again later.');
+    }
+  }
 } 
