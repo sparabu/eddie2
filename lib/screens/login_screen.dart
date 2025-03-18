@@ -141,7 +141,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const EddieLogo(size: 64, withText: true),
+                  const EddieLogo(size: 64, showText: true),
                   const SizedBox(height: 32),
                   Text(
                     localizations.loginToEddie,

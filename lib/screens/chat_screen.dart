@@ -8,8 +8,8 @@ import '../models/message.dart';
 import '../models/qa_pair.dart';
 import '../providers/chat_provider.dart';
 import '../providers/qa_provider.dart';
-import '../theme/eddie_theme.dart';
 import '../theme/eddie_colors.dart';
+import '../theme/eddie_constants.dart';
 import '../theme/eddie_text_styles.dart';
 import '../widgets/chat_input.dart';
 import '../widgets/message_bubble.dart';
@@ -75,7 +75,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.apiError(e.toString())),
-          backgroundColor: EddieColors.getColor(context, Colors.red.shade200, Colors.red.shade800),
+          backgroundColor: EddieColors.getError(context),
         ),
       );
     } finally {
@@ -149,7 +149,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.apiError(e.toString())),
-          backgroundColor: EddieColors.getColor(context, Colors.red.shade200, Colors.red.shade800),
+          backgroundColor: EddieColors.getError(context),
         ),
       );
     } finally {
@@ -194,7 +194,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.apiError(e.toString())),
-          backgroundColor: EddieColors.getColor(context, Colors.red.shade200, Colors.red.shade800),
+          backgroundColor: EddieColors.getError(context),
         ),
       );
     } finally {
@@ -215,7 +215,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.qaPairsDetected(pairs.length)),
-            backgroundColor: EddieTheme.getPrimary(context),
+            backgroundColor: EddieColors.getPrimary(context),
           ),
         );
       } else {
@@ -242,7 +242,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(l10n.noQAPairsDetectedMessage),
-                  const SizedBox(height: 16),
+                  SizedBox(height: EddieConstants.spacingMd),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -271,7 +271,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(l10n.qaPairCreatedSuccess),
-                                        backgroundColor: EddieTheme.getPrimary(context),
+                                        backgroundColor: EddieColors.getPrimary(context),
                                       ),
                                     );
                                   },
@@ -299,8 +299,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l10n.errorDetectingQAPairs(e.toString())),
-          backgroundColor: EddieColors.getColor(context, Colors.red.shade200, Colors.red.shade800),
+          content: Text(l10n.apiError(e.toString())),
+          backgroundColor: EddieColors.getError(context),
         ),
       );
     }
@@ -332,7 +332,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const EddieLogo(size: 64, withText: false),
+                      const EddieLogo(size: 64),
                       const SizedBox(height: 24),
                       Text(
                         l10n.chatWelcomeTitle,
@@ -370,10 +370,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         if (_isLoading)
           Container(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            color: EddieTheme.getSurface(context),
+            color: EddieColors.getSurface(context),
             child: Center(
               child: SpinKitThreeBounce(
-                color: EddieTheme.getPrimary(context),
+                color: EddieColors.getPrimary(context),
                 size: 24,
               ),
             ),

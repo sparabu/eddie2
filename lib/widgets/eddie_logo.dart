@@ -1,54 +1,77 @@
 import 'package:flutter/material.dart';
-import '../theme/eddie_theme.dart';
+import '../theme/eddie_colors.dart';
+import '../theme/eddie_constants.dart';
+import '../theme/eddie_text_styles.dart';
 
-/// Eddie Logo Widget
+/// Eddie Logo
 /// 
-/// A customizable logo widget for the Eddie app.
+/// A simple logo widget for Eddie with customizable size and optional text.
 class EddieLogo extends StatelessWidget {
   final double size;
-  final bool withText;
-  final bool useAltColor;
-
+  final bool showText;
+  final bool useFullName;
+  final Color? customColor;
+  
+  // For backward compatibility
+  static const String deprecationMessage = 'The withText parameter is deprecated. Use showText instead.';
+  
   const EddieLogo({
     Key? key,
-    this.size = 48.0,
-    this.withText = false,
-    this.useAltColor = false,
+    this.size = 32,
+    this.showText = false,
+    this.useFullName = false,
+    this.customColor,
   }) : super(key: key);
-
+  
+  // Deprecated constructor with withText parameter for backward compatibility
+  @Deprecated(deprecationMessage)
+  EddieLogo.legacy({
+    Key? key,
+    double size = 32,
+    bool withText = false,
+    bool useFullName = false,
+    Color? customColor,
+  }) : this(
+      key: key,
+      size: size,
+      showText: withText,
+      useFullName: useFullName,
+      customColor: customColor,
+  );
+  
   @override
   Widget build(BuildContext context) {
-    final Color primaryColor = EddieTheme.getPrimary(context);
+    final Color primaryColor = customColor ?? EddieColors.getPrimary(context);
     
     return Row(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
           width: size,
           height: size,
           decoration: BoxDecoration(
             color: primaryColor,
-            borderRadius: BorderRadius.circular(size * 0.16), // Rounded corners
+            borderRadius: BorderRadius.circular(EddieConstants.borderRadiusSmall),
           ),
           child: Center(
             child: Text(
               'E',
-              style: TextStyle(
-                color: Colors.white,
+              style: EddieTextStyles.heading2(context).copyWith(
                 fontSize: size * 0.5,
+                color: Colors.white, // Use white for contrast on primary color
                 fontWeight: FontWeight.bold,
               ),
             ),
           ),
         ),
-        if (withText) ...[
-          const SizedBox(width: 12),
+        if (showText) ...[
+          SizedBox(width: size * 0.25),
           Text(
-            'Eddie',
-            style: TextStyle(
+            useFullName ? 'Eddie AI' : 'eddie',
+            style: EddieTextStyles.heading2(context).copyWith(
               fontSize: size * 0.5,
-              fontWeight: FontWeight.bold,
-              color: EddieTheme.getTextPrimary(context),
+              color: EddieColors.getTextPrimary(context),
             ),
           ),
         ],

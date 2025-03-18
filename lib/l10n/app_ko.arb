@@ -178,5 +178,7 @@
   "save": "저장",
   "deleteAccount": "계정 삭제",
   "accountDeleted": "계정이 성공적으로 삭제되었습니다",
-  "logout": "로그아웃"
+  "logout": "로그아웃",
+  "editTitle": "제목 수정",
+  "enterProjectTitle": "프로젝트 제목 입력"
 } 

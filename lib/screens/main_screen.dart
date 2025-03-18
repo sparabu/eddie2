@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../models/chat.dart';
 import '../models/qa_pair.dart';
+import '../models/project.dart';
 import '../providers/chat_provider.dart';
 import '../providers/qa_provider.dart';
 import '../providers/settings_provider.dart';
-import '../theme/eddie_theme.dart';
+import '../providers/project_provider.dart';
 import '../theme/eddie_colors.dart';
+import '../theme/eddie_constants.dart';
 import '../theme/eddie_text_styles.dart';
 import '../widgets/eddie_logo.dart';
 import '../widgets/theme_toggle.dart';
@@ -16,6 +18,7 @@ import '../widgets/new_chat_button.dart';
 import '../widgets/qa_list_item.dart';
 import '../widgets/sidebar_item.dart';
 import '../widgets/sidebar_section.dart';
+import '../widgets/project_sidebar_section.dart';
 import '../widgets/qa_pair_form.dart';
 import '../widgets/view_all_link.dart';
 import 'chat_screen.dart';
@@ -23,6 +26,7 @@ import 'qa_screen.dart';
 import 'settings_screen.dart';
 import 'all_chats_screen.dart';
 import 'all_qa_pairs_screen.dart';
+import 'project_screen.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({Key? key}) : super(key: key);
@@ -36,6 +40,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   bool _isSidebarExpanded = true;
   bool _showAllChats = false;
   bool _showAllQAPairs = false;
+  bool _showProject = false;
   
   final List<Widget> _screens = [
     const ChatScreen(),
@@ -68,15 +73,19 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
   
   void _createNewChat() async {
-    // Clear the current chat selection
+    // Clear the current chat selection - this triggers the ChatScreen to create a new chat
     ref.read(selectedChatIdProvider.notifier).state = null;
     
+    // Clear project selection to ensure we're in standalone chat mode
+    ref.read(selectedProjectIdProvider.notifier).state = null;
+    
     // Switch to chat screen if not already there
-    if (_selectedIndex != 0) {
+    if (_selectedIndex != 0 || _showProject || _showAllChats || _showAllQAPairs) {
       setState(() {
         _selectedIndex = 0;
         _showAllChats = false;
         _showAllQAPairs = false;
+        _showProject = false; // Ensure we're not showing a project
       });
     } else {
       // Force a rebuild even if we're already on the chat screen
@@ -96,14 +105,19 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
   
   void _selectChat(String chatId) {
+    // Set the selected chat
     ref.read(selectedChatIdProvider.notifier).state = chatId;
     
+    // Clear project selection to ensure we're in standalone chat mode
+    ref.read(selectedProjectIdProvider.notifier).state = null;
+    
     // Switch to chat screen if not already there
-    if (_selectedIndex != 0) {
+    if (_selectedIndex != 0 || _showProject || _showAllChats || _showAllQAPairs) {
       setState(() {
         _selectedIndex = 0;
         _showAllChats = false;
         _showAllQAPairs = false;
+        _showProject = false; // Ensure we're not showing a project
       });
     }
   }
@@ -174,6 +188,21 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     });
   }
   
+  void _renameChat(String chatId, String newTitle) async {
+    await ref.read(chatProvider.notifier).updateChatTitle(chatId, newTitle);
+  }
+  
+  void _selectProject(String projectId) {
+    ref.read(selectedProjectIdProvider.notifier).state = projectId;
+    
+    setState(() {
+      _showProject = true;
+      _showAllChats = false;
+      _showAllQAPairs = false;
+      // No need to change _selectedIndex as we're showing a different screen type
+    });
+  }
+  
   @override
   Widget build(BuildContext context) {
     final isDarkMode = ref.watch(settingsProvider).isDarkMode;
@@ -182,15 +211,18 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final isSmallScreen = screenWidth < 600;
     final l10n = AppLocalizations.of(context)!;
     
-    // Get chats and QA pairs
+    // Get chats, QA pairs, and projects
     final chats = ref.watch(chatProvider);
     final qaPairs = ref.watch(qaPairProvider);
     final selectedChatId = ref.watch(selectedChatIdProvider);
     final selectedQAPairId = ref.watch(selectedQAPairIdProvider);
+    final selectedProjectId = ref.watch(selectedProjectIdProvider);
     
     // Determine which screen to show
     Widget contentScreen;
-    if (_showAllChats) {
+    if (_showProject && selectedProjectId != null) {
+      contentScreen = ProjectScreen(projectId: selectedProjectId);
+    } else if (_showAllChats) {
       contentScreen = AllChatsScreen(
         chats: chats,
         selectedChatId: selectedChatId,
@@ -205,6 +237,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         onDeleteQAPair: _deleteQAPair,
       );
     } else {
+      // Default to the regular screens based on selectedIndex
       contentScreen = _screens[_selectedIndex];
     }
     
@@ -215,7 +248,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           if (!isSmallScreen && _isSidebarExpanded)
             Container(
               width: 260,
-              color: EddieTheme.getSurface(context),
+              color: EddieColors.getSurface(context),
               child: Column(
                 children: [
                   // Toggle sidebar button (moved to top left)
@@ -233,23 +266,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                           tooltip: l10n.collapseSidebar,
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
-                          color: EddieTheme.getTextPrimary(context),
+                          color: EddieColors.getTextPrimary(context),
                         ),
                         const Spacer(),
                       ],
-                    ),
-                  ),
-                  
-                  // New Chat button
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: OutlinedButton.icon(
-                      onPressed: _createNewChat,
-                      icon: const Icon(Icons.add_circle_outline),
-                      label: Text(l10n.newChatButton ?? "New Chat"),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(40),
-                      ),
                     ),
                   ),
                   
@@ -258,6 +278,28 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                     child: ListView(
                       padding: EdgeInsets.zero,
                       children: [
+                        // Projects section
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: ProjectSidebarSection(
+                            onSelectProject: _selectProject,
+                            selectedProjectId: selectedProjectId,
+                          ),
+                        ),
+                        
+                        // New Chat button - moved below Projects
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: OutlinedButton.icon(
+                            onPressed: _createNewChat,
+                            icon: const Icon(Icons.add_circle_outline),
+                            label: Text(l10n.newChatButton ?? "New Chat"),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(40),
+                            ),
+                          ),
+                        ),
+                        
                         // Chat section
                         Padding(
                           padding: const EdgeInsets.all(16),
@@ -289,44 +331,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                   final recentChats = sortedChats.take(5).toList();
                                   
                                   return recentChats.map((chat) {
-                                    return InkWell(
+                                    return SidebarItem(
+                                      id: chat.id,
+                                      title: chat.title,
+                                      icon: Icons.chat_bubble_outline,
+                                      isSelected: chat.id == selectedChatId && _selectedIndex == 0 && !_showAllQAPairs,
                                       onTap: () => _selectChat(chat.id),
-                                      borderRadius: BorderRadius.circular(4),
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.chat_bubble_outline,
-                                              size: 16,
-                                              color: chat.id == selectedChatId && _selectedIndex == 0 && !_showAllQAPairs
-                                                  ? EddieTheme.getPrimary(context)
-                                                  : EddieTheme.getTextSecondary(context),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: Text(
-                                                chat.title,
-                                                style: EddieTextStyles.body2(context).copyWith(
-                                                  color: chat.id == selectedChatId && _selectedIndex == 0 && !_showAllQAPairs
-                                                      ? EddieTheme.getPrimary(context)
-                                                      : EddieTheme.getTextPrimary(context),
-                                                  fontWeight: chat.id == selectedChatId && _selectedIndex == 0 && !_showAllQAPairs
-                                                      ? FontWeight.bold
-                                                      : FontWeight.normal,
-                                                ),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                            if (chat.id == selectedChatId && _selectedIndex == 0 && !_showAllQAPairs)
-                                              Icon(
-                                                Icons.check,
-                                                size: 16,
-                                                color: EddieTheme.getPrimary(context),
-                                              ),
-                                          ],
-                                        ),
-                                      ),
+                                      onDelete: () => _deleteChat(chat.id),
+                                      onRename: (newTitle) => _renameChat(chat.id, newTitle),
                                     );
                                   }).toList();
                                 })(),
@@ -339,13 +351,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                       Text(
                                         l10n.viewAll,
                                         style: EddieTextStyles.caption(context).copyWith(
-                                          color: EddieTheme.getPrimary(context),
+                                          color: EddieColors.getPrimary(context),
                                         ),
                                       ),
                                       Icon(
                                         Icons.chevron_right,
                                         size: 14,
-                                        color: EddieTheme.getPrimary(context),
+                                        color: EddieColors.getPrimary(context),
                                       ),
                                     ],
                                   ),
@@ -378,7 +390,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                     icon: Icon(
                                       Icons.add,
                                       size: 18,
-                                      color: EddieTheme.getTextSecondary(context),
+                                      color: EddieColors.getTextSecondary(context),
                                     ),
                                     onPressed: _createNewQAPair,
                                     padding: EdgeInsets.zero,
@@ -413,8 +425,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                               Icons.question_answer_outlined,
                                               size: 16,
                                               color: qaPair.id == selectedQAPairId && _selectedIndex == 1 && !_showAllChats
-                                                  ? EddieTheme.getPrimary(context)
-                                                  : EddieTheme.getTextSecondary(context),
+                                                  ? EddieColors.getPrimary(context)
+                                                  : EddieColors.getTextSecondary(context),
                                             ),
                                             const SizedBox(width: 8),
                                             Expanded(
@@ -422,8 +434,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                                 qaPair.question,
                                                 style: EddieTextStyles.body2(context).copyWith(
                                                   color: qaPair.id == selectedQAPairId && _selectedIndex == 1 && !_showAllChats
-                                                      ? EddieTheme.getPrimary(context)
-                                                      : EddieTheme.getTextPrimary(context),
+                                                      ? EddieColors.getPrimary(context)
+                                                      : EddieColors.getTextPrimary(context),
                                                   fontWeight: qaPair.id == selectedQAPairId && _selectedIndex == 1 && !_showAllChats
                                                       ? FontWeight.bold
                                                       : FontWeight.normal,
@@ -435,7 +447,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                               Icon(
                                                 Icons.check,
                                                 size: 16,
-                                                color: EddieTheme.getPrimary(context),
+                                                color: EddieColors.getPrimary(context),
                                               ),
                                           ],
                                         ),
@@ -452,13 +464,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                       Text(
                                         l10n.viewAll,
                                         style: EddieTextStyles.caption(context).copyWith(
-                                          color: EddieTheme.getPrimary(context),
+                                          color: EddieColors.getPrimary(context),
                                         ),
                                       ),
                                       Icon(
                                         Icons.chevron_right,
                                         size: 14,
-                                        color: EddieTheme.getPrimary(context),
+                                        color: EddieColors.getPrimary(context),
                                       ),
                                     ],
                                   ),
@@ -480,7 +492,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                     decoration: BoxDecoration(
                       border: Border(
                         top: BorderSide(
-                          color: EddieTheme.getColor(context, EddieColors.outlineLight, EddieColors.outlineDark),
+                          color: EddieColors.getOutline(context),
                           width: 1,
                         ),
                       ),
@@ -499,16 +511,16 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                               Icons.settings_outlined,
                               size: 16,
                               color: _selectedIndex == 2
-                                  ? EddieTheme.getPrimary(context)
-                                  : EddieTheme.getTextSecondary(context),
+                                  ? EddieColors.getPrimary(context)
+                                  : EddieColors.getTextSecondary(context),
                             ),
                             const SizedBox(width: 8),
                             Text(
                               l10n.settingsTabLabel,
                               style: EddieTextStyles.body2(context).copyWith(
                                 color: _selectedIndex == 2
-                                    ? EddieTheme.getPrimary(context)
-                                    : EddieTheme.getTextPrimary(context),
+                                    ? EddieColors.getPrimary(context)
+                                    : EddieColors.getTextPrimary(context),
                                 fontWeight: _selectedIndex == 2 ? FontWeight.bold : FontWeight.normal,
                               ),
                             ),
@@ -530,7 +542,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 child: Container(
                   width: 1,
                   height: double.infinity,
-                  color: EddieTheme.getColor(context, EddieColors.outlineLight, EddieColors.outlineDark),
+                  color: EddieColors.getOutline(context),
                 ),
               ),
             ),
@@ -544,10 +556,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   height: 56, // Fixed height for the app bar
                   decoration: BoxDecoration(
-                    color: EddieTheme.getSurface(context),
+                    color: EddieColors.getSurface(context),
                     border: Border(
                       bottom: BorderSide(
-                        color: EddieTheme.getColor(context, EddieColors.outlineLight, EddieColors.outlineDark),
+                        color: EddieColors.getOutline(context),
                         width: 1,
                       ),
                     ),
@@ -564,13 +576,48 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                           tooltip: l10n.expandSidebar,
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
-                          color: EddieTheme.getTextPrimary(context),
+                          color: EddieColors.getTextPrimary(context),
                         ),
                       if (!_isSidebarExpanded)
                         const SizedBox(width: 16),
-                      const EddieLogo(size: 24, withText: true),
+                      const EddieLogo(size: 24, showText: true),
                       const SizedBox(width: 8),
-                      if (_selectedIndex == 0 && selectedChatId != null)
+                      if (_showProject && selectedProjectId != null)
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Text(
+                                l10n.projects,
+                                style: EddieTextStyles.body1(context).copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                child: Icon(
+                                  Icons.chevron_right,
+                                  size: 18,
+                                  color: EddieColors.getTextSecondary(context),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 3, // Give the title more space in the row
+                                child: Text(
+                                  ref.watch(projectProvider)
+                                      .firstWhere(
+                                        (p) => p.id == selectedProjectId,
+                                        orElse: () => Project(title: ''),
+                                      )
+                                      .title,
+                                  style: EddieTextStyles.body1(context),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else if (_selectedIndex == 0 && selectedChatId != null)
                         Expanded(
                           child: Row(
                             children: [
@@ -585,7 +632,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                 child: Icon(
                                   Icons.chevron_right,
                                   size: 18,
-                                  color: EddieTheme.getTextSecondary(context),
+                                  color: EddieColors.getTextSecondary(context),
                                 ),
                               ),
                               Expanded(
@@ -615,7 +662,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                 child: Icon(
                                   Icons.chevron_right,
                                   size: 18,
-                                  color: EddieTheme.getTextSecondary(context),
+                                  color: EddieColors.getTextSecondary(context),
                                 ),
                               ),
                               Text(
@@ -640,7 +687,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                 child: Icon(
                                   Icons.chevron_right,
                                   size: 18,
-                                  color: EddieTheme.getTextSecondary(context),
+                                  color: EddieColors.getTextSecondary(context),
                                 ),
                               ),
                               Expanded(
@@ -670,7 +717,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                 child: Icon(
                                   Icons.chevron_right,
                                   size: 18,
-                                  color: EddieTheme.getTextSecondary(context),
+                                  color: EddieColors.getTextSecondary(context),
                                 ),
                               ),
                               Text(

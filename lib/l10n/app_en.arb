@@ -7,6 +7,7 @@
   "chatTabLabel": "Chats",
   "qaTabLabel": "Recent Q&A Pairs",
   "settingsTabLabel": "Settings",
+  "projects": "Projects",
   
   "newChatButton": "New Chat",
   "deleteChatButton": "Delete Chat",
@@ -214,5 +215,22 @@
   "save": "Save",
   "deleteAccount": "Delete Account",
   "accountDeleted": "Your account has been deleted successfully",
-  "logout": "Logout"
+  "logout": "Logout",
+  
+  "createNewProject": "Create new project",
+  "noProjectsYet": "No projects yet",
+  "projectNotFoundError": "Project not found",
+  "description": "Description",
+  "editDescription": "Edit description",
+  "enterProjectDescription": "Enter project description",
+  "noDescriptionProvided": "No description provided",
+  "projectChats": "Project Chats",
+  "newChat": "New Chat",
+  "selectOrCreateChat": "Select or create a chat to start",
+  "startAChat": "Start a chat",
+  "startAChatDescription": "Create a new chat to start working on this project",
+  "cancel": "Cancel",
+  "save": "Save",
+  "editTitle": "Edit Title",
+  "enterProjectTitle": "Enter project title"
 } 

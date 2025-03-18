@@ -11,6 +11,7 @@ class Chat {
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<Message> messages;
+  final String? projectId; // ID of the project this chat belongs to, if any
 
   Chat({
     String? id,
@@ -18,6 +19,7 @@ class Chat {
     DateTime? createdAt,
     DateTime? updatedAt,
     List<Message>? messages,
+    this.projectId,
   })  : id = id ?? const Uuid().v4(),
         createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now(),
@@ -32,6 +34,7 @@ class Chat {
     DateTime? createdAt,
     DateTime? updatedAt,
     List<Message>? messages,
+    String? projectId,
   }) {
     return Chat(
       id: id ?? this.id,
@@ -39,6 +42,7 @@ class Chat {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
       messages: messages ?? List.from(this.messages),
+      projectId: projectId ?? this.projectId,
     );
   }
 

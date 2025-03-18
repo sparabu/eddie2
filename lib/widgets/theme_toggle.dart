@@ -7,6 +7,7 @@ import '../theme/eddie_theme.dart';
 
 /// Theme Toggle
 /// 
+/// @deprecated This is a legacy component. Use EddieThemeToggle instead.
 /// A toggle button for switching between light and dark themes.
 class ThemeToggle extends ConsumerWidget {
   const ThemeToggle({Key? key}) : super(key: key);

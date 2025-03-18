@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../models/chat.dart';
 import '../widgets/chat_list_item.dart';
-import '../theme/eddie_theme.dart';
+import '../theme/eddie_colors.dart';
+import '../theme/eddie_constants.dart';
 import '../theme/eddie_text_styles.dart';
 import '../widgets/eddie_logo.dart';
 
@@ -30,7 +31,7 @@ class AllChatsScreen extends StatelessWidget {
       ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(EddieConstants.spacingMd),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -38,7 +39,7 @@ class AllChatsScreen extends StatelessWidget {
             l10n.chatTabLabel,
             style: EddieTextStyles.heading2(context),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: EddieConstants.spacingMd),
           Expanded(
             child: sortedChats.isEmpty
                 ? Center(
@@ -46,16 +47,12 @@ class AllChatsScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const EddieLogo(size: 64),
-                        const SizedBox(height: 24),
+                        SizedBox(height: EddieConstants.spacingLg),
                         Text(
                           l10n.noChatsYet,
-                          style: EddieTextStyles.heading2(context),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          "Start a new chat to begin a conversation.",
-                          style: EddieTextStyles.body2(context),
-                          textAlign: TextAlign.center,
+                          style: EddieTextStyles.body1(context).copyWith(
+                            color: EddieColors.getTextSecondary(context),
+                          ),
                         ),
                       ],
                     ),
@@ -64,14 +61,11 @@ class AllChatsScreen extends StatelessWidget {
                     itemCount: sortedChats.length,
                     itemBuilder: (context, index) {
                       final chat = sortedChats[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: ChatListItem(
-                          chat: chat,
-                          isSelected: chat.id == selectedChatId,
-                          onTap: () => onSelectChat(chat.id),
-                          onDelete: () => onDeleteChat(chat.id),
-                        ),
+                      return ChatListItem(
+                        chat: chat,
+                        isSelected: chat.id == selectedChatId,
+                        onTap: () => onSelectChat(chat.id),
+                        onDelete: () => onDeleteChat(chat.id),
                       );
                     },
                   ),

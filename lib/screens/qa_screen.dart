@@ -222,7 +222,7 @@ class _QAScreenState extends ConsumerState<QAScreen> {
                                   Icon(
                                     Icons.question_answer,
                                     size: 20,
-                                    color: EddieTheme.getPrimary(context),
+                                    color: EddieColors.getPrimary(context),
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
@@ -288,13 +288,13 @@ class _QAScreenState extends ConsumerState<QAScreen> {
                                     return Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                       decoration: BoxDecoration(
-                                        color: EddieTheme.getPrimary(context).withOpacity(0.1),
+                                        color: EddieColors.getPrimary(context).withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(16),
                                       ),
                                       child: Text(
                                         tag,
                                         style: EddieTextStyles.caption(context).copyWith(
-                                          color: EddieTheme.getPrimary(context),
+                                          color: EddieColors.getPrimary(context),
                                         ),
                                       ),
                                     );

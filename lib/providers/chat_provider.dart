@@ -6,6 +6,8 @@ import '../services/storage_service.dart';
 import '../services/openai_service.dart';
 import '../services/file_service.dart';
 import 'locale_provider.dart';
+import 'project_provider.dart';
+import 'settings_provider.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
@@ -25,28 +27,51 @@ class ChatNotifier extends StateNotifier<List<Chat>> {
     state = chats;
   }
   
-  Future<Chat> createChat({required String title}) async {
+  Future<Chat> createChat({required String title, String? projectId}) async {
     // Create a new chat and immediately add it to the state
-    final newChat = Chat(title: title);
+    final newChat = Chat(title: title, projectId: projectId);
     state = [...state, newChat];
     await _storageService.saveChat(newChat);
+    
+    // If this chat is associated with a project, update the project
+    if (projectId != null) {
+      await _ref.read(projectProvider.notifier).addChatToProject(projectId, newChat.id);
+    }
+    
     return newChat;
   }
   
   Future<void> deleteChat(String chatId) async {
+    // Get the chat before removing it
+    final chat = state.firstWhere((c) => c.id == chatId, orElse: () => null as Chat);
+    
+    // Remove from state
     state = state.where((chat) => chat.id != chatId).toList();
     await _storageService.deleteChat(chatId);
+    
+    // If the chat belonged to a project, update the project
+    if (chat != null && chat.projectId != null) {
+      await _ref.read(projectProvider.notifier).removeChatFromProject(chat.projectId!, chatId);
+    }
   }
   
   Future<void> updateChatTitle(String chatId, String newTitle) async {
-    state = state.map((chat) {
-      if (chat.id == chatId) {
-        final updatedChat = chat.copyWith(title: newTitle);
-        _storageService.saveChat(updatedChat);
-        return updatedChat;
-      }
-      return chat;
-    }).toList();
+    final chatIndex = state.indexWhere((chat) => chat.id == chatId);
+    if (chatIndex == -1) {
+      debugPrint('Chat with ID $chatId not found.');
+      return;
+    }
+    
+    final chat = state[chatIndex];
+    final updatedChat = chat.copyWith(title: newTitle);
+    
+    state = [
+      ...state.sublist(0, chatIndex),
+      updatedChat,
+      ...state.sublist(chatIndex + 1),
+    ];
+    
+    await _storageService.saveChat(updatedChat);
   }
   
   Chat? getChat(String chatId) {
@@ -138,6 +163,79 @@ class ChatNotifier extends StateNotifier<List<Chat>> {
       await _storageService.saveChat(updatedChat);
       
       rethrow;
+    }
+  }
+  
+  // Send a message with a system instruction that doesn't appear in the UI
+  Future<void> sendMessageWithSystemInstruction(String chatId, String content, String systemInstruction) async {
+    // Find the chat in the state
+    final chatIndex = state.indexWhere((chat) => chat.id == chatId);
+    if (chatIndex == -1) {
+      debugPrint('Chat with ID $chatId not found.');
+      return;
+    }
+    
+    final chat = state[chatIndex];
+    
+    try {
+      // Get all existing messages from the chat
+      final chatMessages = chat.messages;
+      
+      // Create a system message
+      final systemMessage = Message(
+        role: MessageRole.system,
+        content: systemInstruction,
+      );
+      
+      // Create a list including the system message and all chat messages
+      final allMessages = [systemMessage, ...chatMessages];
+      
+      // Send the request to OpenAI
+      final responseText = await _openAIService.sendMessage(
+        messages: allMessages,
+        model: _ref.read(settingsProvider).selectedModel,
+      );
+      
+      // Create a message from the assistant's response
+      final assistantMessage = Message(
+        role: MessageRole.assistant,
+        content: responseText,
+      );
+      
+      // Update the chat with the assistant's message
+      final updatedMessages = [...chat.messages, assistantMessage];
+      final updatedChat = chat.copyWith(messages: updatedMessages);
+      
+      // Update state and save to storage
+      state = [
+        ...state.sublist(0, chatIndex),
+        updatedChat,
+        ...state.sublist(chatIndex + 1),
+      ];
+      
+      await _storageService.saveChat(updatedChat);
+    } catch (e) {
+      debugPrint('Error in sendMessageWithSystemInstruction: $e');
+      
+      // Create an error message
+      final errorMessage = Message(
+        role: MessageRole.assistant,
+        content: 'Sorry, there was an error processing your request: $e',
+        isError: true,
+      );
+      
+      // Update the chat with the error message
+      final updatedMessages = [...chat.messages, errorMessage];
+      final updatedChat = chat.copyWith(messages: updatedMessages);
+      
+      // Update state and save to storage
+      state = [
+        ...state.sublist(0, chatIndex),
+        updatedChat,
+        ...state.sublist(chatIndex + 1),
+      ];
+      
+      await _storageService.saveChat(updatedChat);
     }
   }
   
@@ -387,6 +485,95 @@ class ChatNotifier extends StateNotifier<List<Chat>> {
     } catch (e) {
       debugPrint('Error sending message with multiple files: $e');
       rethrow;
+    }
+  }
+  
+  // Get chats for a specific project
+  List<Chat> getChatsForProject(String projectId) {
+    return state.where((chat) => chat.projectId == projectId).toList();
+  }
+  
+  // Associate a chat with a project
+  Future<void> addChatToProject(String chatId, String projectId) async {
+    state = state.map((chat) => chat.copyWith(projectId: projectId)).toList();
+    
+    // Update the project as well
+    await _ref.read(projectProvider.notifier).addChatToProject(projectId, chatId);
+  }
+  
+  // Remove a chat from a project
+  Future<void> removeChatFromProject(String chatId) async {
+    final chat = state.firstWhere((c) => c.id == chatId, orElse: () => null as Chat);
+    if (chat == null || chat.projectId == null) return;
+    
+    final projectId = chat.projectId!;
+    
+    state = state.map((chat) {
+      if (chat.id == chatId) {
+        final updatedChat = chat.copyWith(projectId: null);
+        _storageService.saveChat(updatedChat);
+        return updatedChat;
+      }
+      return chat;
+    }).toList();
+    
+    // Update the project as well
+    await _ref.read(projectProvider.notifier).removeChatFromProject(projectId, chatId);
+  }
+  
+  // Delete all chats associated with a project
+  Future<void> deleteProjectChats(String projectId) async {
+    final projectChats = state.where((chat) => chat.projectId == projectId).toList();
+    
+    for (final chat in projectChats) {
+      await deleteChat(chat.id);
+    }
+  }
+  
+  // Get a chat by ID
+  Chat? getChatById(String chatId) {
+    try {
+      return state.firstWhere((chat) => chat.id == chatId);
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  // Process a message with system instruction without showing the response in the UI
+  Future<String> processMessageWithHiddenResponse(String chatId, String content, String systemInstruction) async {
+    // Find the chat in the state
+    final chatIndex = state.indexWhere((chat) => chat.id == chatId);
+    if (chatIndex == -1) {
+      debugPrint('Chat with ID $chatId not found.');
+      return '';
+    }
+    
+    final chat = state[chatIndex];
+    
+    try {
+      // Get all existing messages from the chat
+      final chatMessages = chat.messages;
+      
+      // Create a system message
+      final systemMessage = Message(
+        role: MessageRole.system,
+        content: systemInstruction,
+      );
+      
+      // Create a list including the system message and all chat messages
+      final allMessages = [systemMessage, ...chatMessages];
+      
+      // Send the request to OpenAI but don't display the response in the UI
+      final responseText = await _openAIService.sendMessage(
+        messages: allMessages,
+        model: _ref.read(settingsProvider).selectedModel,
+      );
+      
+      // Return the response without adding it to the chat history
+      return responseText;
+    } catch (e) {
+      debugPrint('Error in processMessageWithHiddenResponse: $e');
+      return 'Error: $e';
     }
   }
 }
