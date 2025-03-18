@@ -1,15 +1,15 @@
 ---
 title: Eddie2 Features Specification
-version: 1.1.0
-last_updated: 2025-03-18
+version: 1.2.0
+last_updated: 2025-03-19
 status: active
 ---
 
 # Eddie2 Features Specification
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
-![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--18-lightgrey.svg)
+![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--19-lightgrey.svg)
 
 ## 🗺️ Navigation
 [Documentation Index](../INDEX.md) > [Product Requirements](.) > Features
@@ -64,6 +64,8 @@ status: active
   - Display of multiple images in a grid layout when attached to the same message.
   - Persistence of image attachments across browser sessions (web platform).
   - All images in a multi-image message are sent to OpenAI for comprehensive analysis.
+  - Preservation of file order exactly as selected by the user in the file picker.
+  - Consistent ordering of files throughout the UI and when sending to the API.
 
 ### 1.4 Enhanced Chat Creation
 - **User Story**: As a user, I want a new chat to appear only after sending a first message, so my chat list doesn't fill with empty placeholders.

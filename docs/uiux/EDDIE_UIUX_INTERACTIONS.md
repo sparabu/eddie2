@@ -1,15 +1,15 @@
 ---
 title: Eddie2 UI/UX Interaction Patterns
-version: 1.1.0
-last_updated: 2025-03-18
+version: 1.2.0
+last_updated: 2025-03-19
 status: active
 ---
 
 # Eddie2 UI/UX Interaction Patterns
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
-![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--18-lightgrey.svg)
+![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--19-lightgrey.svg)
 
 ## 🗺️ Navigation
 [Documentation Index](../INDEX.md) > [UI/UX Documentation](.) > Interaction Patterns
@@ -159,14 +159,14 @@ This optional doc builds on the interaction patterns in [EDDIE_UIUX_SPEC_MAIN.md
 2. File picker dialog opens showing supported image formats (jpg, jpeg, png, webp, gif)
 3. User selects multiple image files (multi-select is supported)
 4. System validates each image (size, format)
-5. If valid, previews of all selected images appear in the input area
+5. If valid, previews of all selected images appear in the input area in the same order as selected
 6. User types a message (optional)
 7. User clicks send button
-8. Message with all image attachments is sent to the AI
+8. Message with all image attachments is sent to the AI, preserving the exact order as selected by the user
 9. Images appear in a grid layout in the user's message bubble
-   - First image is displayed prominently
-   - Additional images are shown in a grid below the main image
-10. AI response references and analyzes all images content
+   - First image (in user's selection order) is displayed prominently
+   - Additional images are shown in a grid below the main image, maintaining the original selection order
+10. AI response references and analyzes all images content in the order they were submitted
 
 #### Error Handling
 - If image is too large: Error message indicating the size limit
