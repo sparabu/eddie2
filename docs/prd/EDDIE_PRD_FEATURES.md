@@ -1,15 +1,15 @@
 ---
 title: Eddie2 Features Specification
-version: 1.2.0
-last_updated: 2025-03-19
+version: 1.3.0
+last_updated: 2025-03-20
 status: active
 ---
 
 # Eddie2 Features Specification
 
-![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
-![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--19-lightgrey.svg)
+![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--20-lightgrey.svg)
 
 ## 🗺️ Navigation
 [Documentation Index](../INDEX.md) > [Product Requirements](.) > Features
@@ -44,6 +44,9 @@ status: active
   - Sidebar can collapse on mobile or user's command.
   - "Recent Chats" in the sidebar for quick switching.
   - "View All" opens a comprehensive chat list.
+  - Context menu for each chat in the sidebar with options to rename or delete the chat.
+  - Three-dot menu appears when a chat is selected, providing quick access to management functions.
+  - Modal dialogs for confirmation of chat deletion or renaming.
 
 ### 1.2 OpenAI Integration
 - **User Story**: As a user, I want to send prompts to the OpenAI API and receive responses, so I can get AI-generated answers to my questions.
@@ -193,6 +196,15 @@ status: active
 - **Key Points**:
   - Model dropdown in Settings.
   - Pass the chosen model to OpenAI.
+
+### 6.4 Chat Management
+- **User Story**: As a user, I want to easily manage my chats directly from the sidebar, so I can keep my chat list organized.
+- **Key Points**:
+  - Context menu (three-dot menu) for each chat in the sidebar.
+  - Rename option to modify chat titles for better organization.
+  - Delete option with confirmation to remove unwanted conversations.
+  - Visual indicators that highlight the currently selected chat.
+  - Streamlined interaction pattern with minimal clicks required.
 
 ## 7. Localization & Internationalization
 

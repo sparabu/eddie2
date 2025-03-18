@@ -1,15 +1,15 @@
 ---
 title: Eddie2 UI/UX Interaction Patterns
-version: 1.2.0
-last_updated: 2025-03-19
+version: 1.3.0
+last_updated: 2025-03-20
 status: active
 ---
 
 # Eddie2 UI/UX Interaction Patterns
 
-![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
-![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--19-lightgrey.svg)
+![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--20-lightgrey.svg)
 
 ## 🗺️ Navigation
 [Documentation Index](../INDEX.md) > [UI/UX Documentation](.) > Interaction Patterns
@@ -28,7 +28,8 @@ status: active
 5. [Animation Guidelines](#5-animation-guidelines)
 6. [Error States](#6-error-states)
 7. [Loading States](#7-loading-states)
-6. [Image Attachment Interaction](#6-image-attachment-interaction)
+8. [Image Attachment Interaction](#8-image-attachment-interaction)
+9. [Chat Management Interactions](#9-chat-management-interactions)
 
 ## 🔗 Code References
 - Navigation Service: `lib/services/navigation_service.dart`
@@ -36,12 +37,9 @@ status: active
 - Feedback Components: `lib/widgets/feedback/`
 - Animation Utilities: `lib/utils/animation_utils.dart`
 
-## docs/uiux/EDDIE_UIUX_INTERACTIONS.md
-
-```md
 # Eddie2 UI/UX – Extended Interactions & Advanced Flows
 
-This optional doc builds on the interaction patterns in [EDDIE_UIUX_SPEC_MAIN.md](./EDDIE_UIUX_SPEC_MAIN.md), offering more detailed or edge-case flows. It also outlines certain QA or administration processes.
+This document builds on the interaction patterns in [EDDIE_UIUX_SPEC_MAIN.md](./EDDIE_UIUX_SPEC_MAIN.md), offering more detailed or edge-case flows. It also outlines certain QA or administration processes.
 
 ---
 
@@ -138,9 +136,9 @@ This optional doc builds on the interaction patterns in [EDDIE_UIUX_SPEC_MAIN.md
 
 ---
 
-## 6. Image Attachment Interaction
+## 8. Image Attachment Interaction
 
-### 6.1 Attaching Images to Chat Messages
+### 8.1 Attaching Images to Chat Messages
 
 #### Single Image Flow
 1. User clicks attachment button in the chat input
@@ -196,6 +194,57 @@ This optional doc builds on the interaction patterns in [EDDIE_UIUX_SPEC_MAIN.md
 - **ErrorPlaceholder** component shows when images fail to load
 - **FileService** handles persistence of web file data
 - **OpenAIService** processes and includes all images in API requests
+
+## 9. Chat Management Interactions
+
+### 9.1 Sidebar Chat Options Menu
+
+#### Chat Options Flow
+1. User navigates to the sidebar where recent chats are displayed
+2. User selects a chat by clicking on it
+3. When a chat is selected, a three-dot menu icon appears to the right of the chat item
+4. User clicks on the three-dot menu icon
+5. A context menu appears with two options: "Rename" and "Delete"
+6. User selects the desired action
+
+#### Rename Chat Flow
+1. User clicks on "Rename" in the context menu
+2. A modal dialog appears with:
+   - Title: "Rename Chat"
+   - Text field pre-populated with the current chat title
+   - Cancel button
+   - Save button
+3. User modifies the chat title
+4. User clicks "Save" to confirm changes or "Cancel" to discard
+5. On save, the chat title is immediately updated in the sidebar and throughout the app
+6. The dialog is dismissed automatically
+
+#### Delete Chat Flow
+1. User clicks on "Delete" in the context menu
+2. A confirmation dialog appears with:
+   - Title: "Delete chat?"
+   - Warning message: "The chat will be deleted and removed from your chat history. This action cannot be undone."
+   - Cancel button
+   - Delete button (highlighted in red)
+3. User clicks "Delete" to confirm or "Cancel" to abort
+4. On deletion, the chat is removed from the sidebar and the user is redirected to:
+   - Another chat if available
+   - The empty state if no chats remain
+
+#### Visual Feedback
+- Selected chat is highlighted with:
+  - Background color change
+  - Primary color for the icon
+  - Bold text for the title
+- Three-dot menu only appears for the currently selected chat
+- Hover effects on menu items provide visual feedback
+- Dialog animations provide smooth transitions
+- Error states (if a rename or delete operation fails) show appropriate error messages
+
+#### Component Interactions
+- **SidebarItem** component handles the display of each chat item and its options
+- **MainScreen** manages the state of selected chats and provides callback functions
+- **ChatProvider** handles the data operations for renaming and deleting chats
 
 [↑ Back to Top](#eddie2-uiux-interaction-patterns)
 
