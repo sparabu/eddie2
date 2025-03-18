@@ -1,12 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../models/message.dart';
 import '../theme/eddie_theme.dart';
 import '../theme/eddie_colors.dart';
 import '../theme/eddie_text_styles.dart';
 import '../theme/eddie_constants.dart';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import '../services/file_service.dart';
 
 /// Message Bubble
@@ -128,6 +129,7 @@ class MessageBubble extends StatelessWidget {
     late final bool isUser;
     String? attachmentPath;
     String? attachmentName;
+    List<String>? additionalAttachments;
     bool isImageAttachment = false;
     
     if (message is String) {
@@ -141,6 +143,7 @@ class MessageBubble extends StatelessWidget {
       isUser = msg.role == MessageRole.user;
       attachmentPath = msg.attachmentPath;
       attachmentName = msg.attachmentName;
+      additionalAttachments = msg.additionalAttachments;
       isImageAttachment = _isImageFile(attachmentPath);
     } else {
       messageContent = "Unsupported message type";
@@ -231,28 +234,113 @@ class MessageBubble extends StatelessWidget {
                     ),
                   ),
                 ],
+                
+                // Display additional attachments
+                if (additionalAttachments != null && additionalAttachments.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  // Show a header for additional attachments
+                  Text(
+                    'Additional attachments (${additionalAttachments.length}):',
+                    style: EddieTextStyles.caption(context).copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  // Images grid for additional image attachments
+                  if (additionalAttachments.any((path) => _isImageFile(path)))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: additionalAttachments
+                            .where((path) => _isImageFile(path))
+                            .map((path) => ClipRRect(
+                                  borderRadius: BorderRadius.circular(EddieConstants.borderRadiusSmall),
+                                  child: Container(
+                                    width: 100,
+                                    height: 100,
+                                    child: _buildImageWidget(context, path),
+                                  ),
+                                ))
+                            .toList(),
+                      ),
+                    ),
+                  
+                  // List of non-image additional attachments
+                  ...additionalAttachments
+                      .where((path) => !_isImageFile(path))
+                      .map((path) => Container(
+                            margin: const EdgeInsets.only(top: 4),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: EddieColors.getSurfaceVariant(context),
+                              borderRadius: BorderRadius.circular(EddieConstants.borderRadiusSmall),
+                              border: Border.all(
+                                color: EddieColors.getOutline(context),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.attach_file,
+                                  size: 16,
+                                  color: EddieColors.getTextSecondary(context),
+                                ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    path.split('/').last,
+                                    style: EddieTextStyles.caption(context).copyWith(
+                                      color: EddieColors.getTextSecondary(context),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ))
+                      .toList(),
+                ],
+                
                 const SizedBox(height: 4),
                 Row(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       messageTimestamp,
-                      style: EddieTextStyles.caption(context),
+                      style: EddieTextStyles.caption(context).copyWith(
+                        color: EddieColors.getTextSecondary(context),
+                      ),
                     ),
-                    if (!isUser && onSaveQAPair != null) ...[
-                      const SizedBox(width: 8),
-                      GestureDetector(
+                    if (onSaveQAPair != null)
+                      InkWell(
                         onTap: onSaveQAPair,
-                        child: Text(
-                          'Save as Q&A',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: EddieColors.getPrimary(context),
-                            fontWeight: FontWeight.w500,
+                        borderRadius: BorderRadius.circular(16),
+                        child: Padding(
+                          padding: const EdgeInsets.all(4.0),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.save_alt,
+                                size: 14,
+                                color: EddieColors.getPrimary(context),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Save as Q&A',
+                                style: EddieTextStyles.caption(context).copyWith(
+                                  color: EddieColors.getPrimary(context),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                    ],
                   ],
                 ),
               ],

@@ -147,7 +147,7 @@ class FileService {
       final result = await FilePicker.platform.pickFiles(
         type: fileType,
         allowedExtensions: allowedExtensions,
-        allowMultiple: false,
+        allowMultiple: false, // Keep single file selection for backward compatibility
         withData: true, // Important: This ensures we get the bytes on web platform
       );
       
@@ -227,6 +227,111 @@ class FileService {
       }
     } catch (e) {
       debugPrint('Error picking file: $e');
+      rethrow; // Rethrow to let the UI handle specific error messages
+    }
+  }
+  
+  // New method to pick multiple files at once
+  Future<List<Map<String, dynamic>>?> pickMultipleFiles({bool imagesOnly = false}) async {
+    try {
+      // For image selection, we need to use FileType.custom when providing allowedExtensions
+      FileType fileType;
+      List<String>? allowedExtensions;
+      
+      if (imagesOnly) {
+        fileType = FileType.custom;
+        allowedExtensions = supportedImageExtensions;
+      } else {
+        fileType = FileType.any;
+        allowedExtensions = null;
+      }
+      
+      final result = await FilePicker.platform.pickFiles(
+        type: fileType,
+        allowedExtensions: allowedExtensions,
+        allowMultiple: true, // Allow multiple files to be picked
+        withData: true, // Important: This ensures we get the bytes on web platform
+      );
+      
+      if (result == null || result.files.isEmpty) {
+        return null;
+      }
+      
+      // Process each file
+      final List<Map<String, dynamic>> fileDataList = [];
+      
+      for (final file in result.files) {
+        // Check file size
+        if (file.size > maxFileSizeBytes) {
+          continue; // Skip files that are too large
+        }
+        
+        // For images, validate file extension
+        if (imagesOnly) {
+          final extension = file.extension?.toLowerCase() ?? '';
+          if (!supportedImageExtensions.contains(extension)) {
+            continue; // Skip files with unsupported extensions
+          }
+        }
+        
+        // Process based on platform
+        if (kIsWeb) {
+          // Ensure we have the bytes
+          if (file.bytes == null) {
+            continue; // Skip files without bytes
+          }
+          
+          // Generate a unique identifier for this file
+          final webFileId = 'web_file_${DateTime.now().millisecondsSinceEpoch}_${file.name}';
+          
+          // Store the bytes for later retrieval
+          _webFileBytes[webFileId] = file.bytes!;
+          
+          debugPrint('Stored web file bytes with ID: $webFileId');
+          
+          // For images, generate a data URI
+          String? dataUri;
+          if (imagesOnly || _isImageFile(file.name)) {
+            final extension = file.extension?.toLowerCase() ?? '';
+            final mimeType = supportedImageMimeTypes[extension] ?? 'image/jpeg';
+            dataUri = 'data:$mimeType;base64,${base64Encode(file.bytes!)}';
+          }
+          
+          fileDataList.add({
+            'name': file.name,
+            'path': webFileId, // Using our ID as the path
+            'bytes': file.bytes,
+            'size': file.size,
+            'extension': file.extension?.toLowerCase(),
+            'isImage': imagesOnly || _isImageFile(file.name),
+            'dataUri': dataUri, // Include the data URI for images
+          });
+        } else {
+          // For mobile/desktop platforms
+          if (file.path == null) {
+            continue; // Skip files without path
+          }
+          
+          fileDataList.add({
+            'name': file.name,
+            'path': file.path,
+            'bytes': file.bytes, // May be null, but we have the file path
+            'size': file.size,
+            'extension': file.extension?.toLowerCase(),
+            'isImage': imagesOnly || _isImageFile(file.name),
+            'dataUri': null,
+          });
+        }
+      }
+      
+      // Persist all web files to local storage
+      if (kIsWeb) {
+        _persistWebFiles();
+      }
+      
+      return fileDataList.isEmpty ? null : fileDataList;
+    } catch (e) {
+      debugPrint('Error picking multiple files: $e');
       rethrow; // Rethrow to let the UI handle specific error messages
     }
   }

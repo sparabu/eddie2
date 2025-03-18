@@ -20,7 +20,7 @@ status: active
 - [Product Requirements](../prd/EDDIE_PRD_MAIN.md)
 - [Feature Specifications](../prd/EDDIE_PRD_FEATURES.md)
 
-## �� Table of Contents
+## 📋 Table of Contents
 1. [Navigation Patterns](#1-navigation-patterns)
 2. [Input Patterns](#2-input-patterns)
 3. [Feedback Patterns](#3-feedback-patterns)
@@ -47,11 +47,27 @@ This optional doc builds on the interaction patterns in [EDDIE_UIUX_SPEC_MAIN.md
 
 ## 1. Complex or Less Common User Flows
 
-### 1.1 Chat with Multiple File Uploads (Post-MVP)
-1. User sees an "Attach" button with multi-file support.  
-2. Possibly an in-chat file preview list.  
-3. On send, each file is base64-encoded and included in the prompt or a separate API call.  
-4. If any file is invalid, show error while preserving the valid ones.
+### 1.1 Chat with Multiple File Uploads
+- **Implementation Status**: 
+  - Multiple images: ✅ Implemented
+  - Multiple documents: ⏳ Planned (Post-MVP)
+
+#### Current Implementation (Images)
+1. User clicks the "Attach" button in the chat input.
+2. File picker dialog opens supporting multi-select for images.
+3. User selects multiple image files (jpg, jpeg, png, webp, gif).
+4. System validates each image (size, format).
+5. Preview thumbnails appear in the input area showing all selected images.
+6. User types a message (optional).
+7. User clicks the send button.
+8. Message with all image attachments is sent to the AI.
+9. Images appear in a grid layout in the user's message bubble.
+10. AI response references and analyzes all images content.
+
+#### Planned Implementation (Documents)
+1. Multiple document file support will be added in future updates.
+2. Will include similar UI patterns adapted for document previews.
+3. If any file is invalid, show error while preserving the valid ones.
 
 ### 1.2 Merging Q&A Pairs
 - Potential future feature: user merges multiple Q&A pairs into one.  
@@ -126,7 +142,7 @@ This optional doc builds on the interaction patterns in [EDDIE_UIUX_SPEC_MAIN.md
 
 ### 6.1 Attaching Images to Chat Messages
 
-#### User Flow
+#### Single Image Flow
 1. User clicks attachment button in the chat input
 2. File picker dialog opens showing supported image formats (jpg, jpeg, png, webp, gif)
 3. User selects an image file
@@ -138,29 +154,48 @@ This optional doc builds on the interaction patterns in [EDDIE_UIUX_SPEC_MAIN.md
 9. Image appears inline in the user's message bubble
 10. AI response references the image content
 
+#### Multiple Image Flow
+1. User clicks attachment button in the chat input
+2. File picker dialog opens showing supported image formats (jpg, jpeg, png, webp, gif)
+3. User selects multiple image files (multi-select is supported)
+4. System validates each image (size, format)
+5. If valid, previews of all selected images appear in the input area
+6. User types a message (optional)
+7. User clicks send button
+8. Message with all image attachments is sent to the AI
+9. Images appear in a grid layout in the user's message bubble
+   - First image is displayed prominently
+   - Additional images are shown in a grid below the main image
+10. AI response references and analyzes all images content
+
 #### Error Handling
 - If image is too large: Error message indicating the size limit
 - If format is unsupported: Error message listing supported formats
 - If image fails to load after sending: Error placeholder with descriptive message
 - For web platform: Warning about temporary nature of attachments when errors occur
+- For multiple images: Individual validation with indication of which images failed
 
 #### Web Platform Considerations
 - Web file data is persisted to localStorage for improved experience
 - File data is keyed by a unique identifier
 - Files can be accessed across page refreshes (up to 10 most recent files)
+- Multiple image files are individually stored and tracked
 - Error states include instructions about session limitations
 
 #### Animation & Transitions
-- Smooth fade-in of image preview
+- Smooth fade-in of image previews
 - Loading state when processing large images
 - Subtle scale animation when attaching images
+- Grid layout animation when displaying multiple images
 - Error messages appear with brief fade-in
 
 #### Component Interactions
-- **MessageBubble** component displays the image with appropriate formatting
+- **MessageBubble** component displays images with appropriate formatting
+  - Handles single and multiple image layouts adaptively
+  - Provides grid layout for multiple images
 - **ErrorPlaceholder** component shows when images fail to load
 - **FileService** handles persistence of web file data
-- **OpenAIService** processes and includes images in API requests
+- **OpenAIService** processes and includes all images in API requests
 
 [↑ Back to Top](#eddie2-uiux-interaction-patterns)
 

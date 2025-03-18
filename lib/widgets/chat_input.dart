@@ -12,6 +12,7 @@ class ChatInput extends StatefulWidget {
   final Function(String) onSendMessage;
   final Function(String, String) onSendMessageWithFile;
   final Function(String, String) onSendMessageWithImage;
+  final Function(String, List<String>) onSendMessageWithMultipleFiles;
   final bool isLoading;
   final String? hintText;
   
@@ -20,6 +21,7 @@ class ChatInput extends StatefulWidget {
     required this.onSendMessage,
     required this.onSendMessageWithFile,
     required this.onSendMessageWithImage,
+    required this.onSendMessageWithMultipleFiles,
     this.isLoading = false,
     this.hintText,
   }) : super(key: key);
@@ -31,10 +33,10 @@ class ChatInput extends StatefulWidget {
 class _ChatInputState extends State<ChatInput> {
   final TextEditingController _controller = TextEditingController();
   final FileService _fileService = FileService();
-  String? _attachedFilePath;
-  String? _attachedFileName;
+  
+  // Replace single attachment with list of attachments
+  final List<Map<String, dynamic>> _attachedFiles = [];
   bool _isAttaching = false;
-  bool _isImageAttachment = false;
   
   @override
   void dispose() {
@@ -48,15 +50,13 @@ class _ChatInputState extends State<ChatInput> {
     });
     
     try {
-      final fileData = await _fileService.pickFile();
+      // Use pickMultipleFiles instead of pickFile to allow selecting multiple files
+      final filesData = await _fileService.pickMultipleFiles();
       
-      if (fileData != null) {
-        final isImage = fileData['isImage'] == true;
-        
+      if (filesData != null && filesData.isNotEmpty) {
         setState(() {
-          _attachedFilePath = fileData['path'];
-          _attachedFileName = fileData['name'];
-          _isImageAttachment = isImage;
+          // Add the new files to the list of attachments
+          _attachedFiles.addAll(filesData);
         });
       } else {
         // File picking was cancelled or failed
@@ -80,47 +80,9 @@ class _ChatInputState extends State<ChatInput> {
     }
   }
   
-  Future<void> _pickImage() async {
+  void _removeAttachment(int index) {
     setState(() {
-      _isAttaching = true;
-    });
-    
-    try {
-      final imageData = await _fileService.pickImage();
-      
-      if (imageData != null) {
-        setState(() {
-          _attachedFilePath = imageData['path'];
-          _attachedFileName = imageData['name'];
-          _isImageAttachment = true;
-        });
-      } else {
-        // Image picking was cancelled or failed
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.filePickingCancelled),
-          ),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error selecting image: ${e.toString()}"),
-          backgroundColor: EddieColors.getError(context),
-        ),
-      );
-    } finally {
-      setState(() {
-        _isAttaching = false;
-      });
-    }
-  }
-  
-  void _removeAttachment() {
-    setState(() {
-      _attachedFilePath = null;
-      _attachedFileName = null;
-      _isImageAttachment = false;
+      _attachedFiles.removeAt(index);
     });
   }
   
@@ -128,13 +90,29 @@ class _ChatInputState extends State<ChatInput> {
     final message = _controller.text.trim();
     if (message.isEmpty) return;
     
-    if (_attachedFilePath != null && _attachedFileName != null) {
-      if (_isImageAttachment) {
-        widget.onSendMessageWithImage(message, _attachedFilePath!);
+    if (_attachedFiles.isNotEmpty) {
+      // Check if we have multiple files
+      if (_attachedFiles.length > 1) {
+        // Get all file paths as a list
+        final filePaths = _attachedFiles.map((file) => file['path'] as String).toList();
+        widget.onSendMessageWithMultipleFiles(message, filePaths);
       } else {
-        widget.onSendMessageWithFile(message, _attachedFilePath!);
+        // We have only one file, use existing methods for backward compatibility
+        final fileData = _attachedFiles.first;
+        final filePath = fileData['path'] as String;
+        final isImage = fileData['isImage'] as bool? ?? false;
+        
+        if (isImage) {
+          widget.onSendMessageWithImage(message, filePath);
+        } else {
+          widget.onSendMessageWithFile(message, filePath);
+        }
       }
-      _removeAttachment();
+      
+      // Clear attachments after sending
+      setState(() {
+        _attachedFiles.clear();
+      });
     } else {
       widget.onSendMessage(message);
     }
@@ -168,7 +146,7 @@ class _ChatInputState extends State<ChatInput> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (_attachedFileName != null)
+          if (_attachedFiles.isNotEmpty)
             Container(
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -186,14 +164,14 @@ class _ChatInputState extends State<ChatInput> {
                   Row(
                     children: [
                       Icon(
-                        _isImageAttachment ? Icons.image : Icons.attach_file, 
+                        Icons.attach_file, 
                         size: 16,
                         color: EddieColors.getPrimary(context),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          _attachedFileName!,
+                          '${_attachedFiles.length} attached file(s)',
                           style: EddieTextStyles.caption(context),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -206,12 +184,77 @@ class _ChatInputState extends State<ChatInput> {
                         ),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
-                        onPressed: _removeAttachment,
+                        onPressed: () {
+                          setState(() {
+                            _attachedFiles.clear();
+                          });
+                        },
                       ),
                     ],
                   ),
-                  // Show image preview for image attachments
-                  _buildAttachmentPreview(context),
+                  const SizedBox(height: 8),
+                  // List of attachments
+                  ...List.generate(_attachedFiles.length, (index) {
+                    final file = _attachedFiles[index];
+                    final fileName = file['name'] as String;
+                    final isImage = file['isImage'] as bool? ?? false;
+                    
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 4),
+                      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: EddieColors.getSurface(context),
+                        borderRadius: BorderRadius.circular(EddieConstants.borderRadiusSmall),
+                        border: Border.all(
+                          color: EddieColors.getOutline(context),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            isImage ? Icons.image : Icons.description, 
+                            size: 14,
+                            color: EddieColors.getTextSecondary(context),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              fileName,
+                              style: EddieTextStyles.caption(context).copyWith(
+                                fontSize: 12,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              Icons.close, 
+                              size: 12,
+                              color: EddieColors.getTextSecondary(context),
+                            ),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () => _removeAttachment(index),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  // Show image previews for the first image attachment
+                  if (_attachedFiles.any((file) => file['isImage'] == true))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _attachedFiles
+                            .where((file) => file['isImage'] == true)
+                            .take(3) // Limit to first 3 images for preview
+                            .map((file) => _buildImagePreview(context, file['path'] as String))
+                            .toList(),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -219,7 +262,6 @@ class _ChatInputState extends State<ChatInput> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               _buildAttachmentButton(context, isDarkMode, l10n),
-              _buildImageAttachmentButton(context, isDarkMode),
               Expanded(
                 child: TextField(
                   controller: _controller,
@@ -301,60 +343,37 @@ class _ChatInputState extends State<ChatInput> {
     );
   }
 
-  Widget _buildImageAttachmentButton(BuildContext context, bool isDarkMode) {
-    return IconButton(
-      icon: _isAttaching
-          ? SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: EddieColors.getPrimary(context),
-              ),
-            )
-          : Icon(
-              Icons.image,
-              color: EddieColors.getTextSecondary(context),
-            ),
-      onPressed: _isAttaching ? null : _pickImage,
-      tooltip: 'Attach image',
-    );
-  }
-
   // Show image preview for image attachments
-  Widget _buildAttachmentPreview(BuildContext context) {
-    if (!_isImageAttachment || _attachedFilePath == null) {
-      return const SizedBox.shrink();
-    }
-    
-    // Show the image preview based on platform
+  Widget _buildImagePreview(BuildContext context, String imagePath) {
     if (kIsWeb) {
       // For web, check if we have a stored image with a web ID
-      if (_attachedFilePath!.startsWith('web_file_')) {
+      if (imagePath.startsWith('web_file_')) {
         final fileService = _fileService;
-        final dataUri = fileService.getWebFileDataUri(_attachedFilePath!);
+        final dataUri = fileService.getWebFileDataUri(imagePath);
         
         if (dataUri != null) {
-          return Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(EddieConstants.borderRadiusSmall),
-              child: SizedBox(
-                height: 120,
-                child: Image.network(
-                  dataUri,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Center(
-                      child: Text(
-                        'Error loading image preview',
-                        style: EddieTextStyles.caption(context).copyWith(
-                          color: EddieColors.getError(context),
-                        ),
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(EddieConstants.borderRadiusSmall),
+            child: SizedBox(
+              height: 80,
+              width: 80,
+              child: Image.network(
+                dataUri,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: 80,
+                    width: 80,
+                    color: EddieColors.getSurfaceVariant(context),
+                    child: Center(
+                      child: Icon(
+                        Icons.broken_image,
+                        color: EddieColors.getError(context),
+                        size: 24,
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               ),
             ),
           );
@@ -362,56 +381,46 @@ class _ChatInputState extends State<ChatInput> {
       }
       
       // Fallback for web
-      return Padding(
-        padding: const EdgeInsets.only(top: 8),
-        child: Container(
-          height: 120,
-          decoration: BoxDecoration(
-            color: EddieColors.getSurfaceVariant(context),
-            borderRadius: BorderRadius.circular(EddieConstants.borderRadiusSmall),
-            border: Border.all(color: EddieColors.getOutline(context)),
-          ),
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.image,
-                  size: 24,
-                  color: EddieColors.getTextSecondary(context),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Image ready to be sent',
-                  style: EddieTextStyles.caption(context),
-                ),
-              ],
-            ),
+      return Container(
+        height: 80,
+        width: 80,
+        decoration: BoxDecoration(
+          color: EddieColors.getSurfaceVariant(context),
+          borderRadius: BorderRadius.circular(EddieConstants.borderRadiusSmall),
+          border: Border.all(color: EddieColors.getOutline(context)),
+        ),
+        child: Center(
+          child: Icon(
+            Icons.image,
+            size: 24,
+            color: EddieColors.getTextSecondary(context),
           ),
         ),
       );
     } else {
       // For native platforms
-      return Padding(
-        padding: const EdgeInsets.only(top: 8),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(EddieConstants.borderRadiusSmall),
-          child: SizedBox(
-            height: 120,
-            child: Image.file(
-              File(_attachedFilePath!),
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Center(
-                  child: Text(
-                    'Error loading image preview',
-                    style: EddieTextStyles.caption(context).copyWith(
-                      color: EddieColors.getError(context),
-                    ),
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(EddieConstants.borderRadiusSmall),
+        child: SizedBox(
+          height: 80,
+          width: 80,
+          child: Image.file(
+            File(imagePath),
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                height: 80,
+                width: 80,
+                color: EddieColors.getSurfaceVariant(context),
+                child: Center(
+                  child: Icon(
+                    Icons.broken_image,
+                    color: EddieColors.getError(context),
+                    size: 24,
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
         ),
       );

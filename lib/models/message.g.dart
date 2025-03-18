@@ -16,6 +16,13 @@ Message _$MessageFromJson(Map<String, dynamic> json) => Message(
       isError: json['isError'] as bool? ?? false,
       attachmentPath: json['attachmentPath'] as String?,
       attachmentName: json['attachmentName'] as String?,
+      additionalAttachments: (json['additionalAttachments'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      additionalAttachmentNames:
+          (json['additionalAttachmentNames'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList(),
     );
 
 Map<String, dynamic> _$MessageToJson(Message instance) => <String, dynamic>{
@@ -26,6 +33,8 @@ Map<String, dynamic> _$MessageToJson(Message instance) => <String, dynamic>{
       'isError': instance.isError,
       'attachmentPath': instance.attachmentPath,
       'attachmentName': instance.attachmentName,
+      'additionalAttachments': instance.additionalAttachments,
+      'additionalAttachmentNames': instance.additionalAttachmentNames,
     };
 
 const _$MessageRoleEnumMap = {

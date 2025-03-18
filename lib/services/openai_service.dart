@@ -42,6 +42,7 @@ class OpenAIService {
     required List<Message> messages,
     String? filePath,
     String? imagePath,
+    List<String>? additionalImagePaths,
     String model = 'gpt-4o',
     String languageCode = 'en',
   }) async {
@@ -109,12 +110,26 @@ class OpenAIService {
           // Get the last user message content
           final userContent = messages.lastWhere((m) => m.role == MessageRole.user).content;
           
-          final imageContent = await _createImageMessageContent(userContent, imagePath);
+          // Create image content with multiple images if applicable
+          List<Map<String, dynamic>> imageContent;
+          if (additionalImagePaths != null && additionalImagePaths.isNotEmpty) {
+            // Create content with multiple images
+            imageContent = await _createMultiImageMessageContent(userContent, imagePath, additionalImagePaths);
+          } else {
+            // Create content with single image
+            imageContent = await _createImageMessageContent(userContent, imagePath);
+          }
+          
           formattedMessages.add({
             'role': 'user',
             'content': imageContent
           });
-          debugPrint('Added message with current image: $imagePath');
+          
+          if (additionalImagePaths != null && additionalImagePaths.isNotEmpty) {
+            debugPrint('Added message with primary image and ${additionalImagePaths.length} additional images');
+          } else {
+            debugPrint('Added message with current image: $imagePath');
+          }
         }
       }
 
@@ -484,5 +499,65 @@ Example output format:
       debugPrint('Error processing image file: $e');
       rethrow;
     }
+  }
+
+  // Create a message content array that includes both text and multiple images
+  Future<List<Map<String, dynamic>>> _createMultiImageMessageContent(
+    String text, 
+    String primaryImagePath,
+    List<String> additionalImagePaths
+  ) async {
+    final content = <Map<String, dynamic>>[];
+    
+    // Add the text content
+    content.add({
+      'type': 'text',
+      'text': text,
+    });
+    
+    // Add the primary image content
+    try {
+      debugPrint('Processing primary image from path: $primaryImagePath');
+      final imageData = await _getImageData(primaryImagePath);
+      debugPrint('Successfully generated primary image data');
+      
+      content.add({
+        'type': 'image_url',
+        'image_url': {
+          'url': imageData,
+        }
+      });
+      
+      // Add all additional images
+      for (final additionalPath in additionalImagePaths) {
+        try {
+          debugPrint('Processing additional image from path: $additionalPath');
+          final additionalImageData = await _getImageData(additionalPath);
+          
+          content.add({
+            'type': 'image_url',
+            'image_url': {
+              'url': additionalImageData,
+            }
+          });
+          debugPrint('Successfully added additional image');
+        } catch (e) {
+          debugPrint('Error processing additional image: $e');
+          content.add({
+            'type': 'text',
+            'text': 'I tried to send you an additional image, but there was an error: $e'
+          });
+        }
+      }
+      
+    } catch (e) {
+      debugPrint('Error processing primary image: $e');
+      content.add({
+        'type': 'text',
+        'text': 'I tried to send you images, but there was an error with the primary image: $e'
+      });
+    }
+    
+    return content;
   }
 } 

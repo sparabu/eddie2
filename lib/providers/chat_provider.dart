@@ -6,6 +6,9 @@ import '../services/storage_service.dart';
 import '../services/openai_service.dart';
 import '../services/file_service.dart';
 import 'locale_provider.dart';
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
 
 class ChatNotifier extends StateNotifier<List<Chat>> {
   final StorageService _storageService;
@@ -262,6 +265,113 @@ class ChatNotifier extends StateNotifier<List<Chat>> {
     } catch (e) {
       print('Error detecting Q&A pairs: $e');
       return [];
+    }
+  }
+
+  Future<void> sendMessageWithMultipleFiles(String chatId, String content, List<String> filePaths) async {
+    try {
+      debugPrint('Starting sendMessageWithMultipleFiles with ${filePaths.length} files');
+      
+      // Check if this is a new chat
+      final chatIndex = state.indexWhere((chat) => chat.id == chatId);
+      final isNewChat = chatIndex == -1;
+      
+      Chat chat;
+      if (isNewChat) {
+        final title = content.length > 30 ? '${content.substring(0, 30)}...' : content;
+        chat = Chat(id: chatId, title: title);
+        debugPrint('Created new chat with title: $title');
+      } else {
+        chat = state[chatIndex];
+        debugPrint('Using existing chat with ID: $chatId');
+      }
+      
+      // Filter image files
+      final imageFiles = filePaths.where((path) {
+        final extension = path.split('.').last.toLowerCase();
+        return ['jpg', 'jpeg', 'png', 'webp', 'gif'].contains(extension) ||
+            path.startsWith('web_file_'); // Web files might not have extensions
+      }).toList();
+      
+      // Add user message with multiple attachments
+      debugPrint('Creating user message with multiple file attachments');
+      final userMessage = Message(
+        role: MessageRole.user,
+        content: content,
+        attachmentPath: filePaths.isNotEmpty ? filePaths.first : null, // Main attachment path
+        attachmentName: filePaths.isNotEmpty ? filePaths.first.split('/').last : null, // Main attachment name
+        additionalAttachments: filePaths.length > 1 ? filePaths.sublist(1) : [], // Additional paths
+      );
+      
+      debugPrint('Adding message to chat');
+      final updatedChat = chat.addMessage(userMessage);
+      
+      if (isNewChat) {
+        state = [...state, updatedChat];
+        debugPrint('Added new chat to state');
+      } else {
+        state = state.map((c) => c.id == chatId ? updatedChat : c).toList();
+        debugPrint('Updated existing chat in state');
+      }
+      
+      // Save the updated chat
+      await _storageService.saveChat(updatedChat);
+      debugPrint('Saved chat to storage');
+      
+      // Get all previous messages for context
+      final messages = updatedChat.messages;
+      debugPrint('Retrieved ${messages.length} messages for API request');
+      
+      // Verify the last message has the correct attachment paths
+      final lastMessage = messages.lastWhere((m) => m.role == MessageRole.user);
+      debugPrint('Last user message has main attachment: ${lastMessage.attachmentPath != null}');
+      debugPrint('Last user message has ${lastMessage.additionalAttachments?.length ?? 0} additional attachments');
+      
+      // Prepare the API call - if we only have images, use the image-based flow
+      final bool hasOnlyImages = imageFiles.length == filePaths.length && imageFiles.isNotEmpty;
+      
+      String responseText;
+      if (hasOnlyImages) {
+        // For multiple images, we'll use the first one as the primary and others as additional images
+        final primaryImage = imageFiles.first;
+        List<String>? additionalImages = imageFiles.length > 1 ? imageFiles.sublist(1) : null;
+        
+        // Pass the messages with primary image and additional images to the API
+        responseText = await _openAIService.sendMessage(
+          messages: messages,
+          imagePath: primaryImage,
+          additionalImagePaths: additionalImages,
+          model: 'gpt-4o', // Make sure we use a model that supports vision
+          languageCode: _ref.read(localeProvider).languageCode,
+        );
+      } else {
+        // For mixed content or non-images, we'll handle differently
+        // Currently, the OpenAI API doesn't support multiple file attachments in a single message
+        // So we'll just pass the main attachment
+        responseText = await _openAIService.sendMessage(
+          messages: messages,
+          filePath: filePaths.isNotEmpty ? filePaths.first : null,
+          languageCode: _ref.read(localeProvider).languageCode,
+        );
+      }
+      
+      // Add the assistant response as a new message
+      final assistantMessage = Message(
+        role: MessageRole.assistant,
+        content: responseText,
+      );
+      
+      // Update the chat with the assistant's response
+      final chatWithResponse = updatedChat.addMessage(assistantMessage);
+      
+      // Update state and save
+      state = state.map((c) => c.id == chatId ? chatWithResponse : c).toList();
+      await _storageService.saveChat(chatWithResponse);
+      
+      debugPrint('Completed message with multiple files');
+    } catch (e) {
+      debugPrint('Error sending message with multiple files: $e');
+      rethrow;
     }
   }
 }

@@ -1,15 +1,15 @@
 ---
 title: Eddie2 Features Specification
-version: 1.0.0
-last_updated: 2024-03-15
+version: 1.1.0
+last_updated: 2025-03-18
 status: active
 ---
 
 # Eddie2 Features Specification
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
-![Last Updated](https://img.shields.io/badge/last%20updated-2024--03--15-lightgrey.svg)
+![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--18-lightgrey.svg)
 
 ## 🗺️ Navigation
 [Documentation Index](../INDEX.md) > [Product Requirements](.) > Features
@@ -53,14 +53,17 @@ status: active
   - Response formatting.
 
 ### 1.3 File Attachment
-- **User Story**: As a user, I want to attach a single file for the AI to analyze or reference, so I can get context-based answers.
+- **User Story**: As a user, I want to attach files for the AI to analyze or reference, so I can get context-based answers.
 - **Key Points**:
   - Restrict size to OpenAI's limits.
   - Show progress while uploading.
   - If file is invalid or too large, show error.
   - Support for image file attachments in chat messages.
+  - Support for multiple image attachments in a single message.
   - Image previews within the chat interface.
+  - Display of multiple images in a grid layout when attached to the same message.
   - Persistence of image attachments across browser sessions (web platform).
+  - All images in a multi-image message are sent to OpenAI for comprehensive analysis.
 
 ### 1.4 Enhanced Chat Creation
 - **User Story**: As a user, I want a new chat to appear only after sending a first message, so my chat list doesn't fill with empty placeholders.
@@ -112,8 +115,13 @@ status: active
 
 ### 3.2 Advanced File Handling
 - **User Story**: As a user, I want to upload multiple files and get AI analysis of their content, so I can work with complex documents.
+- **Implementation Status**:
+  - Multiple image attachments: ✅ Implemented
+  - Multiple document/text files: ⏳ Planned
 - **Key Points**:
-  - Multiple file upload.
+  - Multiple file upload for images, currently limited to image formats (jpg, jpeg, png, webp, gif).
+  - Support for sending multiple images to OpenAI in a single message.
+  - Future enhancement for multiple document upload.
   - File type validation.
   - Progress tracking.
 

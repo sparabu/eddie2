@@ -148,8 +148,53 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Image processing error: ${e.toString()}"),
-          backgroundColor: EddieColors.getError(context),
+          content: Text(l10n.apiError(e.toString())),
+          backgroundColor: EddieColors.getColor(context, Colors.red.shade200, Colors.red.shade800),
+        ),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+  
+  Future<void> _sendMessageWithMultipleFiles(String message, List<String> filePaths) async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      final selectedChatId = ref.read(selectedChatIdProvider);
+      
+      if (selectedChatId == null) {
+        // Create a new chat with the first message as the title
+        final title = message.length > 30 ? '${message.substring(0, 30)}...' : message;
+        final newChat = await ref.read(chatProvider.notifier).createChat(title: title);
+        ref.read(selectedChatIdProvider.notifier).state = newChat.id;
+        await ref.read(chatProvider.notifier).sendMessageWithMultipleFiles(
+          newChat.id, 
+          message, 
+          filePaths
+        );
+      } else {
+        await ref.read(chatProvider.notifier).sendMessageWithMultipleFiles(
+          selectedChatId, 
+          message, 
+          filePaths
+        );
+      }
+      
+      // Scroll to bottom after the message is sent
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+      });
+    } catch (e) {
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.apiError(e.toString())),
+          backgroundColor: EddieColors.getColor(context, Colors.red.shade200, Colors.red.shade800),
         ),
       );
     } finally {
@@ -341,6 +386,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             onSendMessage: _sendMessage,
             onSendMessageWithFile: _sendMessageWithFile,
             onSendMessageWithImage: _sendMessageWithImage,
+            onSendMessageWithMultipleFiles: _sendMessageWithMultipleFiles,
             isLoading: _isLoading,
             hintText: l10n.typeMessageHint,
           ),
