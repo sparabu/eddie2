@@ -1,15 +1,15 @@
 ---
 title: Eddie2 Version History
-version: 1.0.0
-last_updated: 2024-03-15
+version: 1.1.0
+last_updated: 2025-03-18
 status: active
 ---
 
 # Eddie2 Version History
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
-![Last Updated](https://img.shields.io/badge/last%20updated-2024--03--15-lightgrey.svg)
+![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--18-lightgrey.svg)
 
 ## 🗺️ Navigation
 [Documentation Index](../INDEX.md) > [Product Requirements](.) > Version History
@@ -53,17 +53,25 @@ status: active
 
 ## 2. Release History
 
-### 2.1 Version 1.0.0 (Current)
+### 2.1 Version 1.1.0 (Current)
+- Added image attachment support to chat messages
+- Implemented image previews in chat interface
+- Added persistence of web file data across browser sessions
+- Fixed issues with MessageBubble widget for displaying attachments
+- Enhanced FileService with data persistence capabilities
+- Improved error handling for image files
+
+### 2.2 Version 1.0.0
 - Initial release with core features
 - Complete MVP implementation
 - Basic UI/UX implementation
 
-### 2.2 Version 0.9.0 (Beta)
+### 2.3 Version 0.9.0 (Beta)
 - Feature-complete beta release
 - Performance optimizations
 - Bug fixes and improvements
 
-### 2.3 Version 0.8.0 (Alpha)
+### 2.4 Version 0.8.0 (Alpha)
 - Early alpha release
 - Core functionality implementation
 - Basic UI framework
@@ -72,10 +80,13 @@ status: active
 
 ## 3. Breaking Changes
 
-### 3.1 Version 1.0.0
+### 3.1 Version 1.1.0
+- None
+
+### 3.2 Version 1.0.0
 - None (initial release)
 
-### 3.2 Version 0.9.0
+### 3.3 Version 0.9.0
 - Updated API endpoints
 - Modified data structure
 - UI component changes
@@ -96,12 +107,16 @@ status: active
 
 ## 5. Migration Guides
 
-### 5.1 Version 0.9.0 to 1.0.0
+### 5.1 Version 1.0.0 to 1.1.0
+- No migration steps required
+- Feature is backward compatible
+
+### 5.2 Version 0.9.0 to 1.0.0
 - Update dependencies
 - Migrate data structure
 - Update UI components
 
-### 5.2 Version 0.8.0 to 0.9.0
+### 5.3 Version 0.8.0 to 0.9.0
 - Update API calls
 - Migrate settings
 - Update UI framework

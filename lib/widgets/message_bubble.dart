@@ -4,8 +4,10 @@ import '../models/message.dart';
 import '../theme/eddie_theme.dart';
 import '../theme/eddie_colors.dart';
 import '../theme/eddie_text_styles.dart';
+import '../theme/eddie_constants.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import '../services/file_service.dart';
 
 /// Message Bubble
 /// 
@@ -24,6 +26,100 @@ class MessageBubble extends StatelessWidget {
     this.onSaveQAPair,
   }) : super(key: key);
 
+  bool _isImageFile(String? filePath) {
+    if (filePath == null) return false;
+    final extension = filePath.split('.').last.toLowerCase();
+    return ['jpg', 'jpeg', 'png', 'webp', 'gif'].contains(extension);
+  }
+
+  // Build image widget based on platform
+  Widget _buildImageWidget(BuildContext context, String imagePath) {
+    if (kIsWeb) {
+      // For web platform
+      if (imagePath.startsWith('web_file_')) {
+        // Try to get the data URI from the FileService
+        final fileService = FileService();
+        final dataUri = fileService.getWebFileDataUri(imagePath);
+        
+        if (dataUri != null) {
+          // Use Image.network with the data URI
+          return Image.network(
+            dataUri,
+            fit: BoxFit.contain,
+            errorBuilder: (ctx, error, stackTrace) {
+              return _buildImageErrorWidget(context);
+            },
+          );
+        } else {
+          return _buildImageErrorWidget(context, message: 'Image data not available');
+        }
+      } else if (imagePath.startsWith('data:')) {
+        // Direct data URI
+        return Image.network(
+          imagePath,
+          fit: BoxFit.contain,
+          errorBuilder: (ctx, error, stackTrace) {
+            return _buildImageErrorWidget(context);
+          },
+        );
+      } else {
+        return _buildImageErrorWidget(context, message: 'Unsupported image format');
+      }
+    } else {
+      // Native platforms
+      return Image.file(
+        File(imagePath),
+        fit: BoxFit.contain,
+        errorBuilder: (ctx, error, stackTrace) {
+          return _buildImageErrorWidget(context);
+        },
+      );
+    }
+  }
+  
+  // Build error widget for image loading failures
+  Widget _buildImageErrorWidget(BuildContext context, {String? message}) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: EddieColors.getError(context).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(EddieConstants.borderRadiusSmall),
+        border: Border.all(
+          color: EddieColors.getError(context).withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.broken_image,
+            color: EddieColors.getError(context),
+            size: 24,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message ?? 'Image could not be loaded',
+            style: EddieTextStyles.caption(context).copyWith(
+              color: EddieColors.getError(context),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          if (kIsWeb) 
+            Text(
+              'Web attachments are temporary and may not persist across sessions',
+              style: EddieTextStyles.caption(context).copyWith(
+                color: EddieColors.getError(context),
+                fontSize: 10,
+              ),
+              textAlign: TextAlign.center,
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Handle both String messages and Message objects
@@ -32,6 +128,7 @@ class MessageBubble extends StatelessWidget {
     late final bool isUser;
     String? attachmentPath;
     String? attachmentName;
+    bool isImageAttachment = false;
     
     if (message is String) {
       messageContent = message as String;
@@ -44,6 +141,7 @@ class MessageBubble extends StatelessWidget {
       isUser = msg.role == MessageRole.user;
       attachmentPath = msg.attachmentPath;
       attachmentName = msg.attachmentName;
+      isImageAttachment = _isImageFile(attachmentPath);
     } else {
       messageContent = "Unsupported message type";
       messageTimestamp = DateFormat('HH:mm').format(DateTime.now());
@@ -56,7 +154,7 @@ class MessageBubble extends StatelessWidget {
       children: [
         if (!isUser) ...[
           CircleAvatar(
-            backgroundColor: EddieTheme.getPrimary(context),
+            backgroundColor: EddieColors.getPrimary(context),
             radius: 16,
             child: const Icon(
               Icons.smart_toy_outlined,
@@ -71,13 +169,9 @@ class MessageBubble extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: isUser
-                  ? EddieTheme.getPrimary(context).withOpacity(0.1)
-                  : EddieTheme.getColor(
-                      context,
-                      EddieColors.backgroundLight,
-                      Color(0xFF2A2A2A),
-                    ),
-              borderRadius: BorderRadius.circular(12),
+                  ? EddieColors.getPrimary(context).withOpacity(0.1)
+                  : EddieColors.getSurfaceVariant(context),
+              borderRadius: BorderRadius.circular(EddieConstants.borderRadiusMedium),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,16 +180,31 @@ class MessageBubble extends StatelessWidget {
                   messageContent,
                   style: EddieTextStyles.body1(context),
                 ),
-                // Display attachment if available
-                if (attachmentPath != null && attachmentName != null) ...[
+                
+                // Display image attachment if it's an image
+                if (isImageAttachment && attachmentPath != null) ...[
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(EddieConstants.borderRadiusSmall),
+                    child: Container(
+                      constraints: const BoxConstraints(
+                        maxHeight: 200,
+                        maxWidth: 300,
+                      ),
+                      child: _buildImageWidget(context, attachmentPath),
+                    ),
+                  ),
+                ]
+                // Display file attachment for non-image files
+                else if (attachmentPath != null && attachmentName != null) ...[
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: EddieColors.getSurfaceVariant(context),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(EddieConstants.borderRadiusSmall),
                       border: Border.all(
-                        color: EddieColors.getColor(context, EddieColors.outlineLight, EddieColors.outlineDark),
+                        color: EddieColors.getOutline(context),
                         width: 1,
                       ),
                     ),
@@ -105,14 +214,14 @@ class MessageBubble extends StatelessWidget {
                         Icon(
                           Icons.attach_file,
                           size: 16,
-                          color: EddieTheme.getTextSecondary(context),
+                          color: EddieColors.getTextSecondary(context),
                         ),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
                             attachmentName,
                             style: EddieTextStyles.caption(context).copyWith(
-                              color: EddieTheme.getTextSecondary(context),
+                              color: EddieColors.getTextSecondary(context),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -138,7 +247,7 @@ class MessageBubble extends StatelessWidget {
                           'Save as Q&A',
                           style: TextStyle(
                             fontSize: 12,
-                            color: EddieTheme.getPrimary(context),
+                            color: EddieColors.getPrimary(context),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -153,12 +262,12 @@ class MessageBubble extends StatelessWidget {
         if (isUser) ...[
           const SizedBox(width: 8),
           CircleAvatar(
-            backgroundColor: EddieTheme.getPrimary(context).withOpacity(0.2),
+            backgroundColor: EddieColors.getPrimary(context).withOpacity(0.2),
             radius: 16,
             child: Icon(
               Icons.person,
               size: 16,
-              color: EddieTheme.getTextPrimary(context),
+              color: EddieColors.getTextPrimary(context),
             ),
           ),
         ],

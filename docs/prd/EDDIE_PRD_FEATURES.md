@@ -58,6 +58,9 @@ status: active
   - Restrict size to OpenAI's limits.
   - Show progress while uploading.
   - If file is invalid or too large, show error.
+  - Support for image file attachments in chat messages.
+  - Image previews within the chat interface.
+  - Persistence of image attachments across browser sessions (web platform).
 
 ### 1.4 Enhanced Chat Creation
 - **User Story**: As a user, I want a new chat to appear only after sending a first message, so my chat list doesn't fill with empty placeholders.

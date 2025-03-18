@@ -98,22 +98,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         final title = message.length > 30 ? '${message.substring(0, 30)}...' : message;
         final newChat = await ref.read(chatProvider.notifier).createChat(title: title);
         ref.read(selectedChatIdProvider.notifier).state = newChat.id;
-        await ref.read(chatProvider.notifier).sendMessage(
-          newChat.id, 
-          message,
-          filePath: filePath,
-        );
-        
-        // Force a rebuild to ensure the chat screen updates properly
-        if (mounted) {
-          setState(() {});
-        }
+        await ref.read(chatProvider.notifier).sendMessageWithFile(newChat.id, message, filePath);
       } else {
-        await ref.read(chatProvider.notifier).sendMessage(
-          selectedChatId, 
-          message,
-          filePath: filePath,
-        );
+        await ref.read(chatProvider.notifier).sendMessageWithFile(selectedChatId, message, filePath);
       }
       
       // Scroll to bottom after the message is sent
@@ -125,7 +112,44 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.apiError(e.toString())),
-          backgroundColor: EddieColors.getColor(context, Colors.red.shade200, Colors.red.shade800),
+          backgroundColor: EddieColors.getError(context),
+        ),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+  
+  Future<void> _sendMessageWithImage(String message, String imagePath) async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      final selectedChatId = ref.read(selectedChatIdProvider);
+      
+      if (selectedChatId == null) {
+        // Create a new chat with the first message as the title
+        final title = message.length > 30 ? '${message.substring(0, 30)}...' : message;
+        final newChat = await ref.read(chatProvider.notifier).createChat(title: title);
+        ref.read(selectedChatIdProvider.notifier).state = newChat.id;
+        await ref.read(chatProvider.notifier).sendMessageWithImage(newChat.id, message, imagePath);
+      } else {
+        await ref.read(chatProvider.notifier).sendMessageWithImage(selectedChatId, message, imagePath);
+      }
+      
+      // Scroll to bottom after the message is sent
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+      });
+    } catch (e) {
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Image processing error: ${e.toString()}"),
+          backgroundColor: EddieColors.getError(context),
         ),
       );
     } finally {
@@ -316,6 +340,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           child: ChatInput(
             onSendMessage: _sendMessage,
             onSendMessageWithFile: _sendMessageWithFile,
+            onSendMessageWithImage: _sendMessageWithImage,
             isLoading: _isLoading,
             hintText: l10n.typeMessageHint,
           ),

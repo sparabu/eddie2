@@ -1,26 +1,26 @@
 ---
-title: Eddie2 Interaction Patterns
-version: 1.0.0
-last_updated: 2024-03-15
+title: Eddie2 UI/UX Interaction Patterns
+version: 1.1.0
+last_updated: 2025-03-18
 status: active
 ---
 
-# Eddie2 Interaction Patterns
+# Eddie2 UI/UX Interaction Patterns
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
-![Last Updated](https://img.shields.io/badge/last%20updated-2024--03--15-lightgrey.svg)
+![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--18-lightgrey.svg)
 
 ## 🗺️ Navigation
 [Documentation Index](../INDEX.md) > [UI/UX Documentation](.) > Interaction Patterns
 
 ## 📚 Related Documents
-- [UI/UX Specifications](EDDIE_UIUX_SPEC_MAIN.md)
+- [Main UI/UX Specification](EDDIE_UIUX_SPEC_MAIN.md)
 - [Design System](EDDIE_UIUX_DESIGN_SYSTEM.md)
 - [Product Requirements](../prd/EDDIE_PRD_MAIN.md)
-- [Features Specification](../prd/EDDIE_PRD_FEATURES.md)
+- [Feature Specifications](../prd/EDDIE_PRD_FEATURES.md)
 
-## 📑 Table of Contents
+## �� Table of Contents
 1. [Navigation Patterns](#1-navigation-patterns)
 2. [Input Patterns](#2-input-patterns)
 3. [Feedback Patterns](#3-feedback-patterns)
@@ -28,6 +28,7 @@ status: active
 5. [Animation Guidelines](#5-animation-guidelines)
 6. [Error States](#6-error-states)
 7. [Loading States](#7-loading-states)
+6. [Image Attachment Interaction](#6-image-attachment-interaction)
 
 ## 🔗 Code References
 - Navigation Service: `lib/services/navigation_service.dart`
@@ -118,6 +119,50 @@ This optional doc builds on the interaction patterns in [EDDIE_UIUX_SPEC_MAIN.md
 - **Q&A Tagging** & advanced filtering  
 - **Batch Export** Q&A pairs as CSV or JSON  
 - **In-app Notifications** for real-time updates
+
+---
+
+## 6. Image Attachment Interaction
+
+### 6.1 Attaching Images to Chat Messages
+
+#### User Flow
+1. User clicks attachment button in the chat input
+2. File picker dialog opens showing supported image formats (jpg, jpeg, png, webp, gif)
+3. User selects an image file
+4. System validates the image (size, format)
+5. If valid, a preview of the image appears in the input area
+6. User types a message (optional)
+7. User clicks send button
+8. Message with image attachment is sent to the AI
+9. Image appears inline in the user's message bubble
+10. AI response references the image content
+
+#### Error Handling
+- If image is too large: Error message indicating the size limit
+- If format is unsupported: Error message listing supported formats
+- If image fails to load after sending: Error placeholder with descriptive message
+- For web platform: Warning about temporary nature of attachments when errors occur
+
+#### Web Platform Considerations
+- Web file data is persisted to localStorage for improved experience
+- File data is keyed by a unique identifier
+- Files can be accessed across page refreshes (up to 10 most recent files)
+- Error states include instructions about session limitations
+
+#### Animation & Transitions
+- Smooth fade-in of image preview
+- Loading state when processing large images
+- Subtle scale animation when attaching images
+- Error messages appear with brief fade-in
+
+#### Component Interactions
+- **MessageBubble** component displays the image with appropriate formatting
+- **ErrorPlaceholder** component shows when images fail to load
+- **FileService** handles persistence of web file data
+- **OpenAIService** processes and includes images in API requests
+
+[↑ Back to Top](#eddie2-uiux-interaction-patterns)
 
 ---
 

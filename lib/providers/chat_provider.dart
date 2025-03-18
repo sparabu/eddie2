@@ -70,17 +70,6 @@ class ChatNotifier extends StateNotifier<List<Chat>> {
         chat = Chat(id: chatId, title: title);
       } else {
         chat = state[chatIndex];
-        
-        // We no longer need to update the title for the first message
-        // since we're setting it correctly when creating the chat
-        // Keep this commented out for reference
-        /*
-        // If this is the first message, update the chat title to be the first message
-        if (chat.messages.isEmpty) {
-          final title = content.length > 30 ? '${content.substring(0, 30)}...' : content;
-          chat = chat.copyWith(title: title);
-        }
-        */
       }
       
       // Add user message
@@ -98,64 +87,159 @@ class ChatNotifier extends StateNotifier<List<Chat>> {
         state = [...state, updatedChat];
       } else {
         // Update existing chat in state
-        state = [...state.sublist(0, chatIndex), updatedChat, ...state.sublist(chatIndex + 1)];
+        state = state.map((c) => c.id == chatId ? updatedChat : c).toList();
       }
       
-      // Save the chat
+      // Save the updated chat to storage
       await _storageService.saveChat(updatedChat);
       
-      // Get the current locale
-      final locale = _ref.read(localeProvider);
+      // Get all previous messages for context
+      final messages = updatedChat.messages;
       
-      // Send to OpenAI
-      try {
-        final response = await _openAIService.sendMessage(
-          messages: updatedChat.messages,
-          filePath: filePath,
-          languageCode: locale.languageCode,
-        );
-        
-        // Add assistant message
-        final assistantMessage = Message(
-          role: MessageRole.assistant,
-          content: response,
-        );
-        
-        // Find the updated index (it might have changed if this was a new chat)
-        final updatedIndex = state.indexWhere((chat) => chat.id == updatedChat.id);
-        
-        final finalChat = updatedChat.addMessage(assistantMessage);
-        state = [...state.sublist(0, updatedIndex), finalChat, ...state.sublist(updatedIndex + 1)];
-        await _storageService.saveChat(finalChat);
-        
-        // Clean up temporary file if needed
-        if (filePath != null) {
-          await _fileService.deleteTemporaryFile(filePath);
-        }
-      } catch (e) {
-        // Add error message
-        final errorMessage = Message(
-          role: MessageRole.assistant,
-          content: 'Error: ${e.toString()}',
-          isError: true,
-        );
-        
-        // Find the updated index (it might have changed if this was a new chat)
-        final updatedIndex = state.indexWhere((chat) => chat.id == updatedChat.id);
-        
-        final errorChat = updatedChat.addMessage(errorMessage);
-        state = [...state.sublist(0, updatedIndex), errorChat, ...state.sublist(updatedIndex + 1)];
-        await _storageService.saveChat(errorChat);
-        
-        // Clean up temporary file if needed
-        if (filePath != null) {
-          await _fileService.deleteTemporaryFile(filePath);
-        }
-        
-        rethrow;
-      }
+      // Send the message to OpenAI API
+      final responseText = await _openAIService.sendMessage(
+        messages: messages,
+        filePath: filePath,
+        languageCode: _ref.read(localeProvider).languageCode,
+      );
+      
+      // Add the assistant response as a new message
+      final assistantMessage = Message(
+        role: MessageRole.assistant,
+        content: responseText,
+      );
+      
+      // Update the chat with the assistant's response
+      final chatWithResponse = updatedChat.addMessage(assistantMessage);
+      
+      // Update state and save
+      state = state.map((c) => c.id == chatId ? chatWithResponse : c).toList();
+      await _storageService.saveChat(chatWithResponse);
     } catch (e) {
-      print('Error sending message: $e');
+      // Add error message
+      final errorMessage = Message(
+        role: MessageRole.assistant,
+        content: e.toString(),
+        isError: true,
+      );
+      
+      // Find the chat again from current state
+      final chat = state.firstWhere(
+        (c) => c.id == chatId,
+        orElse: () => Chat(id: chatId, title: 'Error'),
+      );
+      
+      final updatedChat = chat.addMessage(errorMessage);
+      
+      state = state.map((c) => c.id == chatId ? updatedChat : c).toList();
+      await _storageService.saveChat(updatedChat);
+      
+      rethrow;
+    }
+  }
+  
+  // New method specifically for sending with text files
+  Future<void> sendMessageWithFile(String chatId, String content, String filePath) async {
+    await sendMessage(chatId, content, filePath: filePath);
+  }
+  
+  // New method specifically for sending with image files
+  Future<void> sendMessageWithImage(String chatId, String content, String imagePath) async {
+    try {
+      debugPrint('Starting sendMessageWithImage with image: $imagePath');
+      
+      // Check if this is a new chat
+      final chatIndex = state.indexWhere((chat) => chat.id == chatId);
+      final isNewChat = chatIndex == -1;
+      
+      Chat chat;
+      if (isNewChat) {
+        final title = content.length > 30 ? '${content.substring(0, 30)}...' : content;
+        chat = Chat(id: chatId, title: title);
+        debugPrint('Created new chat with title: $title');
+      } else {
+        chat = state[chatIndex];
+        debugPrint('Using existing chat with ID: $chatId');
+      }
+      
+      // Add user message with image attachment
+      debugPrint('Creating user message with image attachment');
+      final userMessage = Message(
+        role: MessageRole.user,
+        content: content,
+        attachmentPath: imagePath,
+        attachmentName: imagePath.split('/').last,
+      );
+      
+      debugPrint('Adding message to chat');
+      final updatedChat = chat.addMessage(userMessage);
+      
+      if (isNewChat) {
+        state = [...state, updatedChat];
+        debugPrint('Added new chat to state');
+      } else {
+        state = state.map((c) => c.id == chatId ? updatedChat : c).toList();
+        debugPrint('Updated existing chat in state');
+      }
+      
+      // Save the updated chat
+      await _storageService.saveChat(updatedChat);
+      debugPrint('Saved chat to storage');
+      
+      // Get all previous messages for context
+      final messages = updatedChat.messages;
+      debugPrint('Retrieved ${messages.length} messages for API request');
+      
+      // Verify the last message has the correct attachment path
+      final lastMessage = messages.lastWhere((m) => m.role == MessageRole.user);
+      debugPrint('Last user message has attachment: ${lastMessage.attachmentPath != null}');
+      
+      // Send the message to OpenAI API, specifying this is an image
+      debugPrint('Sending message to OpenAI with image: $imagePath');
+      final responseText = await _openAIService.sendMessage(
+        messages: messages,
+        imagePath: imagePath,  // This will trigger vision API use
+        model: 'gpt-4o',       // Ensure we use a model that supports vision
+        languageCode: _ref.read(localeProvider).languageCode,
+      );
+      
+      debugPrint('Received response from OpenAI');
+      
+      // Add the assistant response
+      final assistantMessage = Message(
+        role: MessageRole.assistant,
+        content: responseText,
+      );
+      
+      // Update the chat with the response
+      final chatWithResponse = updatedChat.addMessage(assistantMessage);
+      debugPrint('Added assistant response to chat');
+      
+      // Update state and save
+      state = state.map((c) => c.id == chatId ? chatWithResponse : c).toList();
+      await _storageService.saveChat(chatWithResponse);
+      debugPrint('Updated state and saved final chat');
+    } catch (e) {
+      debugPrint('Error in sendMessageWithImage: $e');
+      
+      // Add error message
+      final errorMessage = Message(
+        role: MessageRole.assistant,
+        content: e.toString(),
+        isError: true,
+      );
+      
+      // Find the chat again from current state
+      final chat = state.firstWhere(
+        (c) => c.id == chatId,
+        orElse: () => Chat(id: chatId, title: 'Error'),
+      );
+      
+      final updatedChat = chat.addMessage(errorMessage);
+      
+      state = state.map((c) => c.id == chatId ? updatedChat : c).toList();
+      await _storageService.saveChat(updatedChat);
+      
       rethrow;
     }
   }

@@ -386,13 +386,28 @@ This document defines the UI components, screens, design system, and interaction
   - Left Panel: Sidebar (expanded or collapsed)  
   - Right Panel: Chat area  
     - Chat Header (breadcrumb: "Chat > [Chat Title]")  
-    - Message List (User/Assistant bubbles)  
+    - Message List (User/Assistant bubbles)
+      - Message Bubbles support text content
+      - Image Attachment support with previews in bubbles
+      - Error states for failed image loads with descriptive messages
     - Empty State: "What can I help you learn?"  
-    - Chat Input (text + file attach + send)  
+    - Chat Input (text + file attach + send)
+      - Attach button with support for:
+        - Text files for analysis
+        - Image files for visual queries (jpg, jpeg, png, webp, gif)
+        - Size validation with error handling
+      - Preview of attached files before sending
+  - Image Handling:
+    - Image attachments appear inline in the message bubble
+    - Responsive sizing with max dimensions
+    - Error states with clear messaging
+    - Persisted across browser sessions (web platform)
 - **Behavior**:
   - "New Chat" clears selection, shows empty state  
   - Actual chat created after first message  
-  - Breadcrumb shows new chat title  
+  - Breadcrumb shows new chat title
+  - Attached images sent to OpenAI for analysis
+  - Images stored with data persistence on web platform  
 - **Screen ID**: `ChatScreen`
 
 ### Q&A Screen
