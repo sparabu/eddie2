@@ -271,6 +271,7 @@ class ChatNotifier extends StateNotifier<List<Chat>> {
   Future<void> sendMessageWithMultipleFiles(String chatId, String content, List<String> filePaths) async {
     try {
       debugPrint('Starting sendMessageWithMultipleFiles with ${filePaths.length} files');
+      debugPrint('Files in original order: ${filePaths.map((p) => p.split('/').last).join(', ')}');
       
       // Check if this is a new chat
       final chatIndex = state.indexWhere((chat) => chat.id == chatId);
@@ -278,7 +279,7 @@ class ChatNotifier extends StateNotifier<List<Chat>> {
       
       Chat chat;
       if (isNewChat) {
-        final title = content.length > 30 ? '${content.substring(0, 30)}...' : content;
+        final title = content.length > 60 ? '${content.substring(0, 60)}...' : content;
         chat = Chat(id: chatId, title: title);
         debugPrint('Created new chat with title: $title');
       } else {
@@ -286,12 +287,14 @@ class ChatNotifier extends StateNotifier<List<Chat>> {
         debugPrint('Using existing chat with ID: $chatId');
       }
       
-      // Filter image files
+      // Filter image files while preserving original order
       final imageFiles = filePaths.where((path) {
         final extension = path.split('.').last.toLowerCase();
         return ['jpg', 'jpeg', 'png', 'webp', 'gif'].contains(extension) ||
             path.startsWith('web_file_'); // Web files might not have extensions
       }).toList();
+      
+      debugPrint('Image files in filtered order: ${imageFiles.map((p) => p.split('/').last).join(', ')}');
       
       // Add user message with multiple attachments
       debugPrint('Creating user message with multiple file attachments');
@@ -325,7 +328,13 @@ class ChatNotifier extends StateNotifier<List<Chat>> {
       // Verify the last message has the correct attachment paths
       final lastMessage = messages.lastWhere((m) => m.role == MessageRole.user);
       debugPrint('Last user message has main attachment: ${lastMessage.attachmentPath != null}');
+      if (lastMessage.attachmentPath != null) {
+        debugPrint('Main attachment: ${lastMessage.attachmentPath!.split('/').last}');
+      }
       debugPrint('Last user message has ${lastMessage.additionalAttachments?.length ?? 0} additional attachments');
+      if (lastMessage.additionalAttachments != null && lastMessage.additionalAttachments!.isNotEmpty) {
+        debugPrint('Additional attachments in order: ${lastMessage.additionalAttachments!.map((p) => p.split('/').last).join(', ')}');
+      }
       
       // Prepare the API call - if we only have images, use the image-based flow
       final bool hasOnlyImages = imageFiles.length == filePaths.length && imageFiles.isNotEmpty;
@@ -335,6 +344,11 @@ class ChatNotifier extends StateNotifier<List<Chat>> {
         // For multiple images, we'll use the first one as the primary and others as additional images
         final primaryImage = imageFiles.first;
         List<String>? additionalImages = imageFiles.length > 1 ? imageFiles.sublist(1) : null;
+        
+        debugPrint('Sending to OpenAI - primary image: ${primaryImage.split('/').last}');
+        if (additionalImages != null && additionalImages.isNotEmpty) {
+          debugPrint('Sending to OpenAI - additional images: ${additionalImages.map((p) => p.split('/').last).join(', ')}');
+        }
         
         // Pass the messages with primary image and additional images to the API
         responseText = await _openAIService.sendMessage(

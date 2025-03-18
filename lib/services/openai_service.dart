@@ -515,6 +515,11 @@ Example output format:
       'text': text,
     });
     
+    debugPrint('Creating multi-image message with primary: ${primaryImagePath.split('/').last}');
+    if (additionalImagePaths.isNotEmpty) {
+      debugPrint('Additional images (in order): ${additionalImagePaths.map((p) => p.split('/').last).join(', ')}');
+    }
+    
     // Add the primary image content
     try {
       debugPrint('Processing primary image from path: $primaryImagePath');
@@ -528,25 +533,30 @@ Example output format:
         }
       });
       
-      // Add all additional images
-      for (final additionalPath in additionalImagePaths) {
-        try {
-          debugPrint('Processing additional image from path: $additionalPath');
-          final additionalImageData = await _getImageData(additionalPath);
-          
-          content.add({
-            'type': 'image_url',
-            'image_url': {
-              'url': additionalImageData,
-            }
-          });
-          debugPrint('Successfully added additional image');
-        } catch (e) {
-          debugPrint('Error processing additional image: $e');
-          content.add({
-            'type': 'text',
-            'text': 'I tried to send you an additional image, but there was an error: $e'
-          });
+      // Add all additional images in the exact order provided
+      if (additionalImagePaths.isNotEmpty) {
+        debugPrint('Processing ${additionalImagePaths.length} additional images in provided order');
+        
+        for (int i = 0; i < additionalImagePaths.length; i++) {
+          final additionalPath = additionalImagePaths[i];
+          try {
+            debugPrint('Processing additional image ${i+1}/${additionalImagePaths.length} from path: ${additionalPath.split('/').last}');
+            final additionalImageData = await _getImageData(additionalPath);
+            
+            content.add({
+              'type': 'image_url',
+              'image_url': {
+                'url': additionalImageData,
+              }
+            });
+            debugPrint('Successfully added additional image ${i+1}');
+          } catch (e) {
+            debugPrint('Error processing additional image ${i+1}: $e');
+            content.add({
+              'type': 'text',
+              'text': 'I tried to send you an additional image, but there was an error: $e'
+            });
+          }
         }
       }
       

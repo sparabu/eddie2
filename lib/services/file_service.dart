@@ -257,10 +257,16 @@ class FileService {
         return null;
       }
       
+      debugPrint('Files selected in picker order: ${result.files.map((f) => f.name).join(', ')}');
+      
       // Process each file
       final List<Map<String, dynamic>> fileDataList = [];
+      // Use a single base timestamp to avoid reordering based on millisecond differences
+      final baseTimestamp = DateTime.now().millisecondsSinceEpoch;
       
-      for (final file in result.files) {
+      for (int i = 0; i < result.files.length; i++) {
+        final file = result.files[i];
+        
         // Check file size
         if (file.size > maxFileSizeBytes) {
           continue; // Skip files that are too large
@@ -282,7 +288,8 @@ class FileService {
           }
           
           // Generate a unique identifier for this file
-          final webFileId = 'web_file_${DateTime.now().millisecondsSinceEpoch}_${file.name}';
+          // Use index to maintain the original file order
+          final webFileId = 'web_file_${baseTimestamp}_${i}_${file.name}';
           
           // Store the bytes for later retrieval
           _webFileBytes[webFileId] = file.bytes!;
@@ -328,6 +335,8 @@ class FileService {
       if (kIsWeb) {
         _persistWebFiles();
       }
+      
+      debugPrint('Processed files in order: ${fileDataList.map((f) => f['name']).join(', ')}');
       
       return fileDataList.isEmpty ? null : fileDataList;
     } catch (e) {

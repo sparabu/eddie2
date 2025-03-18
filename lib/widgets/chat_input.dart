@@ -91,10 +91,14 @@ class _ChatInputState extends State<ChatInput> {
     if (message.isEmpty) return;
     
     if (_attachedFiles.isNotEmpty) {
+      debugPrint('Sending message with ${_attachedFiles.length} attachments');
+      debugPrint('Attachment order in UI: ${_attachedFiles.map((f) => f['name'] as String).join(', ')}');
+      
       // Check if we have multiple files
       if (_attachedFiles.length > 1) {
         // Get all file paths as a list
         final filePaths = _attachedFiles.map((file) => file['path'] as String).toList();
+        debugPrint('Sending files in order: ${filePaths.map((p) => p.split('/').last).join(', ')}');
         widget.onSendMessageWithMultipleFiles(message, filePaths);
       } else {
         // We have only one file, use existing methods for backward compatibility
@@ -102,6 +106,7 @@ class _ChatInputState extends State<ChatInput> {
         final filePath = fileData['path'] as String;
         final isImage = fileData['isImage'] as bool? ?? false;
         
+        debugPrint('Sending single file: ${filePath.split('/').last}');
         if (isImage) {
           widget.onSendMessageWithImage(message, filePath);
         } else {
