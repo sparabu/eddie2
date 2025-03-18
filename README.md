@@ -40,9 +40,14 @@ cd eddie2
 flutter pub get
 ```
 
-3. Run the app:
+3. Enable web support (if not already enabled):
 ```bash
-flutter run -d chrome
+flutter config --enable-web
+```
+
+4. Run the app:
+```bash
+flutter run -d web-server
 ```
 
 ### Configuration
