@@ -589,10 +589,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                 ),
                               ),
                               Expanded(
+                                flex: 3, // Give the title more space in the row
                                 child: Text(
                                   chats.firstWhere((chat) => chat.id == selectedChatId, orElse: () => Chat(title: '')).title,
                                   style: EddieTextStyles.body1(context),
                                   overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
                               ),
                             ],
@@ -642,10 +644,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                 ),
                               ),
                               Expanded(
+                                flex: 3, // Give the title more space in the row
                                 child: Text(
                                   qaPairs.firstWhere((qa) => qa.id == selectedQAPairId, orElse: () => QAPair(question: '', answer: '')).question,
                                   style: EddieTextStyles.body1(context),
                                   overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
                               ),
                             ],

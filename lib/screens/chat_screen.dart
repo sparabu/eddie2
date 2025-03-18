@@ -53,7 +53,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       
       if (selectedChatId == null) {
         // Create a new chat with the first message as the title
-        final title = message.length > 30 ? '${message.substring(0, 30)}...' : message;
+        final title = message.length > 60 ? '${message.substring(0, 60)}...' : message;
         final newChat = await ref.read(chatProvider.notifier).createChat(title: title);
         ref.read(selectedChatIdProvider.notifier).state = newChat.id;
         await ref.read(chatProvider.notifier).sendMessage(newChat.id, message);
@@ -95,7 +95,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       
       if (selectedChatId == null) {
         // Create a new chat with the first message as the title
-        final title = message.length > 30 ? '${message.substring(0, 30)}...' : message;
+        final title = message.length > 60 ? '${message.substring(0, 60)}...' : message;
         final newChat = await ref.read(chatProvider.notifier).createChat(title: title);
         ref.read(selectedChatIdProvider.notifier).state = newChat.id;
         await ref.read(chatProvider.notifier).sendMessageWithFile(newChat.id, message, filePath);
@@ -132,7 +132,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       
       if (selectedChatId == null) {
         // Create a new chat with the first message as the title
-        final title = message.length > 30 ? '${message.substring(0, 30)}...' : message;
+        final title = message.length > 60 ? '${message.substring(0, 60)}...' : message;
         final newChat = await ref.read(chatProvider.notifier).createChat(title: title);
         ref.read(selectedChatIdProvider.notifier).state = newChat.id;
         await ref.read(chatProvider.notifier).sendMessageWithImage(newChat.id, message, imagePath);
@@ -169,7 +169,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       
       if (selectedChatId == null) {
         // Create a new chat with the first message as the title
-        final title = message.length > 30 ? '${message.substring(0, 30)}...' : message;
+        final title = message.length > 60 ? '${message.substring(0, 60)}...' : message;
         final newChat = await ref.read(chatProvider.notifier).createChat(title: title);
         ref.read(selectedChatIdProvider.notifier).state = newChat.id;
         await ref.read(chatProvider.notifier).sendMessageWithMultipleFiles(
