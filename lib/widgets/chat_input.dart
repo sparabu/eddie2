@@ -96,7 +96,7 @@ class _ChatInputState extends State<ChatInput> {
       
       // Check if we have multiple files
       if (_attachedFiles.length > 1) {
-        // Get all file paths as a list
+        // Get all file paths as a list - maintain the order
         final filePaths = _attachedFiles.map((file) => file['path'] as String).toList();
         debugPrint('Sending files in order: ${filePaths.map((p) => p.split('/').last).join(', ')}');
         widget.onSendMessageWithMultipleFiles(message, filePaths);

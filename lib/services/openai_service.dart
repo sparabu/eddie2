@@ -520,51 +520,39 @@ Example output format:
       debugPrint('Additional images (in order): ${additionalImagePaths.map((p) => p.split('/').last).join(', ')}');
     }
     
-    // Add the primary image content
     try {
-      debugPrint('Processing primary image from path: $primaryImagePath');
-      final imageData = await _getImageData(primaryImagePath);
-      debugPrint('Successfully generated primary image data');
+      // Process all images in order, starting with the primary image
+      final allImagePaths = [primaryImagePath, ...additionalImagePaths];
+      debugPrint('Processing all images in this order: ${allImagePaths.map((p) => p.split('/').last).join(', ')}');
       
-      content.add({
-        'type': 'image_url',
-        'image_url': {
-          'url': imageData,
-        }
-      });
-      
-      // Add all additional images in the exact order provided
-      if (additionalImagePaths.isNotEmpty) {
-        debugPrint('Processing ${additionalImagePaths.length} additional images in provided order');
+      for (int i = 0; i < allImagePaths.length; i++) {
+        final imagePath = allImagePaths[i];
+        final isPrimary = i == 0;
         
-        for (int i = 0; i < additionalImagePaths.length; i++) {
-          final additionalPath = additionalImagePaths[i];
-          try {
-            debugPrint('Processing additional image ${i+1}/${additionalImagePaths.length} from path: ${additionalPath.split('/').last}');
-            final additionalImageData = await _getImageData(additionalPath);
-            
-            content.add({
-              'type': 'image_url',
-              'image_url': {
-                'url': additionalImageData,
-              }
-            });
-            debugPrint('Successfully added additional image ${i+1}');
-          } catch (e) {
-            debugPrint('Error processing additional image ${i+1}: $e');
-            content.add({
-              'type': 'text',
-              'text': 'I tried to send you an additional image, but there was an error: $e'
-            });
-          }
+        try {
+          debugPrint('Processing ${isPrimary ? "primary" : "additional"} image ${i+1}/${allImagePaths.length} from path: ${imagePath.split('/').last}');
+          final imageData = await _getImageData(imagePath);
+          
+          content.add({
+            'type': 'image_url',
+            'image_url': {
+              'url': imageData,
+            }
+          });
+          debugPrint('Successfully added ${isPrimary ? "primary" : "additional"} image ${i+1}');
+        } catch (e) {
+          debugPrint('Error processing image ${i+1}: $e');
+          content.add({
+            'type': 'text',
+            'text': 'I tried to send you ${isPrimary ? "the primary" : "an additional"} image, but there was an error: $e'
+          });
         }
       }
-      
     } catch (e) {
-      debugPrint('Error processing primary image: $e');
+      debugPrint('Error processing images: $e');
       content.add({
         'type': 'text',
-        'text': 'I tried to send you images, but there was an error with the primary image: $e'
+        'text': 'I tried to send you images, but there was an error: $e'
       });
     }
     

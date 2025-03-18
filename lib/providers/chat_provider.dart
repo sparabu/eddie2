@@ -341,7 +341,8 @@ class ChatNotifier extends StateNotifier<List<Chat>> {
       
       String responseText;
       if (hasOnlyImages) {
-        // For multiple images, we'll use the first one as the primary and others as additional images
+        // For multiple images, use the first image as primary and the rest as additional
+        // The order here is critical - maintain the same order the user selected
         final primaryImage = imageFiles.first;
         List<String>? additionalImages = imageFiles.length > 1 ? imageFiles.sublist(1) : null;
         

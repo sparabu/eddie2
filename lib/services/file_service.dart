@@ -257,15 +257,19 @@ class FileService {
         return null;
       }
       
-      debugPrint('Files selected in picker order: ${result.files.map((f) => f.name).join(', ')}');
+      // The FilePicker result contains files in reverse order from what the user sees in the dialog
+      // Reverse the list to match the order shown to the user
+      final orderedFiles = result.files.reversed.toList();
+      
+      debugPrint('Files selected in picker order (after correction): ${orderedFiles.map((f) => f.name).join(', ')}');
       
       // Process each file
       final List<Map<String, dynamic>> fileDataList = [];
       // Use a single base timestamp to avoid reordering based on millisecond differences
       final baseTimestamp = DateTime.now().millisecondsSinceEpoch;
       
-      for (int i = 0; i < result.files.length; i++) {
-        final file = result.files[i];
+      for (int i = 0; i < orderedFiles.length; i++) {
+        final file = orderedFiles[i];
         
         // Check file size
         if (file.size > maxFileSizeBytes) {
