@@ -141,6 +141,7 @@
   "userLabel": "You",
   "assistantLabel": "Eddie",
   "viewAll": "View All",
+  "showLess": "Show Less",
   
   "authSection": "Authentication",
   "loginToEddie": "Login to Eddie",

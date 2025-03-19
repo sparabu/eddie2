@@ -119,7 +119,7 @@ This document defines the UI components, screens, design system, and interaction
   - Icon (optional, e.g., for Settings)  
   - Children: List of items in the section  
   - Add button: Optional (used in Q&A section)  
-  - View All link: Optional link to see all items in main content  
+  - View All/Show Less link: Optional toggle to expand or collapse the section list  
 - **States**:
   - Expanded: Shows children  
   - Collapsed: Header only  
@@ -316,13 +316,13 @@ This document defines the UI components, screens, design system, and interaction
 
 ### View All Link
 - **Location**: Bottom of sidebar sections  
-- **Description**: Link to view all items  
+- **Description**: Link to expand/collapse complete list of items  
 - **Properties**:
-  - Text: "View All"  
-  - Icon: Chevron right  
-- **States**:
-  - Default: normal text color  
-  - Hover: slightly darker  
+  - Text: "View All" (when collapsed) or "Show Less" (when expanded)  
+  - Icon: expand_more (when collapsed) or expand_less (when expanded)  
+- **Behavior**:
+  - When clicked, toggles between showing all items or just the first 5  
+  - Changes text and icon based on current state  
 - **Component ID**: `ViewAllLink`
 
 ### Error Handling Components

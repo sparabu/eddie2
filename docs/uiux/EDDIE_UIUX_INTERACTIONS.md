@@ -247,6 +247,30 @@ This document builds on the interaction patterns in [EDDIE_UIUX_SPEC_MAIN.md](./
 - **MainScreen** manages the state of selected chats and provides callback functions
 - **ChatProvider** handles the data operations for renaming and deleting chats
 
+### 9.5 Sidebar List Expansion
+
+#### Expanding Chat List
+1. User clicks "View All" link in the Chats section of sidebar
+2. List expands to show all chats in the same sidebar
+3. The "View All" link changes to "Show Less" with an upward-facing arrow
+4. User can scroll through the entire list of chats
+
+#### Collapsing Chat List
+1. User clicks "Show Less" link 
+2. List collapses back to showing only the 5 most recent chats
+3. The link text returns to "View All" with a downward-facing arrow
+
+#### Expanding Q&A Pairs List
+1. User clicks "View All" link in the Q&A Pairs section of sidebar
+2. List expands to show all Q&A pairs in the same sidebar
+3. The "View All" link changes to "Show Less" with an upward-facing arrow
+4. User can scroll through the entire list of Q&A pairs
+
+#### Collapsing Q&A Pairs List
+1. User clicks "Show Less" link
+2. List collapses back to showing only the 5 most recent Q&A pairs
+3. The link text returns to "View All" with a downward-facing arrow
+
 ## 10. Project Setup Interactions
 
 ### 10.1 Conversational Project Setup Flow

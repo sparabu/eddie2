@@ -43,7 +43,7 @@ status: active
 - **Key Points**:
   - Sidebar can collapse on mobile or user's command.
   - "Recent Chats" in the sidebar for quick switching.
-  - "View All" opens a comprehensive chat list.
+  - "View All" expands the list in-place to show all chats within the sidebar.
   - Context menu for each chat in the sidebar with options to rename or delete the chat.
   - Three-dot menu appears when a chat is selected, providing quick access to management functions.
   - Modal dialogs for confirmation of chat deletion or renaming.

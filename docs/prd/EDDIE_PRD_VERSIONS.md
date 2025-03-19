@@ -68,6 +68,8 @@ status: active
 - Added prevention of file/image attachments during project setup phase
 - Improved extraction of project title and description from user messages
 - Enhanced user feedback during project setup process
+- Improved "View All" links to expand lists in-place rather than navigating to a different screen
+- Updated ViewAllLink component to support dynamic expand/collapse behavior
 
 ### 2.3 Version 1.2.0
 - Added support for multiple image attachments in a single message

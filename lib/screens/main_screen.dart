@@ -41,6 +41,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   bool _showAllChats = false;
   bool _showAllQAPairs = false;
   bool _showProject = false;
+  bool _isChatsExpanded = false;
+  bool _isQAPairsExpanded = false;
   
   final List<Widget> _screens = [
     const ChatScreen(),
@@ -174,17 +176,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   
   void _viewAllChats() {
     setState(() {
-      _selectedIndex = 0;
-      _showAllChats = true;
-      _showAllQAPairs = false;
+      _isChatsExpanded = !_isChatsExpanded;
     });
   }
   
   void _viewAllQAPairs() {
     setState(() {
-      _selectedIndex = 1;
-      _showAllChats = false;
-      _showAllQAPairs = true;
+      _isQAPairsExpanded = !_isQAPairsExpanded;
     });
   }
   
@@ -327,10 +325,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                   final sortedChats = List<Chat>.from(chats)
                                     ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
                                   
-                                  // Take only the 5 most recent chats
-                                  final recentChats = sortedChats.take(5).toList();
+                                  // Display all chats if expanded, otherwise just the first 5
+                                  final displayedChats = _isChatsExpanded 
+                                      ? sortedChats 
+                                      : sortedChats.take(5).toList();
                                   
-                                  return recentChats.map((chat) {
+                                  return displayedChats.map((chat) {
                                     return SidebarItem(
                                       id: chat.id,
                                       title: chat.title,
@@ -343,29 +343,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                   }).toList();
                                 })(),
                               if (chats.length > 5)
-                                TextButton(
-                                  onPressed: _viewAllChats,
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        l10n.viewAll,
-                                        style: EddieTextStyles.caption(context).copyWith(
-                                          color: EddieColors.getPrimary(context),
-                                        ),
-                                      ),
-                                      Icon(
-                                        Icons.chevron_right,
-                                        size: 14,
-                                        color: EddieColors.getPrimary(context),
-                                      ),
-                                    ],
-                                  ),
-                                  style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 4),
-                                    minimumSize: Size.zero,
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  ),
+                                ViewAllLink(
+                                  onTap: _viewAllChats,
+                                  isExpanded: _isChatsExpanded,
+                                  collapsedText: l10n.viewAll,
+                                  expandedText: l10n.showLess,
                                 ),
                             ],
                           ),
@@ -410,10 +392,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                 )
                               else
                                 ...(() {
-                                  // Take only the first 5 QA pairs
-                                  final recentQAPairs = qaPairs.take(5).toList();
+                                  // Display all QA pairs if expanded, otherwise just the first 5
+                                  final displayedQAPairs = _isQAPairsExpanded 
+                                      ? qaPairs 
+                                      : qaPairs.take(5).toList();
                                   
-                                  return recentQAPairs.map((qaPair) {
+                                  return displayedQAPairs.map((qaPair) {
                                     return InkWell(
                                       onTap: () => _selectQAPair(qaPair),
                                       borderRadius: BorderRadius.circular(4),
@@ -456,29 +440,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                   }).toList();
                                 })(),
                               if (qaPairs.length > 5)
-                                TextButton(
-                                  onPressed: _viewAllQAPairs,
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        l10n.viewAll,
-                                        style: EddieTextStyles.caption(context).copyWith(
-                                          color: EddieColors.getPrimary(context),
-                                        ),
-                                      ),
-                                      Icon(
-                                        Icons.chevron_right,
-                                        size: 14,
-                                        color: EddieColors.getPrimary(context),
-                                      ),
-                                    ],
-                                  ),
-                                  style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 4),
-                                    minimumSize: Size.zero,
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  ),
+                                ViewAllLink(
+                                  onTap: _viewAllQAPairs,
+                                  isExpanded: _isQAPairsExpanded,
+                                  collapsedText: l10n.viewAll,
+                                  expandedText: l10n.showLess,
                                 ),
                             ],
                           ),
