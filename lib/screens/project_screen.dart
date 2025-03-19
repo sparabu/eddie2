@@ -153,16 +153,52 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
     // Select this chat
     setState(() => _selectedChatId = setupChat.id);
     
-    // Send an initial message from the assistant asking for a title
-    final titlePromptMessage = Message(
+    // Send an initial message from the assistant to start the conversation
+    final initialMessage = Message(
       role: MessageRole.assistant,
-      content: "You want to create a new project, I understand. Can you give a title for the project, please?",
+      content: "Welcome to your new project! Please tell me about what you'd like to work on.",
     );
     
     await ref.read(chatProvider.notifier).addMessageToChat(
       setupChat.id,
-      titlePromptMessage,
+      initialMessage,
     );
+  }
+  
+  // Helper method to check if project needs setup
+  bool _projectNeedsSetup(Project project) {
+    return project.title == "Untitled" || project.description.isEmpty;
+  }
+  
+  // Get the appropriate system instruction based on project state
+  String _getSystemInstruction(Project project) {
+    final needsTitle = project.title == "Untitled";
+    final needsDescription = project.description.isEmpty;
+    
+    if (needsTitle && needsDescription) {
+      return "A new project has been created, but the user has not provided a title or description. "
+          "Your task is to request these fields from the user and then extract them from the user's response. "
+          "After extraction, respond using only the following formats:\n\n"
+          "Title Extraction\n"
+          "Response Format: TITLE: [extracted title]\n"
+          "Example: If the user says \"I want to create a project about AI,\" respond with 'TITLE: AI'\n\n"
+          "Description Extraction\n"
+          "Response Format: DESCRIPTION: [extracted description]\n"
+          "Example: If the user says \"This project is about the Oxford English Dictionary,\" extract an appropriate description.\n\n"
+          "If the user's message contains information for both title and description, extract both. "
+          "If the user's message only contains information for one field, extract that field and ask for the other.";
+    } else if (needsTitle) {
+      return "The project needs a title. "
+          "Extract a concise and appropriate title from the user's message. "
+          "Respond ONLY in this exact format: 'TITLE: [extracted title]'.";
+    } else if (needsDescription) {
+      return "The project needs a description. "
+          "Extract a concise and appropriate description from the user's message. "
+          "Respond ONLY in this exact format: 'DESCRIPTION: [extracted description]'.";
+    }
+    
+    // If neither title nor description is needed, return empty string
+    return "";
   }
   
   void _processUserResponse(String chatId, Message message) async {
@@ -171,31 +207,28 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
     final chat = ref.read(chatProvider.notifier).getChatById(chatId);
     if (chat == null) return;
     
-    // Find all assistant messages in this chat
-    final assistantMessages = chat.messages
-        .where((m) => m.role == MessageRole.assistant)
-        .toList();
+    // Get the current project
+    final project = ref.read(projectProvider.notifier).getProject(widget.projectId);
+    if (project == null) return;
     
-    // Check if this is a response to the title prompt
-    if (assistantMessages.isNotEmpty && 
-        assistantMessages.last.content.contains("give a title for the project")) {
+    // Check if the project needs setup (title is "Untitled" or description is empty)
+    final needsSetup = _projectNeedsSetup(project);
+    
+    if (needsSetup) {
+      // Get the appropriate system instruction
+      final systemInstruction = _getSystemInstruction(project);
       
-      // Send the user message to OpenAI with the system instruction but don't show the response
-      final systemInstruction = "You are helping the user set up a new project. "
-          "Extract a concise and appropriate title from the user's message. "
-          "Respond ONLY in this exact format: 'TITLE: [extracted title]'. "
-          "For example, if user says 'I want to create a project about AI', respond with 'TITLE: AI Project'";
-      
+      // Process the message with the system instruction
       final responseText = await ref.read(chatProvider.notifier).processMessageWithHiddenResponse(
         chatId,
         message.content,
         systemInstruction,
       );
       
-      // Extract the title from the formatted response (TITLE: [extracted title])
-      final match = RegExp(r'TITLE:\s*(.+)').firstMatch(responseText);
-      if (match != null && match.group(1) != null) {
-        final extractedTitle = match.group(1)!.trim();
+      // Check for title in the response
+      final titleMatch = RegExp(r'TITLE:\s*(.+)(?:\n|$)').firstMatch(responseText);
+      if (titleMatch != null && titleMatch.group(1) != null && project.title == "Untitled") {
+        final extractedTitle = titleMatch.group(1)!.trim();
         
         // Update the project title
         await ref.read(projectProvider.notifier).updateProjectTitle(
@@ -215,37 +248,10 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
         );
       }
       
-      // Now send the description prompt
-      final descriptionPromptMessage = Message(
-        role: MessageRole.assistant,
-        content: "Great. Now can you describe your project in more detail?",
-      );
-      
-      await ref.read(chatProvider.notifier).addMessageToChat(
-        chatId,
-        descriptionPromptMessage,
-      );
-    }
-    // Check if this is a response to the description prompt
-    else if (assistantMessages.isNotEmpty && 
-             assistantMessages.last.content.contains("describe your project")) {
-      
-      // Send the user message to OpenAI with the system instruction but don't show the response
-      final systemInstruction = "You are helping the user set up a new project. "
-          "Extract a concise and appropriate description from the user's message. "
-          "Respond ONLY in this exact format: 'DESCRIPTION: [extracted description]'. "
-          "If user says something unrelated, try to formulate a valid description from contextual clues.";
-      
-      final responseText = await ref.read(chatProvider.notifier).processMessageWithHiddenResponse(
-        chatId,
-        message.content,
-        systemInstruction,
-      );
-      
-      // Extract the description from the formatted response (DESCRIPTION: [extracted description])
-      final match = RegExp(r'DESCRIPTION:\s*(.+)', dotAll: true).firstMatch(responseText);
-      if (match != null && match.group(1) != null) {
-        final extractedDescription = match.group(1)!.trim();
+      // Check for description in the response
+      final descMatch = RegExp(r'DESCRIPTION:\s*(.+)', dotAll: true).firstMatch(responseText);
+      if (descMatch != null && descMatch.group(1) != null && project.description.isEmpty) {
+        final extractedDescription = descMatch.group(1)!.trim();
         
         // Update the project description
         await ref.read(projectProvider.notifier).updateProjectDescription(
@@ -254,15 +260,40 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
         );
       }
       
-      // Continue the conversation with OpenAI normally after setup
-      await ref.read(chatProvider.notifier).sendMessage(
-        chatId,
-        message.content,
+      // Create an appropriate response message based on what was extracted
+      String responseContent;
+      final updatedProject = ref.read(projectProvider.notifier).getProject(widget.projectId);
+      
+      if (updatedProject != null) {
+        if (updatedProject.title != "Untitled" && !updatedProject.description.isEmpty) {
+          // Both title and description are set
+          responseContent = "Thank you! I've updated your project with the title '${updatedProject.title}' and saved your description. How can I help you with this project?";
+        } else if (updatedProject.title != "Untitled") {
+          // Only title is set
+          responseContent = "Great! I've set your project title to '${updatedProject.title}'. Could you also provide a brief description of what this project is about?";
+        } else if (!updatedProject.description.isEmpty) {
+          // Only description is set
+          responseContent = "Thanks for the description! Could you also provide a title for your project?";
+        } else {
+          // Neither was set (extraction failed)
+          responseContent = "I'd like to set up your project. Could you provide a title and a brief description of what you're working on?";
+        }
+      } else {
+        responseContent = "I'd like to set up your project. Could you provide a title and a brief description of what you're working on?";
+      }
+      
+      // Add the response to the chat
+      final aiResponseMessage = Message(
+        role: MessageRole.assistant,
+        content: responseContent,
       );
-    }
-    // Regular chat after setup is complete
-    else if (!chat.title.startsWith("Setup - ")) {
-      // This is a regular message, send to OpenAI normally
+      
+      await ref.read(chatProvider.notifier).addMessageToChat(
+        chatId,
+        aiResponseMessage,
+      );
+    } else {
+      // Project is fully set up, process message normally
       await ref.read(chatProvider.notifier).sendMessage(
         chatId,
         message.content,
@@ -804,17 +835,28 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                         message,
                       );
                       
-                      // Process the message - this will handle both setup flow and regular chats
-                      _processUserResponse(_selectedChatId!, message);
+                      // Get the current project to check if setup is needed
+                      final project = ref.read(projectProvider.notifier).getProject(widget.projectId);
+                      if (project != null && _projectNeedsSetup(project)) {
+                        // Special handling for project setup phase
+                        _processUserResponse(_selectedChatId!, message);
+                      } else {
+                        // Normal chat processing for projects that are already set up
+                        await ref.read(chatProvider.notifier).sendMessage(
+                          _selectedChatId!,
+                          content,
+                        );
+                      }
                     },
                     onSendMessageWithFile: (content, filePath) async {
                       // Get the current chat
                       final chat = ref.read(chatProvider.notifier).getChatById(_selectedChatId!);
+                      final project = ref.read(projectProvider.notifier).getProject(widget.projectId);
                       
-                      // For setup flow chats, don't allow file attachments
-                      if (chat != null && chat.title.startsWith("Setup - ")) {
+                      // Don't allow file attachments during project setup
+                      if (project != null && _projectNeedsSetup(project)) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Files cannot be attached during project setup.')),
+                          SnackBar(content: Text('Files cannot be attached until project setup is complete.')),
                         );
                         return;
                       }
@@ -829,11 +871,12 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                     onSendMessageWithImage: (content, imagePath) async {
                       // Get the current chat
                       final chat = ref.read(chatProvider.notifier).getChatById(_selectedChatId!);
+                      final project = ref.read(projectProvider.notifier).getProject(widget.projectId);
                       
-                      // For setup flow chats, don't allow image attachments
-                      if (chat != null && chat.title.startsWith("Setup - ")) {
+                      // Don't allow image attachments during project setup
+                      if (project != null && _projectNeedsSetup(project)) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Images cannot be attached during project setup.')),
+                          SnackBar(content: Text('Images cannot be attached until project setup is complete.')),
                         );
                         return;
                       }
@@ -848,11 +891,12 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                     onSendMessageWithMultipleFiles: (content, filePaths) async {
                       // Get the current chat
                       final chat = ref.read(chatProvider.notifier).getChatById(_selectedChatId!);
+                      final project = ref.read(projectProvider.notifier).getProject(widget.projectId);
                       
-                      // For setup flow chats, don't allow file attachments
-                      if (chat != null && chat.title.startsWith("Setup - ")) {
+                      // Don't allow file attachments during project setup
+                      if (project != null && _projectNeedsSetup(project)) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Files cannot be attached during project setup.')),
+                          SnackBar(content: Text('Files cannot be attached until project setup is complete.')),
                         );
                         return;
                       }

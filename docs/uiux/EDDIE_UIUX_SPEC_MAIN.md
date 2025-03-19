@@ -177,6 +177,24 @@ This document defines the UI components, screens, design system, and interaction
   - Loading: Shows loading indicator  
 - **Component ID**: `ChatInput`
 
+#### Project Setup Welcome Message
+- **Location**: Chat area, first message when creating a new project
+- **Description**: Initial message that starts the project setup conversation
+- **Properties**:
+  - Text: "Welcome to your new project! Please tell me about what you'd like to work on."
+  - Styling: Assistant message format
+- **Component ID**: `ProjectSetupWelcomeMessage`
+
+#### Project Setup Feedback Message
+- **Location**: Chat area, responses during project setup
+- **Description**: Messages that provide feedback on the setup progress
+- **Variants**:
+  - Title extracted: "Great! I've set your project title to '[title]'. Could you also provide a brief description of what this project is about?"
+  - Description extracted: "Thanks for the description! Could you also provide a title for your project?"
+  - Both extracted: "Thank you! I've updated your project with the title '[title]' and saved your description. How can I help you with this project?"
+  - Neither extracted: "I'd like to set up your project. Could you provide a title and a brief description of what you're working on?"
+- **Component ID**: `ProjectSetupFeedbackMessage`
+
 ### Q&A Components
 
 #### Q&A Pair Item

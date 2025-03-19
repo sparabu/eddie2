@@ -120,6 +120,12 @@ For teams focused primarily on a web application and wanting to use Tailwind CSS
   - Large welcome message "What can I help you learn?"  
   - Input field placeholder "Ask Eddie to create..."  
   - Clean interface with minimal controls  
+- **Conversational Project Setup**:  
+  - Natural language interaction to gather project information
+  - Dynamic extraction of title and description from user messages
+  - Contextual feedback based on what information is still needed
+  - Prevention of file attachments during setup phase
+  - Seamless transition from setup to normal chat mode
 - **Real-time Integration** with the OpenAI API for prompts & responses  
 - **Persistent Chat History** stored locally  
 - **Automatic Q&A Pair Detection** with a "Save as Q&A" button  

@@ -51,9 +51,9 @@ Welcome to the Eddie2 project documentation. This folder contains all the docs y
 
 ## 📅 Version Information
 
-- **Current Version**: 1.1.0
-- **Last Updated**: March 18, 2025
-- **Documentation Version**: 1.1.0
+- **Current Version**: 1.4.0
+- **Last Updated**: March 19, 2025
+- **Documentation Version**: 1.4.0
 
 ## 🔄 Maintenance
 

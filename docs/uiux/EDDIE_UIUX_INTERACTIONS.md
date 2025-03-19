@@ -30,6 +30,7 @@ status: active
 7. [Loading States](#7-loading-states)
 8. [Image Attachment Interaction](#8-image-attachment-interaction)
 9. [Chat Management Interactions](#9-chat-management-interactions)
+10. [Project Setup Interactions](#10-project-setup-interactions)
 
 ## 🔗 Code References
 - Navigation Service: `lib/services/navigation_service.dart`
@@ -245,6 +246,47 @@ This document builds on the interaction patterns in [EDDIE_UIUX_SPEC_MAIN.md](./
 - **SidebarItem** component handles the display of each chat item and its options
 - **MainScreen** manages the state of selected chats and provides callback functions
 - **ChatProvider** handles the data operations for renaming and deleting chats
+
+## 10. Project Setup Interactions
+
+### 10.1 Conversational Project Setup Flow
+
+#### Flow Overview
+1. User creates a new project which enters setup mode
+2. System displays welcome message: "Welcome to your new project! Please tell me about what you'd like to work on."
+3. User provides information about the project
+4. System extracts title and/or description from user's message
+5. System provides feedback on what information was extracted and what's still needed
+6. Process continues until both title and description are complete
+7. System gives final confirmation and transitions to normal chat mode
+
+#### Title Extraction
+1. System detects when a message contains potential title information
+2. Extracts a concise title using dynamic system instructions
+3. Updates project title and chat title simultaneously
+4. Provides feedback to user confirming title extraction
+
+#### Description Extraction
+1. System detects when a message contains potential description information
+2. Extracts an appropriate description using dynamic system instructions
+3. Updates project description field
+4. Provides feedback to user confirming description extraction
+
+#### Combined Extraction
+1. If user provides both title and description in one message, system extracts both
+2. Updates both fields simultaneously
+3. Provides comprehensive feedback about the completed setup
+
+#### Message Handling During Setup
+1. Messages are processed through special handlers during project setup
+2. Prevents message duplication issues
+3. Blocks file and image attachments until setup is complete
+4. Provides clear error messages if user attempts to attach files during setup
+
+#### Transition to Normal Mode
+1. Once both title and description are established, project exits setup mode
+2. All chat features become available (file attachments, etc.)
+3. User can now interact with the project normally
 
 [↑ Back to Top](#eddie2-uiux-interaction-patterns)
 

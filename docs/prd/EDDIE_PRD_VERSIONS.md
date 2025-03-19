@@ -61,7 +61,15 @@ status: active
 - Improved overall UX for chat management with modal dialogs and context menus
 - Updated UI components for a more consistent interaction pattern
 
-### 2.2 Version 1.2.0
+### 2.2 Version 1.4.0 (Upcoming)
+- Implemented improved project setup flow with conversational interface
+- Fixed duplicate message issue in chat interactions
+- Enhanced message processing with dynamic system instructions
+- Added prevention of file/image attachments during project setup phase
+- Improved extraction of project title and description from user messages
+- Enhanced user feedback during project setup process
+
+### 2.3 Version 1.2.0
 - Added support for multiple image attachments in a single message
 - Implemented grid layout for displaying multiple images in message bubbles
 - Fixed file ordering to preserve the exact order of files as selected by the user
@@ -69,7 +77,7 @@ status: active
 - Updated UI to show all attached images in their original selection order
 - Improved debugging and logging for file operations
 
-### 2.3 Version 1.1.0
+### 2.4 Version 1.1.0
 - Added image attachment support to chat messages
 - Implemented image previews in chat interface
 - Added persistence of web file data across browser sessions
@@ -77,17 +85,17 @@ status: active
 - Enhanced FileService with data persistence capabilities
 - Improved error handling for image files
 
-### 2.4 Version 1.0.0
+### 2.5 Version 1.0.0
 - Initial release with core features
 - Complete MVP implementation
 - Basic UI/UX implementation
 
-### 2.5 Version 0.9.0 (Beta)
+### 2.6 Version 0.9.0 (Beta)
 - Feature-complete beta release
 - Performance optimizations
 - Bug fixes and improvements
 
-### 2.6 Version 0.8.0 (Alpha)
+### 2.7 Version 0.8.0 (Alpha)
 - Early alpha release
 - Core functionality implementation
 - Basic UI framework

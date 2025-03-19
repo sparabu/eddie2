@@ -83,6 +83,16 @@ status: active
   - Replaces the default app title when in a chat or Q&A detail.
   - "Chat > View All" for All Chats Screen, etc.
 
+### 1.6 Improved Project Setup Flow
+- **User Story**: As a user, I want a natural conversation flow when setting up a new project, so I can provide title and description without feeling like I'm filling out a form.
+- **Key Points**:
+  - Conversational approach to collecting project information
+  - Dynamic adaptation to user responses
+  - Ability to extract both title and description from a single message
+  - Prevention of duplicate messages during setup
+  - Blocking of file/image attachments until setup is complete
+  - Clear user feedback about project setup state
+
 [↑ Back to Top](#eddie2-features-specification)
 
 ## 2. MVP Features
