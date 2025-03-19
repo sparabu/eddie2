@@ -23,7 +23,7 @@ class ViewAllLink extends StatelessWidget {
   Widget build(BuildContext context) {
     final displayText = isExpanded 
         ? (expandedText ?? 'Show Less') 
-        : (collapsedText ?? text.isNotEmpty ? text : 'View All');
+        : (collapsedText ?? (text.isNotEmpty ? text : 'View All'));
     
     return TextButton(
       onPressed: onTap,

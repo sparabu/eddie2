@@ -824,24 +824,28 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                     onSendMessage: (content) async {
                       if (content.trim().isEmpty) return;
                       
-                      final message = Message(
-                        role: MessageRole.user,
-                        content: content,
-                      );
-                      
-                      // Add the user message to the chat
-                      await ref.read(chatProvider.notifier).addMessageToChat(
-                        _selectedChatId!,
-                        message,
-                      );
-                      
                       // Get the current project to check if setup is needed
                       final project = ref.read(projectProvider.notifier).getProject(widget.projectId);
                       if (project != null && _projectNeedsSetup(project)) {
                         // Special handling for project setup phase
+                        // Create and add the user message
+                        final message = Message(
+                          role: MessageRole.user,
+                          content: content,
+                        );
+                        
+                        // Add the user message to the chat
+                        await ref.read(chatProvider.notifier).addMessageToChat(
+                          _selectedChatId!,
+                          message,
+                        );
+                        
+                        // Process the response
                         _processUserResponse(_selectedChatId!, message);
                       } else {
                         // Normal chat processing for projects that are already set up
+                        // The sendMessage method internally adds the user message to the chat,
+                        // so we don't need to add it separately
                         await ref.read(chatProvider.notifier).sendMessage(
                           _selectedChatId!,
                           content,
