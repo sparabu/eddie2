@@ -1,15 +1,15 @@
 ---
 title: Eddie2 Features Specification
-version: 1.5.0
-last_updated: 2025-03-20
+version: 1.6.0
+last_updated: 2025-07-15
 status: active
 ---
 
 # Eddie2 Features Specification
 
-![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.6.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
-![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--20-lightgrey.svg)
+![Last Updated](https://img.shields.io/badge/last%20updated-2025--07--15-lightgrey.svg)
 
 ## 🗺️ Navigation
 [Documentation Index](../INDEX.md) > [Product Requirements](.) > Features
@@ -132,10 +132,17 @@ status: active
 - **User Story**: As a user, I want to upload multiple files and get AI analysis of their content, so I can work with complex documents.
 - **Implementation Status**:
   - Multiple image attachments: ✅ Implemented
+  - PDF processing with text extraction: ✅ Implemented
   - Multiple document/text files: ⏳ Planned
 - **Key Points**:
   - Multiple file upload for images, currently limited to image formats (jpg, jpeg, png, webp, gif).
   - Support for sending multiple images to OpenAI in a single message.
+  - Advanced PDF processing capabilities:
+    - Text extraction from PDF documents
+    - Intelligent chunking for large documents
+    - Metadata retrieval (title, author, page count)
+    - Structured analysis of multi-page documents
+    - Context preservation across document sections
   - Future enhancement for multiple document upload.
   - File type validation.
   - Progress tracking.
@@ -252,15 +259,45 @@ status: active
 - Right-to-Left layout if Arabic/Hebrew are supported.
 - Region-specific formatting (dates, numbers).
 
-## 9. Advanced File Handling (Post-MVP)
+## 9. Document Processing & Analysis
 
-### 9.1 Multiple Files
-- **User Story**: As a user, I want to attach multiple files at once for the AI to consider.
-- **Plan**:
-  - Possibly multi-file pickers, drag-and-drop in the chat input.
+### 9.1 PDF Document Processing
+- **User Story**: As a user, I want to upload PDF documents and have the AI analyze their content, so I can get insights without manually copying text.
+- **Implementation Status**: ✅ Implemented
+- **Key Points**:
+  - Integration with Syncfusion Flutter PDF for robust text extraction
+  - Automatic text preprocessing to improve quality:
+    - Hyphenation fixing
+    - Whitespace normalization
+    - Headers/footers removal
+  - Intelligent document chunking:
+    - Token-aware segmentation for large documents
+    - Context preservation between chunks
+    - Semantic splitting at natural boundaries
+  - Enhanced metadata extraction:
+    - Document title, author, creation date
+    - Page count and structure information
+    - Content type detection
+  - Progressive document analysis:
+    - Section-by-section processing
+    - Coherent multi-part analysis
+    - Overall document summary
+  - Optimized for both small and large documents:
+    - Direct processing for documents under 10 pages
+    - Multi-phase chunking for larger documents
+    - Adaptive model selection based on content size
 
-### 9.2 Compression & Preview
-- Inline previews for images, PDF expansions, etc.
+### 9.2 Future Document Processing Enhancements
+- **User Story**: As a user, I want enhanced document processing capabilities, so I can work with a wider range of file types and more complex documents.
+- **Implementation Status**: ⏳ Planned
+- **Key Points**:
+  - OCR capabilities for scanned documents
+  - Support for additional document formats (DOCX, TXT, etc.)
+  - Table and chart extraction from documents
+  - Multilingual document support
+  - Document comparison capabilities
+
+[↑ Back to Top](#eddie2-features-specification)
 
 ## 10. Cross-Platform Goals (Post-MVP)
 

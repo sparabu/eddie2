@@ -48,12 +48,13 @@ Welcome to the Eddie2 project documentation. This folder contains all the docs y
 - Design system implementation: `lib/theme/eddie_design_system.dart`
 - Component examples and usage are referenced in the UI/UX docs
 - API integration points are documented in the PRD
+- PDF processing: `lib/services/pdf_service.dart` 
 
 ## 📅 Version Information
 
-- **Current Version**: 1.5.0
-- **Last Updated**: March 20, 2025
-- **Documentation Version**: 1.5.0
+- **Current Version**: 1.6.0
+- **Last Updated**: July 15, 2025
+- **Documentation Version**: 1.6.0
 
 ## 🔄 Maintenance
 

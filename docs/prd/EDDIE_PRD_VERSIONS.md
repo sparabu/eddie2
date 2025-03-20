@@ -1,15 +1,15 @@
 ---
 title: Eddie2 Version History
-version: 1.5.0
-last_updated: 2025-03-20
+version: 1.6.0
+last_updated: 2025-07-15
 status: active
 ---
 
 # Eddie2 Version History
 
-![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.6.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
-![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--20-lightgrey.svg)
+![Last Updated](https://img.shields.io/badge/last%20updated-2025--07--15-lightgrey.svg)
 
 ## 🗺️ Navigation
 [Documentation Index](../INDEX.md) > [Product Requirements](.) > Version History
@@ -53,15 +53,25 @@ status: active
 
 ## 2. Release History
 
-### 2.1 Current Version: 1.5.0 (March 2025)
+### 2.1 Current Version: 1.6.0 (July 2025)
+- **Major Features**:
+  - Advanced PDF document processing
+  - Intelligent chunking for large documents
+  - Multi-section document analysis
+  - Enhanced text extraction and preprocessing
+  - Adaptive model selection based on document size
+  - Extensive metadata extraction from documents
+  - Context preservation across document sections
+
+### 2.2 Previous Versions
+
+#### 1.5.0 (March 2025)
 - **Major Features**:
   - Centralized navigation system with navigation provider
   - Improved project setup flow
   - Fixed Settings navigation from project screen
   - Enhanced chat message handling to prevent duplicates
   - Restricted file operations during project setup
-
-### 2.2 Previous Versions
 
 #### 1.4.0 (March 2024)
 - **Major Features**:
@@ -105,19 +115,22 @@ status: active
 
 ## 3. Breaking Changes
 
-### 3.1 Version 1.3.0
+### 3.1 Version 1.6.0
 - None
 
-### 3.2 Version 1.2.0
+### 3.2 Version 1.5.0
 - None
 
-### 3.3 Version 1.1.0
+### 3.3 Version 1.2.0
 - None
 
-### 3.4 Version 1.0.0
+### 3.4 Version 1.1.0
+- None
+
+### 3.5 Version 1.0.0
 - None (initial release)
 
-### 3.5 Version 0.9.0
+### 3.6 Version 0.9.0
 - Updated API endpoints
 - Modified data structure
 - UI component changes
@@ -138,24 +151,28 @@ status: active
 
 ## 5. Migration Guides
 
-### 5.1 Version 1.2.0 to 1.3.0
+### 5.1 Version 1.5.0 to 1.6.0
 - No migration steps required
 - Feature is backward compatible
 
-### 5.2 Version 1.1.0 to 1.2.0
+### 5.2 Version 1.2.0 to 1.5.0
 - No migration steps required
 - Feature is backward compatible
 
-### 5.3 Version 1.0.0 to 1.1.0
+### 5.3 Version 1.1.0 to 1.2.0
 - No migration steps required
 - Feature is backward compatible
 
-### 5.4 Version 0.9.0 to 1.0.0
+### 5.4 Version 1.0.0 to 1.1.0
+- No migration steps required
+- Feature is backward compatible
+
+### 5.5 Version 0.9.0 to 1.0.0
 - Update dependencies
 - Migrate data structure
 - Update UI components
 
-### 5.5 Version 0.8.0 to 0.9.0
+### 5.6 Version 0.8.0 to 0.9.0
 - Update API calls
 - Migrate settings
 - Update UI framework

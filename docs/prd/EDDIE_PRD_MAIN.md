@@ -1,15 +1,15 @@
 ---
 title: Eddie2 Product Requirements Document
-version: 1.5.0
-last_updated: 2025-03-20
+version: 1.6.0
+last_updated: 2025-07-15
 status: active
 ---
 
 # Eddie2 Product Requirements Document
 
-![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.6.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
-![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--20-lightgrey.svg)
+![Last Updated](https://img.shields.io/badge/last%20updated-2025--07--15-lightgrey.svg)
 
 ## 🗺️ Navigation
 [Documentation Index](../INDEX.md) > [Product Requirements](.) > Main PRD
@@ -45,6 +45,7 @@ Eddie2 is an AI-driven education-focused application that helps users interact w
 - **API Key Storage**: Secure management of user-provided API keys  
 - **Selectable Text**: Allows copy/paste of chat messages  
 - **File Upload**: Basic single-file attachment within the chat, supporting any file type allowed by OpenAI  
+- **PDF Processing**: Intelligent PDF text extraction with preprocessing and advanced document analysis  
 - **Recent Chats**: Display of the 5 most recent chats in the sidebar, sorted chronologically  
 - **View All Links**: "View All" links for both Recent Chats and Q&A Pairs sections to show all items  
 - **Sidebar Divider**: Vertical divider bar that acts as a toggle for the sidebar  
@@ -63,6 +64,7 @@ Eddie2 is an AI-driven education-focused application that helps users interact w
 - **Offline Support & Synchronization**: Data sync across multiple devices, with offline access  
 - **Optional Dark Mode**: Toggleable dark/light themes  
 - **Multilingual Support**: Full localization with language selection  
+- **Enhanced Document Processing**: OCR for scanned documents, table extraction, and multi-format support  
 
 [↑ Back to Top](#eddie2-product-requirements-document)
 
@@ -84,6 +86,8 @@ Eddie2 is an AI-driven education-focused application that helps users interact w
 - **File Handling**:  
   - File picker for selecting single files  
   - Base64 encoding for sending file data to OpenAI
+  - Syncfusion Flutter PDF for PDF text extraction and processing
+  - Intelligent chunking system for large document handling
 
 - **AI Processing**: OpenAI API for generating Q&A content  
 - **Web Deployment**: Flutter web with responsive design  
@@ -130,7 +134,8 @@ For teams focused primarily on a web application and wanting to use Tailwind CSS
 - **Persistent Chat History** stored locally  
 - **Automatic Q&A Pair Detection** with a "Save as Q&A" button  
 - **Selectable Text** for convenient copy/paste  
-- **File Attachment**: Single-file upload workflow  
+- **File Attachment**: Single-file upload workflow
+- **PDF Processing**: Intelligent PDF text extraction with preprocessing and advanced document analysis
 - **Simplified Chat List Items** for better space utilization
 
 #### Full Implementation (Post-MVP)

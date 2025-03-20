@@ -332,11 +332,12 @@ Please analyze the content of this document.
       // Create introduction for chunked processing
       debugPrint('Starting chunked processing of large PDF');
       
-      // Get chunks with intelligent splitting
+      // Get chunks with intelligent splitting, enabling OCR if needed
       final chunks = await pdfService.extractAndChunkText(
         pdfBytes, 
         maxTokens: 6000,  // Use a larger chunk size for efficiency
-        overlapSentences: 2  // Overlap 2 sentences between chunks for context
+        overlapSentences: 2,  // Overlap 2 sentences between chunks for context
+        useOcrIfNeeded: true  // Enable OCR for scanned documents
       );
       
       if (chunks.isEmpty) {
@@ -345,13 +346,17 @@ Please analyze the content of this document.
       
       debugPrint('PDF successfully split into ${chunks.length} chunks');
       
+      // Check if OCR was used and include in message
+      final bool usedOcr = chunks.isNotEmpty && chunks[0]['metadata']['processedWithOcr'] == true;
+      final String ocrInfo = usedOcr ? ' (OCR processed)' : '';
+      
       // If there's only one chunk, process it directly
       if (chunks.length == 1) {
         final chunk = chunks.first;
         final pdfMessage = {
           'role': 'user',
           'content': '''
-This is text extracted from a PDF document:
+This is text extracted from a PDF document$ocrInfo:
 Title: $title
 Pages: $pageCount
 ${metadata['author'] != null ? 'Author: $author' : ''}
@@ -359,6 +364,8 @@ ${metadata['author'] != null ? 'Author: $author' : ''}
 ===== DOCUMENT CONTENT =====
 ${chunk['chunk']}
 ===== END OF DOCUMENT =====
+
+${usedOcr ? 'Note: This document was processed using OCR technology as it appears to be a scanned document. There may be some inaccuracies in the text extraction.' : ''}
 
 Please analyze the content of this document.
 '''
@@ -381,7 +388,12 @@ Please analyze the content of this document.
       
       // For multiple chunks, we need to process them sequentially and build a combined response
       StringBuffer combinedAnalysis = StringBuffer();
-      combinedAnalysis.writeln('# Analysis of "$title" (${chunks.length} sections)\n');
+      combinedAnalysis.writeln('# Analysis of "$title"$ocrInfo (${chunks.length} sections)\n');
+      
+      // If OCR was used, add a note
+      if (usedOcr) {
+        combinedAnalysis.writeln('> Note: This document was processed using OCR technology as it appears to be a scanned document. There may be some inaccuracies in the text extraction.\n');
+      }
       
       // Process first chunk with full context
       String currentSummary = await _processPdfChunk(
@@ -392,7 +404,8 @@ Please analyze the content of this document.
         isFirstChunk: true,
         isLastChunk: false,
         chunkNumber: 1,
-        totalChunks: chunks.length
+        totalChunks: chunks.length,
+        usedOcr: usedOcr
       );
       
       combinedAnalysis.writeln('## Section 1 Analysis\n');
@@ -409,7 +422,8 @@ Please analyze the content of this document.
           isLastChunk: false,
           chunkNumber: i + 1,
           totalChunks: chunks.length,
-          previousSummary: currentSummary
+          previousSummary: currentSummary,
+          usedOcr: usedOcr
         );
         
         combinedAnalysis.writeln('## Section ${i + 1} Analysis\n');
@@ -430,7 +444,8 @@ Please analyze the content of this document.
           isLastChunk: true,
           chunkNumber: chunks.length,
           totalChunks: chunks.length,
-          previousSummary: currentSummary
+          previousSummary: currentSummary,
+          usedOcr: usedOcr
         );
         
         combinedAnalysis.writeln('## Section ${chunks.length} Analysis\n');
@@ -440,10 +455,12 @@ Please analyze the content of this document.
         final overallSummaryMessage = {
           'role': 'user',
           'content': '''
-I've analyzed a ${pageCount}-page document titled "$title" in ${chunks.length} sections.
+I've analyzed a ${pageCount}-page document titled "$title"${usedOcr ? ' (OCR processed)' : ''} in ${chunks.length} sections.
 Here are my section-by-section analyses:
 
 ${combinedAnalysis.toString()}
+
+${usedOcr ? 'Note that this document was processed using OCR technology, so there may be some inaccuracies in the text extraction.' : ''}
 
 Please provide a cohesive overall summary of this document, connecting the key points from all sections.
 '''
@@ -481,7 +498,8 @@ Please provide a cohesive overall summary of this document, connecting the key p
     required bool isLastChunk,
     required int chunkNumber,
     required int totalChunks,
-    String? previousSummary
+    String? previousSummary,
+    bool usedOcr = false
   }) async {
     try {
       // Extract chunk metadata
@@ -492,10 +510,11 @@ Please provide a cohesive overall summary of this document, connecting the key p
       String prompt;
       if (isFirstChunk) {
         prompt = '''
-This is section $chunkNumber of $totalChunks from a PDF document:
+This is section $chunkNumber of $totalChunks from a PDF document${usedOcr ? ' (OCR processed)' : ''}:
 Title: ${metadata['title'] ?? 'Untitled Document'}
 Author: ${metadata['author'] ?? 'Unknown'}
 Pages: $pageRange of ${metadata['pageCount'] ?? 'unknown'} total pages
+${usedOcr ? 'Note: This document was processed using OCR technology as it appears to be a scanned document. There may be some inaccuracies in the text extraction.' : ''}
 
 ===== DOCUMENT CONTENT (SECTION $chunkNumber) =====
 $chunkText
@@ -505,7 +524,7 @@ Analyze this first section of the document. Focus on understanding the main topi
 ''';
       } else if (isLastChunk) {
         prompt = '''
-This is the final section ($chunkNumber of $totalChunks) from a PDF document:
+This is the final section ($chunkNumber of $totalChunks) from a PDF document${usedOcr ? ' (OCR processed)' : ''}:
 Title: ${metadata['title'] ?? 'Untitled Document'}
 Pages: $pageRange of ${metadata['pageCount'] ?? 'unknown'} total pages
 
@@ -516,11 +535,13 @@ $previousSummary
 $chunkText
 ===== END OF FINAL SECTION =====
 
+${usedOcr ? 'Note: This document was processed using OCR technology, so there may be some inaccuracies in the text extraction.' : ''}
+
 Analyze this final section, connecting it with the previous content. Include key conclusions if present.
 ''';
       } else {
         prompt = '''
-This is section $chunkNumber of $totalChunks from a PDF document:
+This is section $chunkNumber of $totalChunks from a PDF document${usedOcr ? ' (OCR processed)' : ''}:
 Title: ${metadata['title'] ?? 'Untitled Document'}
 Pages: $pageRange of ${metadata['pageCount'] ?? 'unknown'} total pages
 
@@ -530,6 +551,8 @@ $previousSummary
 ===== DOCUMENT CONTENT (SECTION $chunkNumber) =====
 $chunkText
 ===== END OF SECTION $chunkNumber =====
+
+${usedOcr ? 'Note: This document was processed using OCR technology, so there may be some inaccuracies in the text extraction.' : ''}
 
 Analyze this section, building on the previous sections. Focus on how this content connects with earlier material.
 ''';

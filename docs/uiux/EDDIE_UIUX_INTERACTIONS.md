@@ -1,15 +1,15 @@
 ---
 title: Eddie2 UI/UX Interaction Patterns
-version: 1.5.0
-last_updated: 2025-03-20
+version: 1.6.0
+last_updated: 2025-07-15
 status: active
 ---
 
 # Eddie2 UI/UX Interaction Patterns
 
-![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.6.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
-![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--20-lightgrey.svg)
+![Last Updated](https://img.shields.io/badge/last%20updated-2025--07--15-lightgrey.svg)
 
 ## 🗺️ Navigation
 [Documentation Index](../INDEX.md) > [UI/UX Documentation](.) > Interaction Patterns
@@ -29,9 +29,10 @@ status: active
 6. [Error States](#6-error-states)
 7. [Loading States](#7-loading-states)
 8. [Image Attachment Interaction](#8-image-attachment-interaction)
-9. [Chat Management Interactions](#9-chat-management-interactions)
-10. [Project Setup Interactions](#10-project-setup-interactions)
-11. [Cross-Screen Navigation System](#11-cross-screen-navigation-system)
+9. [PDF Processing Interaction](#9-pdf-processing-interaction)
+10. [Chat Management Interactions](#10-chat-management-interactions)
+11. [Project Setup Interactions](#11-project-setup-interactions)
+12. [Cross-Screen Navigation System](#12-cross-screen-navigation-system)
 
 ## 🔗 Code References
 - Navigation Service: `lib/services/navigation_service.dart`
@@ -197,9 +198,74 @@ This document builds on the interaction patterns in [EDDIE_UIUX_SPEC_MAIN.md](./
 - **FileService** handles persistence of web file data
 - **OpenAIService** processes and includes all images in API requests
 
-## 9. Chat Management Interactions
+## 9. PDF Processing Interaction
 
-### 9.1 Sidebar Chat Options Menu
+### 9.1 Uploading and Processing PDF Documents
+
+#### Standard PDF Flow (Small Documents)
+1. User clicks attachment button in the chat input
+2. File picker dialog opens showing all file types, including PDF
+3. User selects a PDF file
+4. System validates the PDF (size, format)
+5. A thumbnail or icon representing the PDF appears in the input area
+6. User types a message (optional, e.g., "Please analyze this document")
+7. User clicks the send button
+8. System shows a loading indicator with "Processing PDF document..."
+9. In the background:
+   - PDF text is extracted 
+   - Content is preprocessed for quality
+   - Metadata is retrieved (title, author, page count)
+10. Once processing is complete, the system sends the extracted content to OpenAI
+11. AI response appears with comprehensive analysis of the PDF content
+
+#### Large PDF Flow (Chunking Process)
+1. User follows the same steps as the standard flow (steps 1-8)
+2. System detects a large PDF (>10 pages or >1MB)
+3. Enhanced loading indicator appears with "Processing large document..."
+4. In the background:
+   - PDF text is extracted page by page
+   - Content is preprocessed for quality
+   - Text is intelligently chunked into semantically coherent sections
+   - Each chunk maintains context with surrounding content
+5. System processes each chunk sequentially
+6. As each chunk is processed, an incremental update may appear (optional): "Analyzing section X of Y..."
+7. Once all chunks are processed, the system combines the analysis into a structured response
+8. The final AI response appears with a section-by-section analysis and overall summary
+9. Response is formatted in Markdown with clear headings for each section
+
+### 9.2 PDF Processing Error Handling
+
+#### File Access Errors
+1. If the PDF file cannot be accessed (invalid path, permissions issue):
+   - Error message appears: "Could not access file. The file may have been removed or the session expired."
+   - User is prompted to try uploading again
+
+#### Processing Errors
+1. If text extraction fails:
+   - Error message appears: "Error processing PDF: [specific error]"
+   - System offers fallback options: "Try uploading a different PDF or check if the document is password-protected"
+
+#### Size Limitation Errors
+1. If the PDF exceeds maximum size limits:
+   - Warning appears: "This PDF exceeds the maximum size limit of X MB"
+   - User is advised to try a smaller document or to split the document
+
+### 9.3 PDF Analysis View
+
+1. AI responses for PDF analysis are structured with clear sections:
+   - Document metadata (title, author, page count)
+   - Section-by-section analysis with headings
+   - Overall summary at the beginning or end
+   - Key points highlighted in the response
+
+2. For multi-section analyses of large documents:
+   - Each section is labeled with its page range
+   - Progressive disclosure structure (from overview to details)
+   - Clear typography hierarchy distinguishes section levels
+
+## 10. Chat Management Interactions
+
+### 10.1 Sidebar Chat Options Menu
 
 #### Chat Options Flow
 1. User navigates to the sidebar where recent chats are displayed
@@ -248,7 +314,7 @@ This document builds on the interaction patterns in [EDDIE_UIUX_SPEC_MAIN.md](./
 - **MainScreen** manages the state of selected chats and provides callback functions
 - **ChatProvider** handles the data operations for renaming and deleting chats
 
-### 9.5 Sidebar List Expansion
+### 10.5 Sidebar List Expansion
 
 #### Expanding Chat List
 1. User clicks "View All" link in the Chats section of sidebar
@@ -272,9 +338,9 @@ This document builds on the interaction patterns in [EDDIE_UIUX_SPEC_MAIN.md](./
 2. List collapses back to showing only the 5 most recent Q&A pairs
 3. The link text returns to "View All" with a downward-facing arrow
 
-## 10. Project Setup Interactions
+## 11. Project Setup Interactions
 
-### 10.1 Conversational Project Setup Flow
+### 11.1 Conversational Project Setup Flow
 
 #### Flow Overview
 1. User creates a new project which enters setup mode
@@ -296,7 +362,7 @@ This document builds on the interaction patterns in [EDDIE_UIUX_SPEC_MAIN.md](./
 2. The message input field shows a placeholder text: "Describe your project..."
 3. Once complete, the chat reverts to standard appearance with normal input placeholder
 
-### 10.2 Navigation During Project Setup
+### 11.2 Navigation During Project Setup
 
 #### Setup Interruption Flow
 1. If user navigates away during project setup:
@@ -311,9 +377,9 @@ This document builds on the interaction patterns in [EDDIE_UIUX_SPEC_MAIN.md](./
    - Project appears in the sidebar with its extracted title
    - Project can be accessed from any screen via the sidebar
 
-## 11. Cross-Screen Navigation System
+## 12. Cross-Screen Navigation System
 
-### 11.1 Navigation Provider Interactions
+### 12.1 Navigation Provider Interactions
 
 #### Navigation State Changes
 1. User clicks on a navigation element (sidebar item, settings button, etc.)
@@ -338,7 +404,7 @@ This document builds on the interaction patterns in [EDDIE_UIUX_SPEC_MAIN.md](./
 4. Visual transition indicates screen change
 5. Selected item in bottom bar is highlighted
 
-### 11.2 Screen Transition Patterns
+### 12.2 Screen Transition Patterns
 
 #### Transition Effects
 1. Cross-fade between main content areas
