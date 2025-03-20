@@ -1,13 +1,13 @@
 ---
 title: Eddie2 Features Specification
-version: 1.3.0
+version: 1.5.0
 last_updated: 2025-03-20
 status: active
 ---
 
 # Eddie2 Features Specification
 
-![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
 ![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--20-lightgrey.svg)
 
@@ -216,40 +216,65 @@ status: active
   - Visual indicators that highlight the currently selected chat.
   - Streamlined interaction pattern with minimal clicks required.
 
-## 7. Localization & Internationalization
+## 7. Navigation & User Flow
 
-### 7.1 Current Support
+### 7.1 Centralized Navigation System
+- **User Story**: As a user, I want to navigate between different sections of the app seamlessly, so I can focus on my work without confusion.
+- **Implementation Status**: ✅ Implemented
+- **Key Points**:
+  - Centralized navigation state management.
+  - Consistent navigation experience across devices.
+  - Proper state resetting when navigating away from screens.
+  - Special handling for mobile navigation patterns.
+  - Clear visual indicators of the current screen.
+
+### 7.2 Project Setup Flow
+- **User Story**: As a user, I want a guided process to set up my projects, so I can easily provide all necessary information.
+- **Implementation Status**: ✅ Implemented
+- **Key Points**:
+  - Chat-based interface for collecting project information.
+  - Step-by-step guidance through the setup process.
+  - Validation of user inputs in real-time.
+  - Restricted operations during setup (no file uploads).
+  - Clear indication of setup state.
+  - Smooth transition to normal chat after setup completion.
+
+[↑ Back to Top](#eddie2-features-specification)
+
+## 8. Localization & Internationalization
+
+### 8.1 Current Support
 - English, Korean by default.
 - UI & errors fully localized.
 
-### 7.2 Future Plans
+### 8.2 Future Plans
 - Additional languages (Chinese, Spanish, etc.).
 - Right-to-Left layout if Arabic/Hebrew are supported.
 - Region-specific formatting (dates, numbers).
 
-## 8. Advanced File Handling (Post-MVP)
+## 9. Advanced File Handling (Post-MVP)
 
-### 8.1 Multiple Files
+### 9.1 Multiple Files
 - **User Story**: As a user, I want to attach multiple files at once for the AI to consider.
 - **Plan**:
   - Possibly multi-file pickers, drag-and-drop in the chat input.
 
-### 8.2 Compression & Preview
+### 9.2 Compression & Preview
 - Inline previews for images, PDF expansions, etc.
 
-## 9. Cross-Platform Goals (Post-MVP)
+## 10. Cross-Platform Goals (Post-MVP)
 
-### 9.1 Desktop Builds
+### 10.1 Desktop Builds
 - Windows, Mac, Linux packaging.
 - Some adjustments for file pickers, system menubar, etc.
 
-### 9.2 Mobile Builds
+### 10.2 Mobile Builds
 - iOS/Android store deployment.
 - Same Flutter codebase, but ensure performance & memory usage are tested.
 
 ---
 
-## 7. Offline Support & Sync (Post-MVP)
+## 11. Offline Support & Sync (Post-MVP)
 
 - Real-time sync with Firestore if user logs in.
 - Offline read/write with queued updates.
@@ -257,7 +282,7 @@ status: active
 
 ---
 
-## 8. Additional Feature Ideas
+## 12. Additional Feature Ideas
 
 - **User Profiles** with advanced preferences (post-MVP).
 - **Notifications** for chat updates or Q&A reminders.

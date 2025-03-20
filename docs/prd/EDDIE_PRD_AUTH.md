@@ -1,15 +1,15 @@
 ---
 title: Eddie2 Authentication Specification
-version: 1.0.0
-last_updated: 2024-03-15
+version: 1.5.0
+last_updated: 2025-03-20
 status: active
 ---
 
 # Eddie2 Authentication Specification
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
-![Last Updated](https://img.shields.io/badge/last%20updated-2024--03--15-lightgrey.svg)
+![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--20-lightgrey.svg)
 
 ## 🗺️ Navigation
 [Documentation Index](../INDEX.md) > [Product Requirements](.) > Authentication

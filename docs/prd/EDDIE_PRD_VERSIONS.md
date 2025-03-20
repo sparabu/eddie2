@@ -1,13 +1,13 @@
 ---
 title: Eddie2 Version History
-version: 1.3.0
+version: 1.5.0
 last_updated: 2025-03-20
 status: active
 ---
 
 # Eddie2 Version History
 
-![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
 ![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--20-lightgrey.svg)
 
@@ -53,23 +53,22 @@ status: active
 
 ## 2. Release History
 
-### 2.1 Version 1.3.0 (Current)
-- Implemented chat options menu in the sidebar for improved chat management
-- Added ability to rename chats directly from the sidebar via a three-dot menu
-- Implemented confirmation dialog for chat deletion to prevent accidental removals
-- Enhanced visual feedback for selected chat items in the sidebar
-- Improved overall UX for chat management with modal dialogs and context menus
-- Updated UI components for a more consistent interaction pattern
+### 2.1 Current Version: 1.5.0 (March 2025)
+- **Major Features**:
+  - Centralized navigation system with navigation provider
+  - Improved project setup flow
+  - Fixed Settings navigation from project screen
+  - Enhanced chat message handling to prevent duplicates
+  - Restricted file operations during project setup
 
-### 2.2 Version 1.4.0 (Upcoming)
-- Implemented improved project setup flow with conversational interface
-- Fixed duplicate message issue in chat interactions
-- Enhanced message processing with dynamic system instructions
-- Added prevention of file/image attachments during project setup phase
-- Improved extraction of project title and description from user messages
-- Enhanced user feedback during project setup process
-- Improved "View All" links to expand lists in-place rather than navigating to a different screen
-- Updated ViewAllLink component to support dynamic expand/collapse behavior
+### 2.2 Previous Versions
+
+#### 1.4.0 (March 2024)
+- **Major Features**:
+  - Multiple file attachment support
+  - Enhanced UI components
+  - Performance optimizations
+  - Bug fixes for chat functionality
 
 ### 2.3 Version 1.2.0
 - Added support for multiple image attachments in a single message

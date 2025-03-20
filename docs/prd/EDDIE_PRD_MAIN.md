@@ -1,15 +1,15 @@
 ---
 title: Eddie2 Product Requirements Document
-version: 1.0.0
-last_updated: 2024-03-15
+version: 1.5.0
+last_updated: 2025-03-20
 status: active
 ---
 
 # Eddie2 Product Requirements Document
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
-![Last Updated](https://img.shields.io/badge/last%20updated-2024--03--15-lightgrey.svg)
+![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--20-lightgrey.svg)
 
 ## 🗺️ Navigation
 [Documentation Index](../INDEX.md) > [Product Requirements](.) > Main PRD
@@ -343,6 +343,30 @@ For the **full version-by-version breakdown**, see [EDDIE_PRD_VERSIONS.md](EDDIE
 - **EddieConstants**: Spacing, sizing, animations, consistent corner rounding  
 - **EddieThemeExtension**: Integrates custom color sets with Flutter's `Theme`  
 - **Custom Components** (e.g., EddieButton, EddieOutlinedButton, EddieTextField, etc.) with usage guidelines and best practices.
+
+### 6.2 State Management
+
+- **Provider Pattern**: The app uses Riverpod for reactive state management.
+- **Global State**: Shared state like settings and API key status.
+- **Local Component State**: UI component states that don't need to persist.
+- **Persistent State**: Data saved to local storage for persistence across sessions.
+
+### 6.3 Navigation System
+
+- **Navigation Provider**: Centralized navigation state management (lib/providers/navigation_provider.dart).
+- **Screen Tracking**: Maintains the selected screen index and visibility flags for different content types.
+- **Project State**: Tracks the selected project ID and reset mechanisms when navigating away.
+- **Cross-Screen Navigation**: Handles transitions between main screens, settings, and project views.
+- **Mobile Support**: Special handling for bottom navigation bar on smaller screens.
+
+### 6.4 Project Setup Flow
+
+- **Sequential Information Gathering**: Step-by-step process for collecting project details.
+- **Chat-Based Interface**: Uses the chat interface to guide users through project setup.
+- **Input Validation**: Real-time validation of user inputs during setup.
+- **State Tracking**: Tracks completion status of setup steps.
+- **Restricted Operations**: Prevents file uploads and certain operations during setup.
+- **Transition to Regular Chat**: Seamless transition to normal chat once setup is complete.
 
 [↑ Back to Top](#eddie2-product-requirements-document)
 

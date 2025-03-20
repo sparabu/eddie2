@@ -1,15 +1,15 @@
 ---
 title: Eddie2 UI/UX Specifications
-version: 1.0.0
-last_updated: 2024-03-15
+version: 1.5.0
+last_updated: 2025-03-20
 status: active
 ---
 
 # Eddie2 UI/UX Specifications
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
-![Last Updated](https://img.shields.io/badge/last%20updated-2024--03--15-lightgrey.svg)
+![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--20-lightgrey.svg)
 
 ## 🗺️ Navigation
 [Documentation Index](../INDEX.md) > [UI/UX Documentation](.) > Main Specifications
@@ -652,22 +652,61 @@ This document defines the UI components, screens, design system, and interaction
 
 ## 6. State Management Conventions
 
-Eddie2 uses **Riverpod**.  
+Eddie2 uses a mix of local and global state management, primarily with the Riverpod package:
 
-### Provider Types
+#### State Types
+- **Local Widget State**: `StatefulWidget` for temporary UI states
+- **Screen-Level State**: Riverpod providers with specific scopes
+- **App-Wide State**: Global providers for settings, authentication, etc.
+- **Navigation State**: Centralized navigation provider
 
-- **State Notifier Providers** for complex state (chatProvider, qaPairProvider, settingsProvider, localeProvider, sidebarProvider).  
-- **State Providers** for simple booleans/IDs (e.g., selectedChatIdProvider, isDarkModeProvider).
+#### Providers
+- `StateProvider`: Simple states that can be read and modified
+- `StateNotifierProvider`: Complex states with business logic
+- `FutureProvider`: Async data loading
 
-### State Flow
+#### State Flow
 
-┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │ User Action │────▶│State Provider│────▶│ UI Updates │ └─────────────┘ └──────┬──────┘ └─────────────┘ │ ▲ ▼ │ ┌─────────────┐ ┌─────────────┐ │ Business │────▶│ State │ │ Logic │ │ Changes │ └─────────────┘ └─────────────┘
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │ User Action │────▶│State Provider│────▶│ UI Updates │ └─────────────┘ └──────┬──────┘ └─────────────┘ │ ▲ ▼ │ │ ┌─────────────┐ ┌─────────────┐ │ Business │────▶│ State │ │ Logic │ │ Changes │ └─────────────┘ └─────────────┘
 
+### 6.1 Navigation State Management
 
-### Update Patterns
+Eddie2 implements a centralized navigation system using a dedicated navigation provider:
 
-- **UI-Triggered**: e.g., user toggles dark mode → triggers state notifier → updates UI  
-- **API-Triggered**: e.g., user sends a chat → API response → updates chat state
+#### Navigation Provider
+- **File Location**: `lib/providers/navigation_provider.dart`
+- **Purpose**: Manages all aspects of screen navigation and content visibility
+- **Key States**:
+  - `selectedScreenIndex`: Tracks which main screen is currently displayed
+  - `showProjectContent`: Flag for project view visibility
+  - `showAllChats`: Flag for expanded chats view
+  - `showAllQAs`: Flag for expanded Q&A pairs view
+  - `selectedProjectId`: Stores the currently selected project ID
+
+#### Navigation Flow
+
+┌───────────────┐     ┌───────────────────┐     ┌───────────────┐
+│ Navigation    │     │ Navigation         │     │ Screen        │
+│ Button Click  │────▶│ Provider Update    │────▶│ Transition    │
+└───────────────┘     └───────────────────┘     └───────────────┘
+                             │
+                             ▼
+                      ┌───────────────┐
+                      │ State Reset   │
+                      │ (if needed)   │
+                      └───────────────┘
+
+#### Cross-Screen Navigation
+- When navigating between main screens, the navigation provider:
+  1. Updates the selected screen index
+  2. Resets project-specific states if navigating away from a project
+  3. Updates visibility flags based on the destination screen
+  4. Ensures consistent state across the application
+
+#### Mobile-Specific Navigation
+- Bottom navigation bar on small screens
+- Specialized handling for mobile view transitions
+- Back button handling for nested navigation
 
 [↑ Back to Top](#eddie2-uiux-specifications)
 

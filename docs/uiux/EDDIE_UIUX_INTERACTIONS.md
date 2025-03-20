@@ -1,13 +1,13 @@
 ---
 title: Eddie2 UI/UX Interaction Patterns
-version: 1.3.0
+version: 1.5.0
 last_updated: 2025-03-20
 status: active
 ---
 
 # Eddie2 UI/UX Interaction Patterns
 
-![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-active-green.svg)
 ![Last Updated](https://img.shields.io/badge/last%20updated-2025--03--20-lightgrey.svg)
 
@@ -31,6 +31,7 @@ status: active
 8. [Image Attachment Interaction](#8-image-attachment-interaction)
 9. [Chat Management Interactions](#9-chat-management-interactions)
 10. [Project Setup Interactions](#10-project-setup-interactions)
+11. [Cross-Screen Navigation System](#11-cross-screen-navigation-system)
 
 ## 🔗 Code References
 - Navigation Service: `lib/services/navigation_service.dart`
@@ -278,39 +279,84 @@ This document builds on the interaction patterns in [EDDIE_UIUX_SPEC_MAIN.md](./
 #### Flow Overview
 1. User creates a new project which enters setup mode
 2. System displays welcome message: "Welcome to your new project! Please tell me about what you'd like to work on."
-3. User provides information about the project
-4. System extracts title and/or description from user's message
-5. System provides feedback on what information was extracted and what's still needed
-6. Process continues until both title and description are complete
-7. System gives final confirmation and transitions to normal chat mode
+3. User responds with project description
+4. System extracts project title and details from the user's message
+5. System confirms the project setup is complete
+6. Chat transitions to regular project chat mode
 
-#### Title Extraction
-1. System detects when a message contains potential title information
-2. Extracts a concise title using dynamic system instructions
-3. Updates project title and chat title simultaneously
-4. Provides feedback to user confirming title extraction
+#### Project Setup Restrictions
+1. During project setup, file attachments are disabled
+2. If user attempts to upload files during setup:
+   - A SnackBar appears with the message: "You cannot attach files until project setup is complete"
+   - The file upload button remains visible but is non-functional
+3. Once setup is complete, all file attachment capabilities are enabled
 
-#### Description Extraction
-1. System detects when a message contains potential description information
-2. Extracts an appropriate description using dynamic system instructions
-3. Updates project description field
-4. Provides feedback to user confirming description extraction
+#### Setup State Visual Indicators
+1. During setup, a subtle background color change in the chat indicates setup mode
+2. The message input field shows a placeholder text: "Describe your project..."
+3. Once complete, the chat reverts to standard appearance with normal input placeholder
 
-#### Combined Extraction
-1. If user provides both title and description in one message, system extracts both
-2. Updates both fields simultaneously
-3. Provides comprehensive feedback about the completed setup
+### 10.2 Navigation During Project Setup
 
-#### Message Handling During Setup
-1. Messages are processed through special handlers during project setup
-2. Prevents message duplication issues
-3. Blocks file and image attachments until setup is complete
-4. Provides clear error messages if user attempts to attach files during setup
+#### Setup Interruption Flow
+1. If user navigates away during project setup:
+   - Setup state is preserved
+   - Navigating back to the project continues from where they left off
+2. Settings button is always accessible during setup
+3. Navigation to other projects is permitted but current setup state is maintained
 
-#### Transition to Normal Mode
-1. Once both title and description are established, project exits setup mode
-2. All chat features become available (file attachments, etc.)
-3. User can now interact with the project normally
+#### Setup Completion Navigation
+1. Once setup is complete:
+   - Full navigation capabilities are enabled
+   - Project appears in the sidebar with its extracted title
+   - Project can be accessed from any screen via the sidebar
+
+## 11. Cross-Screen Navigation System
+
+### 11.1 Navigation Provider Interactions
+
+#### Navigation State Changes
+1. User clicks on a navigation element (sidebar item, settings button, etc.)
+2. Navigation provider updates the relevant state:
+   - `selectedScreenIndex` for main screen changes
+   - `selectedProjectId` for project selection
+   - visibility flags for content areas
+3. UI components react to state changes and render appropriate content
+
+#### Project-to-Settings Navigation
+1. User is viewing a project and clicks Settings button
+2. Navigation provider:
+   - Updates `selectedScreenIndex` to 2 (Settings)
+   - Sets `selectedProjectId` to null
+   - Sets `showProjectContent` to false
+3. UI transitions from project view to settings screen
+
+#### Mobile-Specific Navigation
+1. On small screens, bottom navigation bar appears
+2. User taps navigation item to change screens
+3. Navigation provider updates state and handles any cleanup needed
+4. Visual transition indicates screen change
+5. Selected item in bottom bar is highlighted
+
+### 11.2 Screen Transition Patterns
+
+#### Transition Effects
+1. Cross-fade between main content areas
+2. Sidebar selection indicators update immediately
+3. Content containers maintain height during transitions to prevent layout shifts
+4. Button states update to reflect current navigation context
+
+#### Error State Navigation
+1. If navigation fails due to an error:
+   - Error message appears as a SnackBar
+   - Navigation state remains at previous valid state
+   - User can retry the navigation action
+
+#### Deep Linking Support
+1. When navigating via URL (future feature):
+   - Navigation provider parses URL parameters
+   - Sets appropriate state based on deep link target
+   - Renders the correct screen with proper context
 
 [↑ Back to Top](#eddie2-uiux-interaction-patterns)
 
