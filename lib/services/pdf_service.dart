@@ -144,7 +144,7 @@ class PdfService {
     processed = processed.replaceAll(RegExp(r'\n{3,}'), '\n\n');
     
     // Fix common hyphenation issues (words broken across lines)
-    processed = processed.replaceAll(RegExp(r'(\w+)-\s*\n\s*(\w+)'), '$1$2');
+    processed = processed.replaceAll(RegExp(r'(\w+)-\s*\n\s*(\w+)'), r'$1$2');
     
     // Remove headers/footers that contain only page numbers
     processed = processed.replaceAll(RegExp(r'\n\s*\d+\s*\n'), '\n');
