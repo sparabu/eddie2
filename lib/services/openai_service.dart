@@ -198,16 +198,16 @@ class OpenAIService {
       };
       
       String fileName;
-      String base64File;
+      Uint8List fileBytes;
       
       try {
         // Special handling for web platform files (which have a special prefixed path)
         if (kIsWeb && filePath.startsWith('web_file_')) {
           // For web files, we need to retrieve the stored bytes from our FileService
           final fileService = FileService();
-          final fileBytes = fileService.getWebFileBytes(filePath);
+          final bytes = fileService.getWebFileBytes(filePath);
           
-          if (fileBytes == null) {
+          if (bytes == null) {
             throw Exception('Could not access file. The file may have been removed or the session expired.');
           }
           
@@ -218,10 +218,8 @@ class OpenAIService {
             fileName = 'file.pdf';
           }
           
-          // Encode to base64
-          base64File = base64Encode(fileBytes);
-          
-          debugPrint('Web file processing complete: $fileName (${fileBytes.length} bytes)');
+          fileBytes = bytes;
+          debugPrint('Web file processing complete: $fileName (${bytes.length} bytes)');
         } else {
           // For native platforms - use the File API
           final file = File(filePath);
@@ -230,16 +228,14 @@ class OpenAIService {
           }
           
           fileName = file.path.split('/').last;
-          final bytes = await file.readAsBytes();
+          fileBytes = await file.readAsBytes();
           
           // Check if file is readable and not corrupted
-          if (bytes.isEmpty) {
+          if (fileBytes.isEmpty) {
             throw Exception('File is empty or corrupted');
           }
           
-          // Encode to base64
-          base64File = base64Encode(bytes);
-          debugPrint('Native file processing complete: $fileName (${bytes.length} bytes)');
+          debugPrint('Native file processing complete: $fileName (${fileBytes.length} bytes)');
         }
         
         // Check if this is a PDF file
@@ -247,31 +243,51 @@ class OpenAIService {
         
         debugPrint('Processing ${isPdf ? 'PDF' : 'file'}: $fileName');
         
-        // Add the file content to the messages
-        messages.add({
-          'role': 'user',
-          'content': [
-            {
-              'type': 'text',
-              'text': isPdf 
-                ? 'I am sending you a PDF document named $fileName. Please analyze its content thoroughly and provide a detailed understanding of what\'s inside. If there are any charts, tables, or figures, please describe those as well.'
-                : 'I am sending you a file named $fileName. Please analyze it.'
-            },
-            {
-              'type': 'file_content',
-              'file_content': {
-                'name': fileName,
-                'data': base64File,
-                'mime_type': isPdf ? 'application/pdf' : null, // Explicitly set MIME type for PDF
+        // For regular chat completions API, we can only use 'text' or 'image_url' type
+        // PDF files need to be converted to text or sent as base64 data URI
+        if (isPdf) {
+          // Add the text message first
+          messages.add({
+            'role': 'user',
+            'content': 'I am sending you a PDF document named $fileName. Please analyze its content thoroughly and provide a detailed understanding of what\'s inside. If there are any charts, tables, or figures, please describe those as well.'
+          });
+          
+          // We need to use the vision API to analyze the PDF
+          debugPrint('Using vision-based approach for PDF analysis');
+          
+          // Use Vision API with base64-encoded PDF
+          final String base64File = base64Encode(fileBytes);
+          final String dataUri = 'data:application/pdf;base64,$base64File';
+          
+          // Add the PDF as an image_url with data URI
+          messages.add({
+            'role': 'user',
+            'content': [
+              {
+                'type': 'text',
+                'text': 'Here is the PDF file:'
+              },
+              {
+                'type': 'image_url',
+                'image_url': {
+                  'url': dataUri
+                }
               }
-            }
-          ]
-        });
+            ]
+          });
+        } else {
+          // For non-PDF files, just use text mode
+          messages.add({
+            'role': 'user',
+            'content': 'I am sending you a file named $fileName. Here is the content: ' + 
+                       String.fromCharCodes(fileBytes)
+          });
+        }
         
         // Log the request (partial, to avoid flooding logs)
         debugPrint('Sending request to OpenAI with file attachment');
         if (isPdf) {
-          debugPrint('Using explicit MIME type: application/pdf');
+          debugPrint('Using PDF-specific format with data URI');
         }
       } catch (e) {
         // If there's any error with the file, add a message explaining the issue
