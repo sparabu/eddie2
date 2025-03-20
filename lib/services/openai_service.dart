@@ -187,32 +187,65 @@ class OpenAIService {
   ) async {
     try {
       final apiKey = getApiKey();
+      if (apiKey == null || apiKey.isEmpty) {
+        throw Exception('API key not found in .env file. Please add your OpenAI API key to the OPENAI_API_KEY variable.');
+      }
+      
+      // Set up proper headers
+      _dio.options.headers = {
+        'Authorization': 'Bearer $apiKey',
+        'Content-Type': 'application/json',
+      };
+      
+      String fileName;
+      String base64File;
       
       try {
-        final file = File(filePath);
-        if (!await file.exists()) {
-          throw Exception('File not found at path: $filePath');
-        }
-        
-        final fileName = file.path.split('/').last;
-        final bytes = await file.readAsBytes();
-        
-        // Check if file is readable and not corrupted
-        if (bytes.isEmpty) {
-          throw Exception('File is empty or corrupted');
-        }
-        
-        // Safely encode bytes to base64
-        String base64File;
-        try {
+        // Special handling for web platform files (which have a special prefixed path)
+        if (kIsWeb && filePath.startsWith('web_file_')) {
+          // For web files, we need to retrieve the stored bytes from our FileService
+          final fileService = FileService();
+          final fileBytes = fileService.getWebFileBytes(filePath);
+          
+          if (fileBytes == null) {
+            throw Exception('Could not access file. The file may have been removed or the session expired.');
+          }
+          
+          // Get file name from the web file ID
+          fileName = filePath.split('_').sublist(3).join('_');
+          if (fileName.isEmpty) {
+            // Fallback to generic name if we can't extract it
+            fileName = 'file.pdf';
+          }
+          
+          // Encode to base64
+          base64File = base64Encode(fileBytes);
+          
+          debugPrint('Web file processing complete: $fileName (${fileBytes.length} bytes)');
+        } else {
+          // For native platforms - use the File API
+          final file = File(filePath);
+          if (!await file.exists()) {
+            throw Exception('File not found at path: $filePath');
+          }
+          
+          fileName = file.path.split('/').last;
+          final bytes = await file.readAsBytes();
+          
+          // Check if file is readable and not corrupted
+          if (bytes.isEmpty) {
+            throw Exception('File is empty or corrupted');
+          }
+          
+          // Encode to base64
           base64File = base64Encode(bytes);
-        } catch (e) {
-          debugPrint('Error encoding file to base64: $e');
-          throw Exception('Could not encode file: $e');
+          debugPrint('Native file processing complete: $fileName (${bytes.length} bytes)');
         }
         
         // Check if this is a PDF file
         final bool isPdf = _isPdfFile(fileName);
+        
+        debugPrint('Processing ${isPdf ? 'PDF' : 'file'}: $fileName');
         
         // Add the file content to the messages
         messages.add({
@@ -234,6 +267,12 @@ class OpenAIService {
             }
           ]
         });
+        
+        // Log the request (partial, to avoid flooding logs)
+        debugPrint('Sending request to OpenAI with file attachment');
+        if (isPdf) {
+          debugPrint('Using explicit MIME type: application/pdf');
+        }
       } catch (e) {
         // If there's any error with the file, add a message explaining the issue
         debugPrint('Error processing file: $e');
@@ -243,6 +282,13 @@ class OpenAIService {
         });
       }
       
+      // Ensure we use a model capable of handling files
+      if (model != 'gpt-4o') {
+        debugPrint('Upgrading model to gpt-4o for file handling');
+        model = 'gpt-4o';
+      }
+      
+      // Send the API request
       final response = await _dio.post(
         '$_baseUrl/chat/completions',
         data: {
@@ -258,7 +304,18 @@ class OpenAIService {
       } else {
         throw Exception('Failed to get response: ${response.statusCode}');
       }
+    } on DioException catch (e) {
+      if (e.response != null) {
+        final errorData = e.response?.data;
+        final errorMessage = errorData?['error']?['message'] ?? 'Unknown API error';
+        debugPrint('API Error details: ${e.response?.data}');
+        throw Exception('API Error: $errorMessage');
+      } else {
+        debugPrint('Network error details: ${e.message}');
+        throw Exception('Network error: ${e.message}');
+      }
     } catch (e) {
+      debugPrint('Error sending file: $e');
       throw Exception('Error sending file: $e');
     }
   }

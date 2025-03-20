@@ -371,57 +371,44 @@ class FileService {
     return extension == 'pdf';
   }
   
-  // Get web file bytes by ID
-  Uint8List? getWebFileBytes(String webFileId) {
-    return _webFileBytes[webFileId];
+  // Get web file data URI by ID
+  String? getWebFileDataUri(String webFileId) {
+    if (!kIsWeb) return null; // Not applicable on non-web platforms
+    
+    // Check if we have this file's bytes
+    final bytes = _webFileBytes[webFileId];
+    if (bytes == null) {
+      debugPrint('Web file bytes not found for ID: $webFileId');
+      return null;
+    }
+    
+    // Try to determine MIME type from the file ID
+    String fileName = webFileId.split('_').sublist(3).join('_'); // Extract filename part
+    String mimeType = 'application/octet-stream'; // Default MIME type
+    
+    final extension = fileName.split('.').last.toLowerCase();
+    if (supportedImageMimeTypes.containsKey(extension)) {
+      mimeType = supportedImageMimeTypes[extension]!;
+    } else if (supportedDocumentMimeTypes.containsKey(extension)) {
+      mimeType = supportedDocumentMimeTypes[extension]!;
+    }
+    
+    // Create data URI
+    return 'data:$mimeType;base64,${base64Encode(bytes)}';
   }
   
-  // Get data URI for a web file (if it exists)
-  String? getWebFileDataUri(String webFileId) {
-    debugPrint('Attempting to retrieve web file data for ID: $webFileId');
+  // Get web file bytes by ID
+  Uint8List? getWebFileBytes(String webFileId) {
+    if (!kIsWeb) return null; // Not applicable on non-web platforms
     
-    // Check if we have the file in memory
-    if (!_webFileBytes.containsKey(webFileId)) {
-      debugPrint('Web file data not found in memory for ID: $webFileId');
-      
-      // If we're on web, try to reload from localStorage in case it was persisted
-      if (kIsWeb) {
-        try {
-          _loadPersistedWebFiles();
-          debugPrint('Reloaded web files from localStorage, checking again for: $webFileId');
-          
-          // Check again after reload
-          if (!_webFileBytes.containsKey(webFileId)) {
-            debugPrint('Web file still not found after reload. Available keys: ${_webFileBytes.keys.join(', ')}');
-            return null;
-          }
-        } catch (e) {
-          debugPrint('Error trying to reload web files: $e');
-          return null;
-        }
-      } else {
-        // Not on web platform
-        return null;
-      }
+    // Check if we have this file's bytes
+    final bytes = _webFileBytes[webFileId];
+    if (bytes == null) {
+      debugPrint('Web file bytes not found for ID: $webFileId');
+      return null;
     }
     
-    // At this point we should have the file bytes
-    final bytes = _webFileBytes[webFileId]!;
-    debugPrint('Found web file data for ID: $webFileId. Data size: ${bytes.length} bytes');
-    
-    // Try to extract the file extension from the ID
-    final fileNameParts = webFileId.split('_').skip(2).join('_').split('.');
-    if (fileNameParts.length < 2) {
-      // Default to jpeg if can't determine
-      debugPrint('Could not determine file extension, defaulting to jpeg');
-      return 'data:image/jpeg;base64,${base64Encode(bytes)}';
-    }
-    
-    final extension = fileNameParts.last.toLowerCase();
-    final mimeType = supportedImageMimeTypes[extension] ?? 'image/jpeg';
-    debugPrint('Using MIME type: $mimeType for file extension: $extension');
-    
-    return 'data:$mimeType;base64,${base64Encode(bytes)}';
+    return bytes;
   }
   
   // Specific method for picking images only
