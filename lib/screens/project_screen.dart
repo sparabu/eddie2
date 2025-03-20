@@ -126,17 +126,9 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
   }
   
   void _createNewChat() async {
-    final project = ref.read(projectProvider.notifier).getProject(widget.projectId);
-    if (project == null) return;
-    
-    final l10n = AppLocalizations.of(context)!;
-    final newChat = await ref.read(chatProvider.notifier).createChat(
-      title: '${project.title} - Chat',
-      projectId: widget.projectId,
-    );
-    
-    // Select the new chat
-    setState(() => _selectedChatId = newChat.id);
+    // Instead of creating a chat immediately, just set _selectedChatId to null
+    // to indicate we're in a "new chat" state, similar to how the main ChatScreen works
+    setState(() => _selectedChatId = null);
   }
   
   void _startSetupFlow() async {
@@ -824,32 +816,71 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                     onSendMessage: (content) async {
                       if (content.trim().isEmpty) return;
                       
-                      // Get the current project to check if setup is needed
-                      final project = ref.read(projectProvider.notifier).getProject(widget.projectId);
-                      if (project != null && _projectNeedsSetup(project)) {
-                        // Special handling for project setup phase
-                        // Create and add the user message
-                        final message = Message(
-                          role: MessageRole.user,
-                          content: content,
+                      // Check if we're in a "new chat" state (no selected chat)
+                      if (_selectedChatId == null) {
+                        // Create a new chat with the first message as the title
+                        final title = content.length > 60 ? '${content.substring(0, 60)}...' : content;
+                        final newChat = await ref.read(chatProvider.notifier).createChat(
+                          title: title,
+                          projectId: widget.projectId,
                         );
                         
-                        // Add the user message to the chat
-                        await ref.read(chatProvider.notifier).addMessageToChat(
-                          _selectedChatId!,
-                          message,
-                        );
+                        // Set the selected chat ID
+                        setState(() => _selectedChatId = newChat.id);
                         
-                        // Process the response
-                        _processUserResponse(_selectedChatId!, message);
+                        // Get the current project to check if setup is needed
+                        final project = ref.read(projectProvider.notifier).getProject(widget.projectId);
+                        if (project != null && _projectNeedsSetup(project)) {
+                          // Special handling for project setup phase
+                          // Create and add the user message
+                          final message = Message(
+                            role: MessageRole.user,
+                            content: content,
+                          );
+                          
+                          // Add the user message to the chat
+                          await ref.read(chatProvider.notifier).addMessageToChat(
+                            newChat.id,
+                            message,
+                          );
+                          
+                          // Process the response
+                          _processUserResponse(newChat.id, message);
+                        } else {
+                          // Normal chat processing for projects that are already set up
+                          await ref.read(chatProvider.notifier).sendMessage(
+                            newChat.id,
+                            content,
+                          );
+                        }
                       } else {
-                        // Normal chat processing for projects that are already set up
-                        // The sendMessage method internally adds the user message to the chat,
-                        // so we don't need to add it separately
-                        await ref.read(chatProvider.notifier).sendMessage(
-                          _selectedChatId!,
-                          content,
-                        );
+                        // Get the current project to check if setup is needed
+                        final project = ref.read(projectProvider.notifier).getProject(widget.projectId);
+                        if (project != null && _projectNeedsSetup(project)) {
+                          // Special handling for project setup phase
+                          // Create and add the user message
+                          final message = Message(
+                            role: MessageRole.user,
+                            content: content,
+                          );
+                          
+                          // Add the user message to the chat
+                          await ref.read(chatProvider.notifier).addMessageToChat(
+                            _selectedChatId!,
+                            message,
+                          );
+                          
+                          // Process the response
+                          _processUserResponse(_selectedChatId!, message);
+                        } else {
+                          // Normal chat processing for projects that are already set up
+                          // The sendMessage method internally adds the user message to the chat,
+                          // so we don't need to add it separately
+                          await ref.read(chatProvider.notifier).sendMessage(
+                            _selectedChatId!,
+                            content,
+                          );
+                        }
                       }
                     },
                     onSendMessageWithFile: (content, filePath) async {
@@ -919,7 +950,107 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             ),
           )
         else if (_selectedChatId == null)
-          // No chat selected
+          // New chat state - show input but no messages yet
+          Expanded(
+            flex: 3,
+            child: Column(
+              children: [
+                // Empty message area with welcome text
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          size: 64,
+                          color: EddieColors.getTextSecondary(context),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          l10n.startAChat,
+                          style: EddieTextStyles.heading3(context).copyWith(
+                            color: EddieColors.getTextPrimary(context),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          l10n.sendMessageToStartChatting,
+                          style: EddieTextStyles.body1(context).copyWith(
+                            color: EddieColors.getTextSecondary(context),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                // Chat input
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: ChatInput(
+                    onSendMessage: (content) async {
+                      if (content.trim().isEmpty) return;
+                      
+                      // Create a new chat with the first message as the title
+                      final title = content.length > 60 ? '${content.substring(0, 60)}...' : content;
+                      final newChat = await ref.read(chatProvider.notifier).createChat(
+                        title: title,
+                        projectId: widget.projectId,
+                      );
+                      
+                      // Set the selected chat ID
+                      setState(() => _selectedChatId = newChat.id);
+                      
+                      // Get the current project to check if setup is needed
+                      final project = ref.read(projectProvider.notifier).getProject(widget.projectId);
+                      if (project != null && _projectNeedsSetup(project)) {
+                        // Special handling for project setup phase
+                        final message = Message(
+                          role: MessageRole.user,
+                          content: content,
+                        );
+                        
+                        // Add the user message to the chat
+                        await ref.read(chatProvider.notifier).addMessageToChat(
+                          newChat.id,
+                          message,
+                        );
+                        
+                        // Process the response
+                        _processUserResponse(newChat.id, message);
+                      } else {
+                        // Normal chat processing for projects that are already set up
+                        await ref.read(chatProvider.notifier).sendMessage(
+                          newChat.id,
+                          content,
+                        );
+                      }
+                    },
+                    onSendMessageWithFile: (_, __) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Please send a message first to create the chat before attaching files.')),
+                      );
+                    },
+                    onSendMessageWithImage: (_, __) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Please send a message first to create the chat before attaching images.')),
+                      );
+                    },
+                    onSendMessageWithMultipleFiles: (_, __) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Please send a message first to create the chat before attaching files.')),
+                      );
+                    },
+                    isLoading: false,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else 
+          // No chat selected - show the "select or create chat" message
           Expanded(
             flex: 3,
             child: Center(
