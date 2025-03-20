@@ -7,6 +7,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/message.dart';
 import 'dart:math' as Math;
 import '../services/file_service.dart';
+import '../services/pdf_service.dart';
 
 class OpenAIService {
   static const String _baseUrl = 'https://api.openai.com/v1';
@@ -246,24 +247,39 @@ class OpenAIService {
         // For regular chat completions API, we can only use 'text' or 'image_url' type
         // PDF files need to be converted to text or sent as base64 data URI
         if (isPdf) {
-          // Per OpenAI's limitation, we can't send PDFs directly with image_url type
-          // Only actual images (jpeg, png, etc.) are supported with image_url
-          // Instead, we'll need to describe the PDF and handle it as text
-
-          // Convert bytes to base64 for reference (but we won't use data URI since it's not supported)
-          final String base64File = base64Encode(fileBytes);
+          // Use our new PdfService to extract text from the PDF
+          debugPrint('Extracting text from PDF using PdfService');
+          final pdfService = PdfService();
           
-          // Add a detailed message about the PDF
+          // Show a loading indicator in the message stream
           messages.add({
-            'role': 'user',
-            'content': 'I have a PDF document named "$fileName" (${fileBytes.length} bytes). ' +
-                       'This is a PDF file that I want to analyze. ' +
-                       'The PDF file contains information that I need help understanding. ' +
-                       'Please provide guidance on what I should look for in this PDF and ' +
-                       'suggest how I might extract and analyze the information it contains.'
+            'role': 'assistant',
+            'content': 'Processing PDF file. This might take a moment...'
           });
           
-          debugPrint('Sending PDF info as text message instead of direct file content');
+          // Extract text and metadata from the PDF
+          final String extractedText = await pdfService.extractText(fileBytes);
+          final Map<String, dynamic> metadata = await pdfService.extractMetadata(fileBytes);
+          
+          // Prepare metadata information string
+          final StringBuffer metadataString = StringBuffer();
+          metadataString.writeln('PDF Document Information:');
+          metadata.forEach((key, value) {
+            metadataString.writeln('- $key: $value');
+          });
+          
+          // Replace the loading message with actual PDF content
+          messages.removeLast(); // Remove loading message
+          
+          // Add a detailed message with the extracted text
+          messages.add({
+            'role': 'user',
+            'content': 'I have a PDF document named "$fileName" with the following content:\n\n' +
+                       metadataString.toString() + '\n\n' +
+                       'DOCUMENT CONTENT:\n' + extractedText
+          });
+          
+          debugPrint('Successfully extracted and processed PDF text (${extractedText.length} characters)');
         } else {
           // For non-PDF files, just use text mode
           messages.add({
@@ -276,7 +292,7 @@ class OpenAIService {
         // Log the request (partial, to avoid flooding logs)
         debugPrint('Sending request to OpenAI with file attachment');
         if (isPdf) {
-          debugPrint('Using PDF-specific format with data URI');
+          debugPrint('Using extracted PDF text for analysis');
         }
       } catch (e) {
         // If there's any error with the file, add a message explaining the issue
@@ -287,7 +303,7 @@ class OpenAIService {
         });
       }
       
-      // Ensure we use a model capable of handling files
+      // Ensure we use a model capable of handling large text input
       if (model != 'gpt-4o') {
         debugPrint('Upgrading model to gpt-4o for file handling');
         model = 'gpt-4o';
