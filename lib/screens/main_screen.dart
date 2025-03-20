@@ -8,6 +8,7 @@ import '../providers/chat_provider.dart';
 import '../providers/qa_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/project_provider.dart';
+import '../providers/navigation_provider.dart';
 import '../theme/eddie_colors.dart';
 import '../theme/eddie_constants.dart';
 import '../theme/eddie_text_styles.dart';
@@ -36,11 +37,7 @@ class MainScreen extends ConsumerStatefulWidget {
 }
 
 class _MainScreenState extends ConsumerState<MainScreen> {
-  int _selectedIndex = 0;
   bool _isSidebarExpanded = true;
-  bool _showAllChats = false;
-  bool _showAllQAPairs = false;
-  bool _showProject = false;
   bool _isChatsExpanded = false;
   bool _isQAPairsExpanded = false;
   
@@ -56,15 +53,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     // Set selected index to Settings (2) if no API key is available
     // or to Chat (0) if API key is available
     final hasApiKey = ref.read(settingsProvider).hasApiKey;
-    if (!hasApiKey && _selectedIndex != 2) {
-      setState(() {
-        _selectedIndex = 2; // Settings index
-      });
-    } else if (hasApiKey && _selectedIndex == 2) {
+    final selectedScreenIndex = ref.read(selectedScreenIndexProvider);
+    
+    if (!hasApiKey && selectedScreenIndex != 2) {
+      ref.read(selectedScreenIndexProvider.notifier).state = 2; // Settings index
+    } else if (hasApiKey && selectedScreenIndex == 2) {
       // If API key was just added and we're on settings, switch to chat
-      setState(() {
-        _selectedIndex = 0; // Chat index
-      });
+      ref.read(selectedScreenIndexProvider.notifier).state = 0; // Chat index
     }
   }
   
@@ -81,18 +76,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     // Clear project selection to ensure we're in standalone chat mode
     ref.read(selectedProjectIdProvider.notifier).state = null;
     
-    // Switch to chat screen if not already there
-    if (_selectedIndex != 0 || _showProject || _showAllChats || _showAllQAPairs) {
-      setState(() {
-        _selectedIndex = 0;
-        _showAllChats = false;
-        _showAllQAPairs = false;
-        _showProject = false; // Ensure we're not showing a project
-      });
-    } else {
-      // Force a rebuild even if we're already on the chat screen
-      setState(() {});
-    }
+    // Reset navigation state
+    ref.read(showProjectProvider.notifier).state = false;
+    ref.read(showAllChatsProvider.notifier).state = false;
+    ref.read(showAllQAPairsProvider.notifier).state = false;
+    ref.read(selectedScreenIndexProvider.notifier).state = 0; // Chat index
   }
   
   void _deleteChat(String chatId) async {
@@ -113,28 +101,21 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     // Clear project selection to ensure we're in standalone chat mode
     ref.read(selectedProjectIdProvider.notifier).state = null;
     
-    // Switch to chat screen if not already there
-    if (_selectedIndex != 0 || _showProject || _showAllChats || _showAllQAPairs) {
-      setState(() {
-        _selectedIndex = 0;
-        _showAllChats = false;
-        _showAllQAPairs = false;
-        _showProject = false; // Ensure we're not showing a project
-      });
-    }
+    // Reset navigation state
+    ref.read(showProjectProvider.notifier).state = false;
+    ref.read(showAllChatsProvider.notifier).state = false;
+    ref.read(showAllQAPairsProvider.notifier).state = false;
+    ref.read(selectedScreenIndexProvider.notifier).state = 0; // Chat index
   }
   
   void _selectQAPair(QAPair qaPair) {
     ref.read(selectedQAPairIdProvider.notifier).state = qaPair.id;
     
-    // Switch to QA screen if not already there
-    if (_selectedIndex != 1) {
-      setState(() {
-        _selectedIndex = 1;
-        _showAllChats = false;
-        _showAllQAPairs = false;
-      });
-    }
+    // Reset navigation state
+    ref.read(showProjectProvider.notifier).state = false;
+    ref.read(showAllChatsProvider.notifier).state = false;
+    ref.read(showAllQAPairsProvider.notifier).state = false;
+    ref.read(selectedScreenIndexProvider.notifier).state = 1; // QA index
   }
   
   void _deleteQAPair(String qaPairId) async {
@@ -154,14 +135,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               ref.read(qaPairProvider.notifier).addQAPair(qaPair);
               Navigator.of(context).pop();
               
-              // Switch to QA screen if not already there
-              if (_selectedIndex != 1) {
-                setState(() {
-                  _selectedIndex = 1;
-                  _showAllChats = false;
-                  _showAllQAPairs = false;
-                });
-              }
+              // Reset navigation state
+              ref.read(showProjectProvider.notifier).state = false;
+              ref.read(showAllChatsProvider.notifier).state = false;
+              ref.read(showAllQAPairsProvider.notifier).state = false;
+              ref.read(selectedScreenIndexProvider.notifier).state = 1; // QA index
               
               // Select the newly created QA pair
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -192,13 +170,18 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   
   void _selectProject(String projectId) {
     ref.read(selectedProjectIdProvider.notifier).state = projectId;
-    
-    setState(() {
-      _showProject = true;
-      _showAllChats = false;
-      _showAllQAPairs = false;
-      // No need to change _selectedIndex as we're showing a different screen type
-    });
+    ref.read(showProjectProvider.notifier).state = true;
+    ref.read(showAllChatsProvider.notifier).state = false;
+    ref.read(showAllQAPairsProvider.notifier).state = false;
+  }
+  
+  void _goToSettings() {
+    // Reset all navigation state and go to settings
+    ref.read(selectedProjectIdProvider.notifier).state = null;
+    ref.read(showProjectProvider.notifier).state = false;
+    ref.read(showAllChatsProvider.notifier).state = false;
+    ref.read(showAllQAPairsProvider.notifier).state = false;
+    ref.read(selectedScreenIndexProvider.notifier).state = 2; // Settings index
   }
   
   @override
@@ -216,18 +199,24 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final selectedQAPairId = ref.watch(selectedQAPairIdProvider);
     final selectedProjectId = ref.watch(selectedProjectIdProvider);
     
+    // Get navigation state
+    final selectedScreenIndex = ref.watch(selectedScreenIndexProvider);
+    final showProject = ref.watch(showProjectProvider);
+    final showAllChats = ref.watch(showAllChatsProvider);
+    final showAllQAPairs = ref.watch(showAllQAPairsProvider);
+    
     // Determine which screen to show
     Widget contentScreen;
-    if (_showProject && selectedProjectId != null) {
+    if (showProject && selectedProjectId != null) {
       contentScreen = ProjectScreen(projectId: selectedProjectId);
-    } else if (_showAllChats) {
+    } else if (showAllChats) {
       contentScreen = AllChatsScreen(
         chats: chats,
         selectedChatId: selectedChatId,
         onSelectChat: _selectChat,
         onDeleteChat: _deleteChat,
       );
-    } else if (_showAllQAPairs) {
+    } else if (showAllQAPairs) {
       contentScreen = AllQAPairsScreen(
         qaPairs: qaPairs,
         selectedQAPairId: selectedQAPairId,
@@ -236,7 +225,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       );
     } else {
       // Default to the regular screens based on selectedIndex
-      contentScreen = _screens[_selectedIndex];
+      contentScreen = _screens[selectedScreenIndex];
     }
     
     return Scaffold(
@@ -335,7 +324,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                       id: chat.id,
                                       title: chat.title,
                                       icon: Icons.chat_bubble_outline,
-                                      isSelected: chat.id == selectedChatId && _selectedIndex == 0 && !_showAllQAPairs,
+                                      isSelected: chat.id == selectedChatId && selectedScreenIndex == 0 && !showAllQAPairs,
                                       onTap: () => _selectChat(chat.id),
                                       onDelete: () => _deleteChat(chat.id),
                                       onRename: (newTitle) => _renameChat(chat.id, newTitle),
@@ -408,7 +397,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                             Icon(
                                               Icons.question_answer_outlined,
                                               size: 16,
-                                              color: qaPair.id == selectedQAPairId && _selectedIndex == 1 && !_showAllChats
+                                              color: qaPair.id == selectedQAPairId && selectedScreenIndex == 1 && !showAllChats
                                                   ? EddieColors.getPrimary(context)
                                                   : EddieColors.getTextSecondary(context),
                                             ),
@@ -417,17 +406,17 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                               child: Text(
                                                 qaPair.question,
                                                 style: EddieTextStyles.body2(context).copyWith(
-                                                  color: qaPair.id == selectedQAPairId && _selectedIndex == 1 && !_showAllChats
+                                                  color: qaPair.id == selectedQAPairId && selectedScreenIndex == 1 && !showAllChats
                                                       ? EddieColors.getPrimary(context)
                                                       : EddieColors.getTextPrimary(context),
-                                                  fontWeight: qaPair.id == selectedQAPairId && _selectedIndex == 1 && !_showAllChats
+                                                  fontWeight: qaPair.id == selectedQAPairId && selectedScreenIndex == 1 && !showAllChats
                                                       ? FontWeight.bold
                                                       : FontWeight.normal,
                                                 ),
                                                 overflow: TextOverflow.ellipsis,
                                               ),
                                             ),
-                                            if (qaPair.id == selectedQAPairId && _selectedIndex == 1 && !_showAllChats)
+                                            if (qaPair.id == selectedQAPairId && selectedScreenIndex == 1 && !showAllChats)
                                               Icon(
                                                 Icons.check,
                                                 size: 16,
@@ -464,11 +453,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                       ),
                     ),
                     child: InkWell(
-                      onTap: () => setState(() {
-                        _selectedIndex = 2;
-                        _showAllChats = false;
-                        _showAllQAPairs = false;
-                      }),
+                      onTap: _goToSettings,
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Row(
@@ -476,7 +461,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                             Icon(
                               Icons.settings_outlined,
                               size: 16,
-                              color: _selectedIndex == 2
+                              color: selectedScreenIndex == 2
                                   ? EddieColors.getPrimary(context)
                                   : EddieColors.getTextSecondary(context),
                             ),
@@ -484,10 +469,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                             Text(
                               l10n.settingsTabLabel,
                               style: EddieTextStyles.body2(context).copyWith(
-                                color: _selectedIndex == 2
+                                color: selectedScreenIndex == 2
                                     ? EddieColors.getPrimary(context)
                                     : EddieColors.getTextPrimary(context),
-                                fontWeight: _selectedIndex == 2 ? FontWeight.bold : FontWeight.normal,
+                                fontWeight: selectedScreenIndex == 2 ? FontWeight.bold : FontWeight.normal,
                               ),
                             ),
                           ],
@@ -548,7 +533,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                         const SizedBox(width: 16),
                       const EddieLogo(size: 24, showText: true),
                       const SizedBox(width: 8),
-                      if (_showProject && selectedProjectId != null)
+                      if (showProject && selectedProjectId != null)
                         Expanded(
                           child: Row(
                             children: [
@@ -583,7 +568,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                             ],
                           ),
                         )
-                      else if (_selectedIndex == 0 && selectedChatId != null)
+                      else if (selectedScreenIndex == 0 && selectedChatId != null)
                         Expanded(
                           child: Row(
                             children: [
@@ -613,7 +598,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                             ],
                           ),
                         )
-                      else if (_showAllChats)
+                      else if (showAllChats)
                         Expanded(
                           child: Row(
                             children: [
@@ -638,7 +623,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                             ],
                           ),
                         )
-                      else if (_selectedIndex == 1 && selectedQAPairId != null)
+                      else if (selectedScreenIndex == 1 && selectedQAPairId != null)
                         Expanded(
                           child: Row(
                             children: [
@@ -668,7 +653,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                             ],
                           ),
                         )
-                      else if (_showAllQAPairs)
+                      else if (showAllQAPairs)
                         Expanded(
                           child: Row(
                             children: [
@@ -696,10 +681,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                       else
                         Expanded(
                           child: Text(
-                            _showAllChats ? l10n.chatTabLabel :
-                            _showAllQAPairs ? l10n.qaTabLabel :
-                            _selectedIndex == 0 ? l10n.chatTabLabel :
-                            _selectedIndex == 1 ? l10n.qaTabLabel : l10n.settingsTabLabel,
+                            showAllChats ? l10n.chatTabLabel :
+                            showAllQAPairs ? l10n.qaTabLabel :
+                            selectedScreenIndex == 0 ? l10n.chatTabLabel :
+                            selectedScreenIndex == 1 ? l10n.qaTabLabel : l10n.settingsTabLabel,
                             style: EddieTextStyles.body1(context).copyWith(
                               fontWeight: FontWeight.bold,
                             ),
@@ -722,15 +707,16 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       // Bottom navigation for small screens
       bottomNavigationBar: isSmallScreen
           ? BottomNavigationBar(
-              currentIndex: _selectedIndex,
+              currentIndex: selectedScreenIndex,
               onTap: (index) {
                 // Only allow navigation if API key is set or if navigating to Settings
                 if (hasApiKey || index == 2) {
-                  setState(() {
-                    _selectedIndex = index;
-                    _showAllChats = false;
-                    _showAllQAPairs = false;
-                  });
+                  // Reset project state and update screen index
+                  ref.read(selectedProjectIdProvider.notifier).state = null;
+                  ref.read(showProjectProvider.notifier).state = false;
+                  ref.read(showAllChatsProvider.notifier).state = false;
+                  ref.read(showAllQAPairsProvider.notifier).state = false;
+                  ref.read(selectedScreenIndexProvider.notifier).state = index;
                 } else {
                   // Show a message that API key is required
                   ScaffoldMessenger.of(context).showSnackBar(

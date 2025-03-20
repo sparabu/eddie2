@@ -6,6 +6,7 @@ import '../models/message.dart';
 import '../providers/project_provider.dart';
 import '../providers/chat_provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/navigation_provider.dart';
 import '../theme/eddie_colors.dart';
 import '../theme/eddie_text_styles.dart';
 import '../theme/eddie_theme.dart';
@@ -380,6 +381,16 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
       }
     }
     return null;
+  }
+  
+  // New method to handle settings navigation
+  void _navigateToSettings() {
+    // Reset project view
+    ref.read(selectedProjectIdProvider.notifier).state = null;
+    ref.read(showProjectProvider.notifier).state = false;
+    
+    // Show settings
+    ref.read(selectedScreenIndexProvider.notifier).state = 2;
   }
   
   @override
