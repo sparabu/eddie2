@@ -27,10 +27,70 @@ class MessageBubble extends StatelessWidget {
     this.onSaveQAPair,
   }) : super(key: key);
 
-  bool _isImageFile(String? filePath) {
-    if (filePath == null) return false;
-    final extension = filePath.split('.').last.toLowerCase();
+  // Helper function to check if a file is an image
+  bool _isImageFile(String? path) {
+    if (path == null) return false;
+    final extension = path.split('.').last.toLowerCase();
     return ['jpg', 'jpeg', 'png', 'webp', 'gif'].contains(extension);
+  }
+  
+  // Helper function to check if a file is a PDF
+  bool _isPdfFile(String? path) {
+    if (path == null) return false;
+    final extension = path.split('.').last.toLowerCase();
+    return extension == 'pdf';
+  }
+  
+  // Get the appropriate icon for a file type
+  IconData _getFileIcon(String? path) {
+    if (path == null) return Icons.attach_file;
+    if (_isPdfFile(path)) {
+      return Icons.picture_as_pdf;
+    }
+    return Icons.attach_file;
+  }
+  
+  Widget _buildFileAttachmentWidget(BuildContext context, String filePath, String fileName) {
+    final isPdf = _isPdfFile(filePath);
+    
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: EddieColors.getSurfaceVariant(context),
+        borderRadius: BorderRadius.circular(EddieConstants.borderRadiusSmall),
+        border: Border.all(
+          color: isPdf 
+              ? EddieColors.getPrimary(context).withOpacity(0.5)
+              : EddieColors.getOutline(context),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            _getFileIcon(filePath),
+            size: 16,
+            color: isPdf 
+                ? EddieColors.getPrimary(context)
+                : EddieColors.getTextSecondary(context),
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              fileName,
+              style: EddieTextStyles.caption(context).copyWith(
+                color: isPdf 
+                    ? EddieColors.getPrimary(context)
+                    : EddieColors.getTextSecondary(context),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // Build image widget based on platform
@@ -201,38 +261,7 @@ class MessageBubble extends StatelessWidget {
                 // Display file attachment for non-image files
                 else if (attachmentPath != null && attachmentName != null) ...[
                   const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: EddieColors.getSurfaceVariant(context),
-                      borderRadius: BorderRadius.circular(EddieConstants.borderRadiusSmall),
-                      border: Border.all(
-                        color: EddieColors.getOutline(context),
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.attach_file,
-                          size: 16,
-                          color: EddieColors.getTextSecondary(context),
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            attachmentName,
-                            style: EddieTextStyles.caption(context).copyWith(
-                              color: EddieColors.getTextSecondary(context),
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _buildFileAttachmentWidget(context, attachmentPath, attachmentName),
                 ],
                 
                 // Display additional attachments
@@ -272,36 +301,7 @@ class MessageBubble extends StatelessWidget {
                       .where((path) => !_isImageFile(path))
                       .map((path) => Container(
                             margin: const EdgeInsets.only(top: 4),
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: EddieColors.getSurfaceVariant(context),
-                              borderRadius: BorderRadius.circular(EddieConstants.borderRadiusSmall),
-                              border: Border.all(
-                                color: EddieColors.getOutline(context),
-                                width: 1,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.attach_file,
-                                  size: 16,
-                                  color: EddieColors.getTextSecondary(context),
-                                ),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(
-                                    path.split('/').last,
-                                    style: EddieTextStyles.caption(context).copyWith(
-                                      color: EddieColors.getTextSecondary(context),
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
+                            child: _buildFileAttachmentWidget(context, path, path.split('/').last),
                           ))
                       .toList(),
                 ],

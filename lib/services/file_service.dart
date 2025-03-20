@@ -121,6 +121,11 @@ class FileService {
     'jpg', 'jpeg', 'png', 'webp', 'gif'
   ];
   
+  // Add PDF to supported file types
+  static const List<String> supportedDocumentExtensions = [
+    'pdf'
+  ];
+  
   // MIME types for additional validation
   static const Map<String, String> supportedImageMimeTypes = {
     'jpg': 'image/jpeg',
@@ -128,6 +133,11 @@ class FileService {
     'png': 'image/png',
     'webp': 'image/webp',
     'gif': 'image/gif',
+  };
+  
+  // MIME types for document files
+  static const Map<String, String> supportedDocumentMimeTypes = {
+    'pdf': 'application/pdf',
   };
   
   Future<Map<String, dynamic>?> pickFile({bool imagesOnly = false}) async {
@@ -353,6 +363,12 @@ class FileService {
   bool _isImageFile(String fileName) {
     final extension = fileName.split('.').last.toLowerCase();
     return supportedImageExtensions.contains(extension);
+  }
+  
+  // Helper method to check if a file is a PDF document
+  bool _isPdfFile(String filePath) {
+    final extension = filePath.split('.').last.toLowerCase();
+    return extension == 'pdf';
   }
   
   // Get web file bytes by ID

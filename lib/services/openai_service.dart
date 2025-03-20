@@ -94,9 +94,19 @@ class OpenAIService {
         }
       }
       
-      // If there's a text file, use the chat completions with file API
-      if (filePath != null && filePath.isNotEmpty && !_isImageFile(filePath)) {
-        return await _sendMessageWithFile(formattedMessages, filePath, model);
+      // Check if there's a PDF or other file attachment
+      if (filePath != null && filePath.isNotEmpty) {
+        // Check if it's an image or other file type
+        if (_isImageFile(filePath)) {
+          // Handle as image
+          hasImageAttachment = true;
+          imagePath = filePath;
+        } else {
+          // If it's a PDF or other file type, use the file-specific API
+          final isPdf = _isPdfFile(filePath);
+          debugPrint('Sending message with ${isPdf ? 'PDF' : 'file'} attachment: $filePath');
+          return await _sendMessageWithFile(formattedMessages, filePath, model);
+        }
       }
       
       // If there's an image file from the current message, add it now
@@ -201,19 +211,25 @@ class OpenAIService {
           throw Exception('Could not encode file: $e');
         }
         
+        // Check if this is a PDF file
+        final bool isPdf = _isPdfFile(fileName);
+        
         // Add the file content to the messages
         messages.add({
           'role': 'user',
           'content': [
             {
               'type': 'text',
-              'text': 'I am sending you a file named $fileName. Please analyze it.'
+              'text': isPdf 
+                ? 'I am sending you a PDF document named $fileName. Please analyze its content thoroughly and provide a detailed understanding of what\'s inside. If there are any charts, tables, or figures, please describe those as well.'
+                : 'I am sending you a file named $fileName. Please analyze it.'
             },
             {
               'type': 'file_content',
               'file_content': {
                 'name': fileName,
                 'data': base64File,
+                'mime_type': isPdf ? 'application/pdf' : null, // Explicitly set MIME type for PDF
               }
             }
           ]
@@ -326,10 +342,16 @@ Example output format:
     }
   }
 
-  // Helper to check if a file is an image
+  // Helper function to check if a file is an image based on the extension
   bool _isImageFile(String filePath) {
-    final extension = filePath.split('.').last.toLowerCase();
+    final extension = filePath.toLowerCase().split('.').last;
     return ['jpg', 'jpeg', 'png', 'webp', 'gif'].contains(extension);
+  }
+  
+  // Helper function to check if a file is a PDF
+  bool _isPdfFile(String filePath) {
+    final extension = filePath.toLowerCase().split('.').last;
+    return extension == 'pdf';
   }
 
   // Create message content for a message that contains an image
