@@ -181,163 +181,379 @@ class OpenAIService {
     }
   }
   
+  /// Send a message with a file attachment (specially handling PDFs)
   Future<String> _sendMessageWithFile(
     List<Map<String, dynamic>> messages,
     String filePath,
-    String model,
+    String model
   ) async {
     try {
-      final apiKey = getApiKey();
-      if (apiKey == null || apiKey.isEmpty) {
-        throw Exception('API key not found in .env file. Please add your OpenAI API key to the OPENAI_API_KEY variable.');
+      final isPdf = _isPdfFile(filePath);
+      
+      // Create a loading message
+      String loadingMessage = isPdf 
+        ? "Processing PDF document. This may take a moment..."
+        : "Processing file. This may take a moment...";
+      
+      // Check if it's a PDF and handle it with our specialized PDF service
+      if (isPdf) {
+        debugPrint('Processing PDF file: $filePath');
+        
+        // Use PdfService to extract text from PDF
+        final PdfService pdfService = PdfService();
+        final FileService fileService = FileService();
+        
+        try {
+          // Get file as bytes for processing
+          Uint8List bytes;
+          if (kIsWeb) {
+            bytes = await fileService.loadWebFileAsBytes(filePath);
+          } else {
+            bytes = await File(filePath).readAsBytes();
+          }
+          
+          // Get file size in MB for reference
+          final double fileSizeMB = bytes.length / (1024 * 1024);
+          debugPrint('PDF file size: ${fileSizeMB.toStringAsFixed(2)} MB');
+          
+          // Extract metadata
+          final metadata = await pdfService.extractMetadata(bytes);
+          final int pageCount = metadata['pageCount'] ?? 0;
+          final String title = metadata['title'] ?? 'Untitled Document';
+          
+          // Determine if we need to use chunking
+          final bool isLargePdf = pageCount > 10 || fileSizeMB > 1;
+          String extractedText;
+          
+          if (isLargePdf) {
+            // Use chunking for large PDFs
+            debugPrint('PDF is large, using chunking strategy');
+            return await _sendMessageWithLargePdf(messages, bytes, metadata, model);
+          } else {
+            // Small PDF, extract all text at once
+            extractedText = await pdfService.extractText(bytes);
+          }
+          
+          // Create message with extracted text
+          final pdfMessage = {
+            'role': 'user',
+            'content': '''
+This is text extracted from a PDF document:
+Title: ${metadata['title'] ?? 'Untitled'}
+Pages: $pageCount
+${metadata['author'] != null ? 'Author: ${metadata['author']}' : ''}
+
+===== DOCUMENT CONTENT =====
+$extractedText
+===== END OF DOCUMENT =====
+
+Please analyze the content of this document.
+'''
+          };
+          
+          // Replace loading message with PDF content
+          debugPrint('Sending PDF content to OpenAI - ${extractedText.length} characters');
+          
+          // Ensure we're using a model that can handle large inputs (like gpt-4o) for PDFs
+          String adjustedModel = model;
+          if (extractedText.length > 15000 && !model.contains('gpt-4')) {
+            debugPrint('Upgrading model to gpt-4o for large PDF content');
+            adjustedModel = 'gpt-4o';
+          }
+          
+          // Send the message to OpenAI with the PDF content
+          final response = await _dio.post(
+            '$_baseUrl/chat/completions',
+            data: {
+              'model': adjustedModel,
+              'messages': [...messages, pdfMessage],
+            },
+          );
+          
+          if (response.statusCode == 200) {
+            return response.data['choices'][0]['message']['content'];
+          } else {
+            throw Exception('Failed to get response: ${response.statusCode}');
+          }
+        } catch (e) {
+          debugPrint('Error processing PDF: $e');
+          return 'Error processing PDF: $e';
+        }
+      } else {
+        // For non-PDF files, create a message describing the file
+        final filename = filePath.split('/').last;
+        final fileExtension = filename.contains('.') ? filename.split('.').last.toLowerCase() : 'unknown';
+        
+        final message = {
+          'role': 'user',
+          'content': 'I have attached a $fileExtension file named "$filename". '
+              'Please guide me on how I might extract and analyze the content of this file. '
+              'What are the common tools or libraries used for working with $fileExtension files?'
+        };
+        
+        final response = await _dio.post(
+          '$_baseUrl/chat/completions',
+          data: {
+            'model': model,
+            'messages': [...messages, message],
+          },
+        );
+        
+        if (response.statusCode == 200) {
+          return response.data['choices'][0]['message']['content'];
+        } else {
+          throw Exception('Failed to get response: ${response.statusCode}');
+        }
+      }
+    } catch (e) {
+      debugPrint('Error in _sendMessageWithFile: $e');
+      return 'Error processing file: $e';
+    }
+  }
+  
+  /// Handle large PDFs by chunking and processing sequentially
+  Future<String> _sendMessageWithLargePdf(
+    List<Map<String, dynamic>> messages,
+    Uint8List pdfBytes,
+    Map<String, dynamic> metadata,
+    String model
+  ) async {
+    try {
+      final PdfService pdfService = PdfService();
+      
+      // Extract meaningful document metadata
+      final int pageCount = metadata['pageCount'] ?? 0;
+      final String title = metadata['title'] ?? 'Untitled Document';
+      final String author = metadata['author'] ?? 'Unknown Author';
+      
+      // Create introduction for chunked processing
+      debugPrint('Starting chunked processing of large PDF');
+      
+      // Get chunks with intelligent splitting
+      final chunks = await pdfService.extractAndChunkText(
+        pdfBytes, 
+        maxTokens: 6000,  // Use a larger chunk size for efficiency
+        overlapSentences: 2  // Overlap 2 sentences between chunks for context
+      );
+      
+      if (chunks.isEmpty) {
+        throw Exception('Failed to extract text from PDF');
       }
       
-      // Set up proper headers
-      _dio.options.headers = {
-        'Authorization': 'Bearer $apiKey',
-        'Content-Type': 'application/json',
+      debugPrint('PDF successfully split into ${chunks.length} chunks');
+      
+      // If there's only one chunk, process it directly
+      if (chunks.length == 1) {
+        final chunk = chunks.first;
+        final pdfMessage = {
+          'role': 'user',
+          'content': '''
+This is text extracted from a PDF document:
+Title: $title
+Pages: $pageCount
+${metadata['author'] != null ? 'Author: $author' : ''}
+
+===== DOCUMENT CONTENT =====
+${chunk['chunk']}
+===== END OF DOCUMENT =====
+
+Please analyze the content of this document.
+'''
+        };
+        
+        final response = await _dio.post(
+          '$_baseUrl/chat/completions',
+          data: {
+            'model': model.contains('gpt-4') ? model : 'gpt-4o', // Use GPT-4 for better comprehension
+            'messages': [...messages, pdfMessage],
+          },
+        );
+        
+        if (response.statusCode == 200) {
+          return response.data['choices'][0]['message']['content'];
+        } else {
+          throw Exception('Failed to get response: ${response.statusCode}');
+        }
+      }
+      
+      // For multiple chunks, we need to process them sequentially and build a combined response
+      StringBuffer combinedAnalysis = StringBuffer();
+      combinedAnalysis.writeln('# Analysis of "$title" (${chunks.length} sections)\n');
+      
+      // Process first chunk with full context
+      String currentSummary = await _processPdfChunk(
+        messages,
+        chunks[0],
+        metadata,
+        model,
+        isFirstChunk: true,
+        isLastChunk: false,
+        chunkNumber: 1,
+        totalChunks: chunks.length
+      );
+      
+      combinedAnalysis.writeln('## Section 1 Analysis\n');
+      combinedAnalysis.writeln('$currentSummary\n');
+      
+      // Process middle chunks (if any)
+      for (int i = 1; i < chunks.length - 1; i++) {
+        String chunkSummary = await _processPdfChunk(
+          messages,
+          chunks[i],
+          metadata,
+          model,
+          isFirstChunk: false,
+          isLastChunk: false,
+          chunkNumber: i + 1,
+          totalChunks: chunks.length,
+          previousSummary: currentSummary
+        );
+        
+        combinedAnalysis.writeln('## Section ${i + 1} Analysis\n');
+        combinedAnalysis.writeln('$chunkSummary\n');
+        
+        // Update current summary for context in next chunk
+        currentSummary = chunkSummary;
+      }
+      
+      // Process final chunk if there are multiple chunks
+      if (chunks.length > 1) {
+        String finalSummary = await _processPdfChunk(
+          messages,
+          chunks[chunks.length - 1],
+          metadata,
+          model,
+          isFirstChunk: false,
+          isLastChunk: true,
+          chunkNumber: chunks.length,
+          totalChunks: chunks.length,
+          previousSummary: currentSummary
+        );
+        
+        combinedAnalysis.writeln('## Section ${chunks.length} Analysis\n');
+        combinedAnalysis.writeln('$finalSummary\n');
+        
+        // Add an overall summary by analyzing the combined sections
+        final overallSummaryMessage = {
+          'role': 'user',
+          'content': '''
+I've analyzed a ${pageCount}-page document titled "$title" in ${chunks.length} sections.
+Here are my section-by-section analyses:
+
+${combinedAnalysis.toString()}
+
+Please provide a cohesive overall summary of this document, connecting the key points from all sections.
+'''
+        };
+        
+        final response = await _dio.post(
+          '$_baseUrl/chat/completions',
+          data: {
+            'model': model.contains('gpt-4') ? model : 'gpt-4o',
+            'messages': [...messages, overallSummaryMessage],
+          },
+        );
+        
+        if (response.statusCode == 200) {
+          final overallSummary = response.data['choices'][0]['message']['content'];
+          combinedAnalysis.writeln('## Overall Summary\n');
+          combinedAnalysis.writeln('$overallSummary\n');
+        }
+      }
+      
+      return combinedAnalysis.toString();
+    } catch (e) {
+      debugPrint('Error in _sendMessageWithLargePdf: $e');
+      return 'Error processing large PDF: $e';
+    }
+  }
+  
+  /// Process a single chunk of a PDF document
+  Future<String> _processPdfChunk(
+    List<Map<String, dynamic>> baseMessages,
+    Map<String, dynamic> chunk,
+    Map<String, dynamic> metadata,
+    String model, {
+    required bool isFirstChunk,
+    required bool isLastChunk,
+    required int chunkNumber,
+    required int totalChunks,
+    String? previousSummary
+  }) async {
+    try {
+      // Extract chunk metadata
+      final String pageRange = chunk['metadata']['pageRange'] ?? 'unknown';
+      final String chunkText = chunk['chunk'] ?? '';
+      
+      // Create appropriate prompt based on chunk position
+      String prompt;
+      if (isFirstChunk) {
+        prompt = '''
+This is section $chunkNumber of $totalChunks from a PDF document:
+Title: ${metadata['title'] ?? 'Untitled Document'}
+Author: ${metadata['author'] ?? 'Unknown'}
+Pages: $pageRange of ${metadata['pageCount'] ?? 'unknown'} total pages
+
+===== DOCUMENT CONTENT (SECTION $chunkNumber) =====
+$chunkText
+===== END OF SECTION $chunkNumber =====
+
+Analyze this first section of the document. Focus on understanding the main topics and structure.
+''';
+      } else if (isLastChunk) {
+        prompt = '''
+This is the final section ($chunkNumber of $totalChunks) from a PDF document:
+Title: ${metadata['title'] ?? 'Untitled Document'}
+Pages: $pageRange of ${metadata['pageCount'] ?? 'unknown'} total pages
+
+Previous section key points:
+$previousSummary
+
+===== DOCUMENT CONTENT (FINAL SECTION $chunkNumber) =====
+$chunkText
+===== END OF FINAL SECTION =====
+
+Analyze this final section, connecting it with the previous content. Include key conclusions if present.
+''';
+      } else {
+        prompt = '''
+This is section $chunkNumber of $totalChunks from a PDF document:
+Title: ${metadata['title'] ?? 'Untitled Document'}
+Pages: $pageRange of ${metadata['pageCount'] ?? 'unknown'} total pages
+
+Previous section key points:
+$previousSummary
+
+===== DOCUMENT CONTENT (SECTION $chunkNumber) =====
+$chunkText
+===== END OF SECTION $chunkNumber =====
+
+Analyze this section, building on the previous sections. Focus on how this content connects with earlier material.
+''';
+      }
+      
+      // Send the chunk for analysis
+      final chunkMessage = {
+        'role': 'user',
+        'content': prompt
       };
       
-      String fileName;
-      Uint8List fileBytes;
-      
-      try {
-        // Special handling for web platform files (which have a special prefixed path)
-        if (kIsWeb && filePath.startsWith('web_file_')) {
-          // For web files, we need to retrieve the stored bytes from our FileService
-          final fileService = FileService();
-          final bytes = fileService.getWebFileBytes(filePath);
-          
-          if (bytes == null) {
-            throw Exception('Could not access file. The file may have been removed or the session expired.');
-          }
-          
-          // Get file name from the web file ID
-          fileName = filePath.split('_').sublist(3).join('_');
-          if (fileName.isEmpty) {
-            // Fallback to generic name if we can't extract it
-            fileName = 'file.pdf';
-          }
-          
-          fileBytes = bytes;
-          debugPrint('Web file processing complete: $fileName (${bytes.length} bytes)');
-        } else {
-          // For native platforms - use the File API
-          final file = File(filePath);
-          if (!await file.exists()) {
-            throw Exception('File not found at path: $filePath');
-          }
-          
-          fileName = file.path.split('/').last;
-          fileBytes = await file.readAsBytes();
-          
-          // Check if file is readable and not corrupted
-          if (fileBytes.isEmpty) {
-            throw Exception('File is empty or corrupted');
-          }
-          
-          debugPrint('Native file processing complete: $fileName (${fileBytes.length} bytes)');
-        }
-        
-        // Check if this is a PDF file
-        final bool isPdf = _isPdfFile(fileName);
-        
-        debugPrint('Processing ${isPdf ? 'PDF' : 'file'}: $fileName');
-        
-        // For regular chat completions API, we can only use 'text' or 'image_url' type
-        // PDF files need to be converted to text or sent as base64 data URI
-        if (isPdf) {
-          // Use our new PdfService to extract text from the PDF
-          debugPrint('Extracting text from PDF using PdfService');
-          final pdfService = PdfService();
-          
-          // Show a loading indicator in the message stream
-          messages.add({
-            'role': 'assistant',
-            'content': 'Processing PDF file. This might take a moment...'
-          });
-          
-          // Extract text and metadata from the PDF
-          final String extractedText = await pdfService.extractText(fileBytes);
-          final Map<String, dynamic> metadata = await pdfService.extractMetadata(fileBytes);
-          
-          // Prepare metadata information string
-          final StringBuffer metadataString = StringBuffer();
-          metadataString.writeln('PDF Document Information:');
-          metadata.forEach((key, value) {
-            metadataString.writeln('- $key: $value');
-          });
-          
-          // Replace the loading message with actual PDF content
-          messages.removeLast(); // Remove loading message
-          
-          // Add a detailed message with the extracted text
-          messages.add({
-            'role': 'user',
-            'content': 'I have a PDF document named "$fileName" with the following content:\n\n' +
-                       metadataString.toString() + '\n\n' +
-                       'DOCUMENT CONTENT:\n' + extractedText
-          });
-          
-          debugPrint('Successfully extracted and processed PDF text (${extractedText.length} characters)');
-        } else {
-          // For non-PDF files, just use text mode
-          messages.add({
-            'role': 'user',
-            'content': 'I am sending you a file named $fileName. Here is the content: ' + 
-                       String.fromCharCodes(fileBytes)
-          });
-        }
-        
-        // Log the request (partial, to avoid flooding logs)
-        debugPrint('Sending request to OpenAI with file attachment');
-        if (isPdf) {
-          debugPrint('Using extracted PDF text for analysis');
-        }
-      } catch (e) {
-        // If there's any error with the file, add a message explaining the issue
-        debugPrint('Error processing file: $e');
-        messages.add({
-          'role': 'user',
-          'content': 'I tried to send you a file, but there was an error: $e'
-        });
-      }
-      
-      // Ensure we use a model capable of handling large text input
-      if (model != 'gpt-4o') {
-        debugPrint('Upgrading model to gpt-4o for file handling');
-        model = 'gpt-4o';
-      }
-      
-      // Send the API request
       final response = await _dio.post(
         '$_baseUrl/chat/completions',
         data: {
-          'model': model,
-          'messages': messages,
+          'model': model.contains('gpt-4') ? model : 'gpt-4o',
+          'messages': [...baseMessages, chunkMessage],
         },
       );
       
       if (response.statusCode == 200) {
-        final data = response.data;
-        final content = data['choices'][0]['message']['content'];
-        return content;
+        return response.data['choices'][0]['message']['content'];
       } else {
-        throw Exception('Failed to get response: ${response.statusCode}');
-      }
-    } on DioException catch (e) {
-      if (e.response != null) {
-        final errorData = e.response?.data;
-        final errorMessage = errorData?['error']?['message'] ?? 'Unknown API error';
-        debugPrint('API Error details: ${e.response?.data}');
-        throw Exception('API Error: $errorMessage');
-      } else {
-        debugPrint('Network error details: ${e.message}');
-        throw Exception('Network error: ${e.message}');
+        throw Exception('Failed to get response for chunk $chunkNumber: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Error sending file: $e');
-      throw Exception('Error sending file: $e');
+      debugPrint('Error processing chunk $chunkNumber: $e');
+      return 'Error analyzing section $chunkNumber: $e';
     }
   }
   

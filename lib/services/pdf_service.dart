@@ -18,6 +18,13 @@ class PdfService {
   // Private constructor for singleton
   PdfService._internal();
   
+  /// Default token limit for chunks to stay within OpenAI's limits
+  /// Using a conservative number to account for tokens in messages and metadata
+  static const int defaultMaxTokens = 4000;
+  
+  /// Approximate characters per token (OpenAI's tokenization is ~4 chars per token)
+  static const double charsPerToken = 4.0;
+  
   /// Extract text from a PDF file
   /// 
   /// - [bytes] The PDF file as bytes
@@ -67,6 +74,193 @@ class PdfService {
     }
   }
   
+  /// Extract and chunk text from a PDF file
+  /// 
+  /// - [bytes] The PDF file as bytes
+  /// - [maxTokens] Optional maximum tokens per chunk (default: 4000)
+  /// - [overlapSize] Optional number of sentences to overlap between chunks (default: 2)
+  /// - Returns list of text chunks with metadata
+  Future<List<Map<String, dynamic>>> extractAndChunkText(Uint8List bytes, {
+    int maxTokens = defaultMaxTokens, 
+    int overlapSentences = 2
+  }) async {
+    try {
+      // Load the PDF document
+      final PdfDocument document = PdfDocument(inputBytes: bytes);
+      final int pageCount = document.pages.count;
+      
+      // Extract metadata for context
+      final Map<String, dynamic> metadata = await extractMetadata(bytes);
+      final String title = metadata['title'] ?? 'Untitled Document';
+      
+      // Stores all extracted text by page 
+      final List<String> pageTexts = [];
+      
+      // Extract text from each page
+      for (int i = 0; i < pageCount; i++) {
+        final PdfTextExtractor extractor = PdfTextExtractor(document);
+        
+        try {
+          String pageText = extractor.extractText(startPageIndex: i, endPageIndex: i);
+          pageText = _preprocessText(pageText, i + 1, pageCount);
+          pageTexts.add(pageText);
+        } catch (e) {
+          debugPrint('Error extracting text from page ${i + 1}: $e');
+          pageTexts.add('(Error extracting text)');
+        }
+      }
+      
+      // Clean up
+      document.dispose();
+      
+      // Now chunk the extracted text semantically
+      final List<Map<String, dynamic>> chunks = _createSemanticChunks(
+        pageTexts: pageTexts,
+        metadata: metadata,
+        maxTokens: maxTokens,
+        overlapSentences: overlapSentences
+      );
+      
+      debugPrint('Successfully chunked PDF into ${chunks.length} segments');
+      return chunks;
+    } catch (e) {
+      debugPrint('Error extracting and chunking PDF: $e');
+      return [{'chunk': 'Error processing PDF: $e', 'metadata': {'error': true}}];
+    }
+  }
+  
+  /// Create semantic chunks from extracted page texts
+  /// 
+  /// Uses intelligent chunking to preserve context and structure
+  List<Map<String, dynamic>> _createSemanticChunks({
+    required List<String> pageTexts,
+    required Map<String, dynamic> metadata,
+    required int maxTokens,
+    required int overlapSentences
+  }) {
+    final List<Map<String, dynamic>> chunks = [];
+    final int pageCount = pageTexts.length;
+    final int maxCharsPerChunk = (maxTokens * charsPerToken).floor();
+    final String title = metadata['title'] ?? 'Untitled Document';
+    
+    // Create a buffer for the current chunk
+    StringBuffer currentChunk = StringBuffer();
+    int currentChunkSize = 0;
+    int startPage = 0;
+    int endPage = 0;
+    List<String> overlapSentencesList = [];
+    
+    for (int pageIndex = 0; pageIndex < pageTexts.length; pageIndex++) {
+      final String pageText = pageTexts[pageIndex];
+      final List<String> sentences = _splitIntoSentences(pageText);
+      
+      if (sentences.isEmpty) continue;
+      
+      for (int sentenceIndex = 0; sentenceIndex < sentences.length; sentenceIndex++) {
+        final String sentence = sentences[sentenceIndex];
+        final int sentenceLength = sentence.length;
+        
+        // If adding this sentence exceeds the chunk size limit, create a new chunk
+        if (currentChunkSize + sentenceLength > maxCharsPerChunk && currentChunkSize > 0) {
+          // Add metadata to the current chunk
+          chunks.add({
+            'chunk': currentChunk.toString(),
+            'metadata': {
+              'title': title,
+              'pageRange': '${startPage+1}-${endPage+1}',
+              'totalPages': pageCount,
+              'chunkIndex': chunks.length,
+            }
+          });
+          
+          // Start a new chunk with the overlap sentences for context
+          currentChunk = StringBuffer();
+          for (String overlapSentence in overlapSentencesList) {
+            currentChunk.write(overlapSentence);
+          }
+          currentChunkSize = overlapSentencesList.fold(0, (sum, s) => sum + s.length);
+          startPage = pageIndex;
+          
+          // Clear the overlap list but keep track of recent sentences
+          overlapSentencesList = [];
+        }
+        
+        // Add the current sentence to the chunk
+        currentChunk.write(sentence);
+        currentChunkSize += sentenceLength;
+        endPage = pageIndex;
+        
+        // Maintain a sliding window of recent sentences for overlap
+        overlapSentencesList.add(sentence);
+        if (overlapSentencesList.length > overlapSentences) {
+          overlapSentencesList.removeAt(0);
+        }
+      }
+      
+      // Add a page separator if we're not at the end
+      if (pageIndex < pageTexts.length - 1) {
+        currentChunk.writeln('\n--- Next Page ---\n');
+        currentChunkSize += 20; // Approximate chars for the separator
+      }
+    }
+    
+    // Add the final chunk if there's anything remaining
+    if (currentChunkSize > 0) {
+      chunks.add({
+        'chunk': currentChunk.toString(),
+        'metadata': {
+          'title': title,
+          'pageRange': '${startPage+1}-${endPage+1}',
+          'totalPages': pageCount,
+          'chunkIndex': chunks.length,
+        }
+      });
+    }
+    
+    return chunks;
+  }
+  
+  /// Split text into sentences for better chunking
+  List<String> _splitIntoSentences(String text) {
+    // Basic sentence splitting regex
+    // This is a simplified approach - natural language processing would be more robust
+    final RegExp sentenceRegex = RegExp(r'[.!?]+\s+');
+    
+    // Split by sentence boundaries
+    List<String> sentences = text.split(sentenceRegex);
+    
+    // Recombine with the sentence terminators that were removed
+    List<String> result = [];
+    int startIndex = 0;
+    
+    for (String sentence in sentences) {
+      if (sentence.trim().isEmpty) continue;
+      
+      // Find where this sentence ends in the original text
+      int nextIndex = text.indexOf(sentence, startIndex) + sentence.length;
+      
+      // Get the sentence with its terminator
+      String completesentence = text.substring(startIndex, 
+        nextIndex < text.length ? 
+          text.indexOf(RegExp(r'\s+'), nextIndex) + 1 : 
+          text.length
+      );
+      
+      if (completesentence.trim().isNotEmpty) {
+        result.add(completesentence);
+      }
+      
+      startIndex = nextIndex;
+    }
+    
+    // If no sentences were found (e.g., no punctuation), return the whole text
+    if (result.isEmpty && text.trim().isNotEmpty) {
+      result.add(text);
+    }
+    
+    return result;
+  }
+  
   /// Extract text from a PDF file path
   /// 
   /// - [filePath] Path to the PDF file
@@ -85,6 +279,32 @@ class PdfService {
     } catch (e) {
       debugPrint('Error reading PDF file: $e');
       return 'Error reading PDF file: $e';
+    }
+  }
+  
+  /// Extract and chunk text from a PDF file path
+  /// 
+  /// - [filePath] Path to the PDF file
+  /// - [maxTokens] Optional maximum tokens per chunk
+  /// - [overlapSize] Optional sentences to overlap between chunks
+  /// - Returns list of text chunks with metadata
+  Future<List<Map<String, dynamic>>> extractAndChunkTextFromPath(String filePath, {
+    int maxTokens = defaultMaxTokens,
+    int overlapSentences = 2
+  }) async {
+    try {
+      if (kIsWeb) {
+        throw Exception('extractAndChunkTextFromPath is not supported on web. Use extractAndChunkText with file bytes instead.');
+      }
+      
+      // Read the file
+      final File file = File(filePath);
+      final Uint8List bytes = await file.readAsBytes();
+      
+      return extractAndChunkText(bytes, maxTokens: maxTokens, overlapSentences: overlapSentences);
+    } catch (e) {
+      debugPrint('Error reading PDF file for chunking: $e');
+      return [{'chunk': 'Error reading PDF file: $e', 'metadata': {'error': true}}];
     }
   }
   
