@@ -207,7 +207,10 @@ class OpenAIService {
           // Get file as bytes for processing
           Uint8List bytes;
           if (kIsWeb) {
-            bytes = await fileService.loadWebFileAsBytes(filePath);
+            bytes = fileService.getWebFileBytes(filePath) ?? Uint8List(0);
+            if (bytes.isEmpty) {
+              throw Exception('Could not access file. The file may have been removed or the session expired.');
+            }
           } else {
             bytes = await File(filePath).readAsBytes();
           }
