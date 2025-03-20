@@ -246,35 +246,24 @@ class OpenAIService {
         // For regular chat completions API, we can only use 'text' or 'image_url' type
         // PDF files need to be converted to text or sent as base64 data URI
         if (isPdf) {
-          // Add the text message first
-          messages.add({
-            'role': 'user',
-            'content': 'I am sending you a PDF document named $fileName. Please analyze its content thoroughly and provide a detailed understanding of what\'s inside. If there are any charts, tables, or figures, please describe those as well.'
-          });
-          
-          // We need to use the vision API to analyze the PDF
-          debugPrint('Using vision-based approach for PDF analysis');
-          
-          // Use Vision API with base64-encoded PDF
+          // Per OpenAI's limitation, we can't send PDFs directly with image_url type
+          // Only actual images (jpeg, png, etc.) are supported with image_url
+          // Instead, we'll need to describe the PDF and handle it as text
+
+          // Convert bytes to base64 for reference (but we won't use data URI since it's not supported)
           final String base64File = base64Encode(fileBytes);
-          final String dataUri = 'data:application/pdf;base64,$base64File';
           
-          // Add the PDF as an image_url with data URI
+          // Add a detailed message about the PDF
           messages.add({
             'role': 'user',
-            'content': [
-              {
-                'type': 'text',
-                'text': 'Here is the PDF file:'
-              },
-              {
-                'type': 'image_url',
-                'image_url': {
-                  'url': dataUri
-                }
-              }
-            ]
+            'content': 'I have a PDF document named "$fileName" (${fileBytes.length} bytes). ' +
+                       'This is a PDF file that I want to analyze. ' +
+                       'The PDF file contains information that I need help understanding. ' +
+                       'Please provide guidance on what I should look for in this PDF and ' +
+                       'suggest how I might extract and analyze the information it contains.'
           });
+          
+          debugPrint('Sending PDF info as text message instead of direct file content');
         } else {
           // For non-PDF files, just use text mode
           messages.add({
