@@ -27,10 +27,11 @@ class PdfPageImageExtractor {
       // such as pdf.js on web or a native PDF renderer on mobile
       final img.Image image = img.Image(width: width, height: height);
       
-      // Fill with white background (255, 255, 255)
+      // Fill with white color (simplest way that works across versions)
       for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-          image.setPixel(x, y, 0xFFFFFFFF); // RGBA white color
+          // Using RGB values directly as an integer
+          image.setPixelRgba(x, y, 255, 255, 255, 255);
         }
       }
       
