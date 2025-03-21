@@ -145,14 +145,14 @@ $extractedText
       if (useOcrIfNeeded) {
         // Check if this is a scanned PDF
         final OcrService ocrService = OcrService();
-        final bool isScanned = await ocrService.isScannedPdf(bytes);
+        final double scannedScore = await ocrService.isScannedPdf(bytes);
         
-        if (isScanned) {
-          debugPrint('Detected scanned PDF, using OCR extraction');
+        if (scannedScore >= scannedPdfThreshold) {
+          debugPrint('Detected scanned PDF (score: $scannedScore), using OCR extraction');
           fullText = await _extractTextWithOcr(bytes);
           usedOcr = true;
         } else {
-          debugPrint('Using standard text extraction for digital PDF');
+          debugPrint('Using standard text extraction for digital PDF (score: $scannedScore)');
           fullText = await _extractTextStandard(bytes);
         }
       } else {
