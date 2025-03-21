@@ -6,6 +6,8 @@ import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'ocr_service.dart';
 import 'dart:math' as math;
+import 'package:image/image.dart' as img;
+import 'file_service.dart';
 
 /// Service for handling PDF file operations
 class PdfService {
@@ -26,6 +28,9 @@ class PdfService {
   /// Using a conservative number to account for tokens in messages and metadata
   static const int defaultMaxTokens = 4000;
   
+  /// Default number of sentences to overlap between chunks
+  static const int defaultOverlapSentences = 2;
+  
   /// Approximate characters per token (OpenAI's tokenization is ~4 chars per token)
   static const double charsPerToken = 4.0;
   
@@ -41,7 +46,9 @@ class PdfService {
   /// - [bytes] The PDF file as bytes
   /// - [useOcrIfNeeded] Whether to use OCR for scanned documents
   /// - Returns extracted text with basic preprocessing
-  Future<String> extractText(Uint8List bytes, {bool useOcrIfNeeded = true}) async {
+  Future<Map<String, dynamic>> extractText(Uint8List bytes, {bool useOcrIfNeeded = true}) async {
+    debugPrint('Extracting text from PDF file (${(bytes.length / 1024 / 1024).toStringAsFixed(2)} MB)');
+    
     try {
       // Check if this appears to be a scanned document that would benefit from OCR
       if (useOcrIfNeeded) {
@@ -49,15 +56,42 @@ class PdfService {
         
         if (scannedProbability >= scannedPdfThreshold) {
           debugPrint('PDF appears to be scanned (score: $scannedProbability). Using OCR extraction.');
-          return _extractTextWithOcr(bytes);
+          final result = await _extractTextWithOcr(bytes);
+          
+          // If result is a string, it's an error message
+          if (result is String) {
+            return {
+              'text': result,
+              'isScanned': true,
+              'imageFiles': <String>[],
+            };
+          }
+          
+          // Otherwise, it's a map with text and image files
+          return {
+            'text': result['text'],
+            'isScanned': true,
+            'imageFiles': result['imageFiles'],
+          };
+        } else {
+          debugPrint('PDF appears to be digital (score: $scannedProbability). Using standard extraction.');
         }
       }
       
-      // If not scanned or OCR is disabled, use standard extraction
-      return _extractTextStandard(bytes);
+      // Standard text extraction for digital PDFs
+      final String extractedText = await _extractTextStandard(bytes);
+      return {
+        'text': extractedText,
+        'isScanned': false,
+        'imageFiles': <String>[],
+      };
     } catch (e) {
-      debugPrint('Error extracting text from PDF: $e');
-      return 'Error extracting text from PDF: $e';
+      debugPrint('Error in text extraction: $e');
+      return {
+        'text': 'Error extracting text: $e',
+        'isScanned': false,
+        'imageFiles': <String>[],
+      };
     }
   }
   
@@ -87,7 +121,7 @@ class PdfService {
   
   /// Extract text from PDF bytes using OCR for scanned documents
   Future<String> _extractTextWithOcr(Uint8List bytes) async {
-    debugPrint('Using OCR for text extraction');
+    debugPrint('Using OCR for text extraction via OpenAI vision');
     try {
       // Load the PDF document
       final PdfDocument document = PdfDocument(inputBytes: bytes);
@@ -97,128 +131,172 @@ class PdfService {
       
       // Add document metadata
       final StringBuffer extractedText = StringBuffer();
-      extractedText.writeln('Document processed with OCR');
+      extractedText.writeln('Document processed via OpenAI vision');
       extractedText.writeln('Total pages: $pageCount');
       extractedText.writeln('-----------------');
       
       // To improve performance, we'll limit processing to a reasonable number of pages
-      // For web especially, processing too many pages can cause browser freezes
-      final int maxPagesToProcess = 10;
+      final int maxPagesToProcess = 5; // Limit to 5 pages for OpenAI vision processing
       final int pagesToProcess = pageCount > maxPagesToProcess ? maxPagesToProcess : pageCount;
       
       if (pageCount > maxPagesToProcess) {
-        extractedText.writeln('Note: This is a large document. Only processing the first $maxPagesToProcess pages for performance reasons.');
+        extractedText.writeln('Note: This is a large document. Only processing the first $maxPagesToProcess pages.');
         extractedText.writeln('-----------------');
       }
       
-      // Process pages with OCR
+      // Convert PDF pages to images and send to OpenAI
+      List<String> imageFiles = [];
       for (int i = 0; i < pagesToProcess; i++) {
         try {
-          // Use a timeout for each page to prevent browser from freezing
-          final String pageText = await _extractOcrTextFromPage(document.pages[i], i)
-              .timeout(Duration(seconds: 30), onTimeout: () {
-            return '⚠️ OCR processing timed out for page ${i+1}. This page may be too complex for browser-based OCR.';
-          });
+          // Convert PDF page to image
+          final PdfPageImageExtractor extractor = PdfPageImageExtractor(document.pages[i]);
+          final img.Image? pageImage = await extractor.extractImage();
           
-          extractedText.writeln('--- Page ${i+1} ---');
-          extractedText.writeln(pageText);
-          extractedText.writeln();
+          if (pageImage == null) {
+            extractedText.writeln('--- Page ${i+1} ---');
+            extractedText.writeln('(Error: Could not convert page to image)');
+            extractedText.writeln();
+            continue;
+          }
+          
+          // Encode as PNG
+          final List<int> pngBytes = img.encodePng(pageImage);
+          final Uint8List imageData = Uint8List.fromList(pngBytes);
+          
+          // Save to temporary file
+          final String imagePath = await _savePdfPageAsImage(imageData, i);
+          imageFiles.add(imagePath);
+          
+          extractedText.writeln('--- Page ${i+1} converted to image ---');
         } catch (e) {
-          debugPrint('Error processing page ${i+1} with OCR: $e');
-          extractedText.writeln('--- Page ${i+1} (Error extracting text) ---');
+          debugPrint('Error processing page ${i+1}: $e');
+          extractedText.writeln('--- Page ${i+1} (Error) ---');
           extractedText.writeln('Error: $e');
           extractedText.writeln();
         }
         
-        // Yield back to the main thread periodically to prevent UI freezes
+        // Yield back to the main thread to prevent UI freezes
         await Future.delayed(Duration.zero);
-      }
-      
-      if (pageCount > maxPagesToProcess) {
-        extractedText.writeln('-----------------');
-        extractedText.writeln('Note: ${pageCount - maxPagesToProcess} remaining pages were not processed to prevent browser performance issues.');
       }
       
       // Clean up
       document.dispose();
       
-      return extractedText.toString();
+      if (imageFiles.isEmpty) {
+        return 'Could not extract any images from the PDF. The document may be damaged or in an unsupported format.';
+      }
+      
+      // Return information about the converted files
+      extractedText.writeln('-----------------');
+      extractedText.writeln('Converted ${imageFiles.length} pages to images for OpenAI vision processing.');
+      extractedText.writeln('Please refer to OpenAI\'s analysis of the document content.');
+      
+      // Return both the paths and the text
+      return {
+        'text': extractedText.toString(),
+        'imageFiles': imageFiles,
+      };
     } catch (e) {
       debugPrint('Error in OCR text extraction: $e');
       return 'Error extracting text with OCR: $e';
     }
   }
   
-  Future<String> _extractOcrTextFromPage(PdfPage page, int pageIndex) async {
-    // Use OCR service to extract text from this page
-    final result = await _ocrService.extractTextFromPageUsingOcr(page);
+  /// Save a PDF page as an image file and return the path
+  Future<String> _savePdfPageAsImage(Uint8List imageData, int pageIndex) async {
+    final String fileName = 'pdf_page_${pageIndex + 1}_${DateTime.now().millisecondsSinceEpoch}.png';
     
-    // If the result is empty, provide feedback about the page
-    if (result.trim().isEmpty) {
-      return '(No text content detected on this page. It may contain only images or non-textual content.)';
+    if (kIsWeb) {
+      // For web, use the FileService to store in browser
+      final FileService fileService = FileService();
+      final String webId = await fileService.saveWebFileData(fileName, imageData);
+      return webId;
+    } else {
+      // For native platforms, save to temporary directory
+      final Directory tempDir = await Directory.systemTemp.createTemp('pdf_images');
+      final File file = File('${tempDir.path}/$fileName');
+      await file.writeAsBytes(imageData);
+      return file.path;
     }
-    
-    return result;
   }
   
   /// Extract text from a PDF and divide it into semantic chunks
   /// with overlapping sentences for context preservation
   Future<List<Map<String, dynamic>>> extractAndChunkText(
     Uint8List bytes, {
-    int maxTokens = 4000,
-    int overlapSentences = 2,
-    bool useOcrIfNeeded = false,
+    int maxTokens = defaultMaxTokens,
+    int overlapSentences = defaultOverlapSentences,
+    bool useOcrIfNeeded = true,
   }) async {
     try {
-      // Start with standard extraction or OCR extraction based on the PDF type
-      bool usedOcr = false;
-      String fullText;
+      // Extract the text
+      final extractResult = await extractText(bytes, useOcrIfNeeded: useOcrIfNeeded);
+      final String extractedText = extractResult['text'];
+      final bool isScanned = extractResult['isScanned'];
+      final List<String> imageFiles = extractResult['imageFiles'] ?? <String>[];
       
-      if (useOcrIfNeeded) {
-        // Check if this is a scanned PDF
-        final double scannedScore = await _ocrService.isScannedPdf(bytes);
+      // If the document is scanned and we have image files, return them
+      if (isScanned && imageFiles.isNotEmpty) {
+        // For scanned documents, we'll return the image files for processing by OpenAI vision
+        return [
+          {
+            'content': 'This document appears to be scanned. Processing with OpenAI vision.',
+            'chunk_index': 0,
+            'total_chunks': 1,
+            'metadata': {
+              'isScanned': true,
+              'imageFiles': imageFiles,
+              'pageCount': imageFiles.length,
+            }
+          }
+        ];
+      }
+      
+      // If we have valid text, proceed with chunking
+      if (extractedText.isNotEmpty) {
+        // Process into chunks
+        final chunks = await _createSemanticChunks(extractedText, maxTokens, overlapSentences);
         
-        if (scannedScore >= scannedPdfThreshold) {
-          debugPrint('Detected scanned PDF (score: $scannedScore), using OCR extraction');
-          fullText = await _extractTextWithOcr(bytes);
-          usedOcr = true;
-        } else {
-          debugPrint('Using standard text extraction for digital PDF (score: $scannedScore)');
-          fullText = await _extractTextStandard(bytes);
-        }
+        // Add metadata to each chunk
+        return chunks.asMap().entries.map((entry) {
+          return {
+            'content': entry.value,
+            'chunk_index': entry.key,
+            'total_chunks': chunks.length,
+            'metadata': {
+              'isScanned': isScanned,
+              'imageFiles': <String>[],
+            }
+          };
+        }).toList();
       } else {
-        // Skip detection and use standard extraction
-        fullText = await _extractTextStandard(bytes);
+        // Return empty content with metadata if no text was extracted
+        return [
+          {
+            'content': 'No text content could be extracted from this document.',
+            'chunk_index': 0,
+            'total_chunks': 1,
+            'metadata': {
+              'isScanned': isScanned,
+              'imageFiles': <String>[],
+            }
+          }
+        ];
       }
-      
-      if (fullText.trim().isEmpty) {
-        debugPrint('Warning: Extracted text is empty');
-        return [];
-      }
-      
-      // Get metadata for content understanding
-      final metadata = await extractMetadata(bytes);
-      final int pageCount = metadata['pageCount'] ?? 1;
-      
-      // Split text by pages for better semantic chunking
-      final List<String> pages = _splitTextIntoPages(fullText, pageCount);
-      
-      // Create chunks that respect semantic boundaries
-      final List<Map<String, dynamic>> chunks = _createSemanticChunks(
-        pages, 
-        maxTokens: maxTokens,
-        overlapSentences: overlapSentences,
-      );
-      
-      // Add metadata to each chunk including OCR info
-      for (int i = 0; i < chunks.length; i++) {
-        chunks[i]['metadata']['processedWithOcr'] = usedOcr;
-      }
-      
-      return chunks;
     } catch (e) {
-      debugPrint('Error in extractAndChunkText: $e');
-      return [];
+      debugPrint('Error in text extraction and chunking: $e');
+      return [
+        {
+          'content': 'Error processing document: $e',
+          'chunk_index': 0,
+          'total_chunks': 1,
+          'metadata': {
+            'isScanned': false,
+            'imageFiles': <String>[],
+            'error': e.toString(),
+          }
+        }
+      ];
     }
   }
   
@@ -251,99 +329,69 @@ class PdfService {
     return pages.where((page) => page.trim().isNotEmpty).toList();
   }
   
-  /// Create semantic chunks from pages respecting natural boundaries
-  List<Map<String, dynamic>> _createSemanticChunks(
-    List<String> pages, {
-    int maxTokens = 4000,
-    int overlapSentences = 2,
-  }) {
-    List<Map<String, dynamic>> chunks = [];
-    StringBuffer currentChunk = StringBuffer();
-    List<String> lastSentences = [];
-    int currentTokenEstimate = 0;
-    int startPage = 0;
-    int endPage = 0;
-    
-    // We use a rough estimate of 1.3 tokens per word
-    int estimateTokens(String text) {
-      return (text.split(RegExp(r'\s+')).length * 1.3).ceil();
-    }
-    
-    for (int i = 0; i < pages.length; i++) {
-      String page = pages[i];
+  /// Create semantically meaningful chunks from text
+  Future<List<String>> _createSemanticChunks(
+    String fullText,
+    int maxTokens,
+    int overlapSentences,
+  ) async {
+    try {
+      // Split text into paragraphs
+      final paragraphs = fullText.split(RegExp(r'\n{2,}'));
+      final List<String> chunks = [];
       
-      // Skip empty pages
-      if (page.trim().isEmpty) continue;
+      String currentChunk = '';
+      List<String> overlapBuffer = [];
       
-      if (currentChunk.isEmpty) {
-        startPage = i;
-      }
-      
-      // Extract sentences from current page
-      final sentenceRegex = RegExp(r'[.!?]\s+');
-      List<String> sentences = page.split(sentenceRegex)
-        .map((s) => s.trim() + '.')
-        .where((s) => s.length > 2)
-        .toList();
-      
-      // If the page doesn't have clear sentences, treat the whole page as one
-      if (sentences.isEmpty) {
-        sentences = [page];
-      }
-      
-      // Calculate token estimate for this page
-      int pageTokens = estimateTokens(page);
-      
-      // If adding this page would exceed token limit, finalize current chunk
-      if (currentTokenEstimate > 0 && currentTokenEstimate + pageTokens > maxTokens) {
-        // Add the chunk with metadata
-        chunks.add({
-          'chunk': currentChunk.toString(),
-          'metadata': {
-            'pageRange': '${startPage + 1}-${endPage + 1}',
-            'tokenEstimate': currentTokenEstimate,
-          }
-        });
+      for (final paragraph in paragraphs) {
+        // Skip empty paragraphs
+        if (paragraph.trim().isEmpty) continue;
         
-        // Start a new chunk with overlap from previous
-        currentChunk = StringBuffer();
-        if (lastSentences.isNotEmpty) {
-          int sentencesToInclude = math.min(overlapSentences, lastSentences.length);
-          for (int j = lastSentences.length - sentencesToInclude; j < lastSentences.length; j++) {
-            currentChunk.writeln(lastSentences[j]);
-          }
+        // If adding this paragraph would exceed the token limit
+        if (_estimateTokens(currentChunk + paragraph) > maxTokens && currentChunk.isNotEmpty) {
+          // Add the current chunk to the list
+          chunks.add(currentChunk);
+          
+          // Start a new chunk with the overlap buffer
+          currentChunk = overlapBuffer.join(' ');
+          
+          // Reset overlap buffer but keep latest sentences for continuity
+          overlapBuffer = [];
         }
         
-        // Reset tracking variables
-        currentTokenEstimate = estimateTokens(currentChunk.toString());
-        startPage = i;
-      }
-      
-      // Add current page to chunk
-      currentChunk.writeln(page);
-      currentTokenEstimate += pageTokens;
-      endPage = i;
-      
-      // Track last N sentences for overlap
-      if (sentences.length > overlapSentences) {
-        lastSentences = sentences.sublist(sentences.length - overlapSentences);
-      } else {
-        lastSentences = sentences;
-      }
-    }
-    
-    // Add final chunk if there's content
-    if (currentChunk.isNotEmpty) {
-      chunks.add({
-        'chunk': currentChunk.toString(),
-        'metadata': {
-          'pageRange': '${startPage + 1}-${endPage + 1}',
-          'tokenEstimate': currentTokenEstimate,
+        // Add paragraph to current chunk
+        if (currentChunk.isNotEmpty) {
+          currentChunk += '\n\n';
         }
-      });
+        currentChunk += paragraph;
+        
+        // Update overlap buffer with sentences from this paragraph
+        final sentences = paragraph.split(RegExp(r'(?<=[.!?])\s+'));
+        if (sentences.length <= overlapSentences) {
+          overlapBuffer.add(paragraph);
+        } else {
+          // Keep only the last N sentences for overlap
+          overlapBuffer = sentences.sublist(sentences.length - overlapSentences);
+        }
+      }
+      
+      // Add the last chunk if not empty
+      if (currentChunk.isNotEmpty) {
+        chunks.add(currentChunk);
+      }
+      
+      return chunks;
+    } catch (e) {
+      debugPrint('Error creating semantic chunks: $e');
+      // Return original text as a single chunk on error
+      return [fullText];
     }
-    
-    return chunks;
+  }
+  
+  /// Estimate the number of tokens in a text string
+  /// This is a rough approximation using word count * 1.3
+  int _estimateTokens(String text) {
+    return (text.split(RegExp(r'\s+')).length * 1.3).ceil();
   }
   
   /// Extract text from a PDF file path
@@ -378,7 +426,7 @@ class PdfService {
   Future<List<Map<String, dynamic>>> extractAndChunkTextFromPath(
     String filePath, {
     int maxTokens = defaultMaxTokens,
-    int overlapSentences = 2,
+    int overlapSentences = defaultOverlapSentences,
     bool useOcrIfNeeded = true
   }) async {
     try {

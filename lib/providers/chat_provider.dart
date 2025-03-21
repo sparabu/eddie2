@@ -11,6 +11,7 @@ import 'settings_provider.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
+import 'dart:io';
 
 class ChatNotifier extends StateNotifier<List<Chat>> {
   final StorageService _storageService;
@@ -241,7 +242,225 @@ class ChatNotifier extends StateNotifier<List<Chat>> {
   
   // New method specifically for sending with text files
   Future<void> sendMessageWithFile(String chatId, String content, String filePath) async {
-    await sendMessage(chatId, content, filePath: filePath);
+    try {
+      // Check if this is a PDF file
+      if (filePath.toLowerCase().endsWith('.pdf')) {
+        await _handlePdfFile(chatId, content, filePath);
+      } else {
+        // Handle other file types
+        await sendMessage(chatId, content, filePath: filePath);
+      }
+    } catch (e) {
+      debugPrint('Error in sendMessageWithFile: $e');
+      rethrow;
+    }
+  }
+  
+  Future<void> _handlePdfFile(String chatId, String content, String filePath) async {
+    try {
+      debugPrint('Processing PDF file: $filePath');
+      
+      // Get file bytes
+      Uint8List? fileBytes;
+      if (kIsWeb && filePath.startsWith('web_file_')) {
+        fileBytes = _fileService.getWebFileBytes(filePath);
+      } else {
+        final file = File(filePath);
+        fileBytes = await file.readAsBytes();
+      }
+      
+      if (fileBytes == null) {
+        throw Exception('Could not read file bytes');
+      }
+      
+      debugPrint('PDF file size: ${(fileBytes.length / 1024 / 1024).toStringAsFixed(2)} MB');
+      
+      // Use PDF service to extract text and process the file
+      final pdfService = PdfService();
+      final result = await pdfService.extractAndChunkText(
+        fileBytes,
+        useOcrIfNeeded: true,
+      );
+      
+      // Check if this is a scanned document with image files
+      final firstChunk = result.isNotEmpty ? result.first : null;
+      final metadata = firstChunk?['metadata'] as Map<String, dynamic>?;
+      final isScanned = metadata?['isScanned'] as bool? ?? false;
+      final imageFiles = metadata?['imageFiles'] as List<String>? ?? [];
+      
+      if (isScanned && imageFiles.isNotEmpty) {
+        // Handle scanned PDF by processing the image files
+        debugPrint('Handling scanned PDF with ${imageFiles.length} image files');
+        
+        // Create a user message that includes the original content
+        final userMessage = Message(
+          role: MessageRole.user,
+          content: content,
+          attachmentPath: filePath,
+          attachmentName: filePath.split('/').last,
+        );
+        
+        // Get the chat
+        final chatIndex = state.indexWhere((c) => c.id == chatId);
+        final chat = chatIndex != -1 ? state[chatIndex] : Chat(id: chatId);
+        final updatedChat = chat.addMessage(userMessage);
+        
+        // Update state
+        if (chatIndex != -1) {
+          state = state.map((c) => c.id == chatId ? updatedChat : c).toList();
+        } else {
+          state = [...state, updatedChat];
+        }
+        
+        await _storageService.saveChat(updatedChat);
+        
+        // Process the first image file immediately
+        await _processScannedPdfImage(chatId, imageFiles.isNotEmpty ? imageFiles[0] : null, 
+          '${content}\n\n[This is a scanned document being processed with OCR]');
+        
+        // If there are multiple images, process them in sequence
+        if (imageFiles.length > 1) {
+          for (int i = 1; i < imageFiles.length; i++) {
+            final imagePath = imageFiles[i];
+            await _processScannedPdfImage(chatId, imagePath, 
+              "[Continuing OCR processing of page ${i + 1}/${imageFiles.length} of the scanned document]");
+          }
+        }
+      } else {
+        // Handle regular PDF with text extraction
+        await _processPdfText(chatId, content, filePath, result);
+      }
+    } catch (e) {
+      debugPrint('Error processing PDF file: $e');
+      // Add error message to chat
+      await sendMessage(chatId, 'Error processing PDF file: $e');
+    }
+  }
+  
+  Future<void> _processScannedPdfImage(String chatId, String? imagePath, String message) async {
+    if (imagePath == null) return;
+    
+    try {
+      // Use the OpenAI service to send the image with the message
+      final locale = _ref.read(localeProvider);
+      
+      // Get all previous messages for context
+      final chat = state.firstWhere((c) => c.id == chatId);
+      final messages = chat.messages;
+      
+      // Send the message to OpenAI with image
+      final responseText = await _openAIService.sendMessage(
+        messages: messages,
+        imagePath: imagePath,
+        model: 'gpt-4o',  // Model that supports vision
+        languageCode: locale.languageCode,
+      );
+      
+      // Add the assistant response
+      final assistantMessage = Message(
+        role: MessageRole.assistant,
+        content: responseText,
+      );
+      
+      // Update the chat
+      final updatedChat = chat.addMessage(assistantMessage);
+      state = state.map((c) => c.id == chatId ? updatedChat : c).toList();
+      await _storageService.saveChat(updatedChat);
+    } catch (e) {
+      debugPrint('Error processing scanned PDF image: $e');
+      
+      // Add error message
+      final errorMessage = Message(
+        role: MessageRole.assistant,
+        content: 'Error processing scanned document image: $e',
+        isError: true,
+      );
+      
+      final chat = state.firstWhere((c) => c.id == chatId);
+      final updatedChat = chat.addMessage(errorMessage);
+      state = state.map((c) => c.id == chatId ? updatedChat : c).toList();
+      await _storageService.saveChat(updatedChat);
+    }
+  }
+  
+  Future<void> _processPdfText(String chatId, String content, String filePath, List<Map<String, dynamic>> textChunks) async {
+    // Add user message with attachment
+    final userMessage = Message(
+      role: MessageRole.user,
+      content: content,
+      attachmentPath: filePath,
+      attachmentName: filePath.split('/').last,
+    );
+    
+    // Get the chat
+    final chatIndex = state.indexWhere((c) => c.id == chatId);
+    final chat = chatIndex != -1 ? state[chatIndex] : Chat(id: chatId);
+    final updatedChat = chat.addMessage(userMessage);
+    
+    // Update state
+    if (chatIndex != -1) {
+      state = state.map((c) => c.id == chatId ? updatedChat : c).toList();
+    } else {
+      state = [...state, updatedChat];
+    }
+    
+    await _storageService.saveChat(updatedChat);
+    
+    // Process the chunks
+    if (textChunks.isEmpty) {
+      // Handle the case where no text could be extracted
+      final noTextMessage = Message(
+        role: MessageRole.assistant,
+        content: 'I could not extract any text from the provided PDF. It may be empty, password-protected, or contain only images without OCR text.',
+      );
+      
+      final chatWithResponse = updatedChat.addMessage(noTextMessage);
+      state = state.map((c) => c.id == chatId ? chatWithResponse : c).toList();
+      await _storageService.saveChat(chatWithResponse);
+      return;
+    }
+    
+    // Send the text to OpenAI
+    final locale = _ref.read(localeProvider);
+    final extractedText = textChunks.map((chunk) => chunk['content']).join('\n\n--- Next Section ---\n\n');
+    final pdfPrompt = '$content\n\n$extractedText';
+    
+    try {
+      final responseText = await _openAIService.sendMessage(
+        messages: [
+          ...updatedChat.messages.where((m) => m.id != userMessage.id).toList(),
+          Message(
+            role: MessageRole.user,
+            content: pdfPrompt,
+          ),
+        ],
+        model: 'gpt-4o',
+        languageCode: locale.languageCode,
+      );
+      
+      // Add assistant response
+      final assistantMessage = Message(
+        role: MessageRole.assistant,
+        content: responseText,
+      );
+      
+      final chatWithResponse = updatedChat.addMessage(assistantMessage);
+      state = state.map((c) => c.id == chatId ? chatWithResponse : c).toList();
+      await _storageService.saveChat(chatWithResponse);
+    } catch (e) {
+      debugPrint('Error processing PDF text with OpenAI: $e');
+      
+      // Add error message
+      final errorMessage = Message(
+        role: MessageRole.assistant,
+        content: 'Error processing PDF: $e',
+        isError: true,
+      );
+      
+      final chatWithError = updatedChat.addMessage(errorMessage);
+      state = state.map((c) => c.id == chatId ? chatWithError : c).toList();
+      await _storageService.saveChat(chatWithError);
+    }
   }
   
   // New method specifically for sending with image files
