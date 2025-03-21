@@ -895,64 +895,94 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                       }
                     },
                     onSendMessageWithFile: (content, filePath) async {
-                      // Get the current chat
-                      final chat = ref.read(chatProvider.notifier).getChatById(_selectedChatId!);
-                      final project = ref.read(projectProvider.notifier).getProject(widget.projectId);
+                      if (content.trim().isEmpty) return;
                       
-                      // Don't allow file attachments during project setup
+                      // Create a new chat with the first message as the title
+                      final title = content.length > 60 ? '${content.substring(0, 60)}...' : content;
+                      final newChat = await ref.read(chatProvider.notifier).createChat(
+                        title: title,
+                        projectId: widget.projectId,
+                      );
+                      
+                      // Set the selected chat ID
+                      setState(() => _selectedChatId = newChat.id);
+                      
+                      // Get the current project to check if setup is needed
+                      final project = ref.read(projectProvider.notifier).getProject(widget.projectId);
                       if (project != null && _projectNeedsSetup(project)) {
+                        // Don't allow file attachments during project setup
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Files cannot be attached until project setup is complete.')),
                         );
                         return;
+                      } else {
+                        // Normal chat processing for projects that are already set up
+                        await ref.read(chatProvider.notifier).sendMessageWithFile(
+                          newChat.id,
+                          content,
+                          filePath,
+                        );
                       }
-                      
-                      // For regular chats, handle file attachments
-                      await ref.read(chatProvider.notifier).sendMessageWithFile(
-                        _selectedChatId!,
-                        content,
-                        filePath,
-                      );
                     },
                     onSendMessageWithImage: (content, imagePath) async {
-                      // Get the current chat
-                      final chat = ref.read(chatProvider.notifier).getChatById(_selectedChatId!);
-                      final project = ref.read(projectProvider.notifier).getProject(widget.projectId);
+                      if (content.trim().isEmpty) return;
                       
-                      // Don't allow image attachments during project setup
+                      // Create a new chat with the first message as the title
+                      final title = content.length > 60 ? '${content.substring(0, 60)}...' : content;
+                      final newChat = await ref.read(chatProvider.notifier).createChat(
+                        title: title,
+                        projectId: widget.projectId,
+                      );
+                      
+                      // Set the selected chat ID
+                      setState(() => _selectedChatId = newChat.id);
+                      
+                      // Get the current project to check if setup is needed
+                      final project = ref.read(projectProvider.notifier).getProject(widget.projectId);
                       if (project != null && _projectNeedsSetup(project)) {
+                        // Don't allow image attachments during project setup
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Images cannot be attached until project setup is complete.')),
                         );
                         return;
+                      } else {
+                        // Normal chat processing for projects that are already set up
+                        await ref.read(chatProvider.notifier).sendMessageWithImage(
+                          newChat.id,
+                          content,
+                          imagePath,
+                        );
                       }
-                      
-                      // For regular chats, handle image attachments
-                      await ref.read(chatProvider.notifier).sendMessageWithImage(
-                        _selectedChatId!,
-                        content,
-                        imagePath,
-                      );
                     },
                     onSendMessageWithMultipleFiles: (content, filePaths) async {
-                      // Get the current chat
-                      final chat = ref.read(chatProvider.notifier).getChatById(_selectedChatId!);
-                      final project = ref.read(projectProvider.notifier).getProject(widget.projectId);
+                      if (content.trim().isEmpty) return;
                       
-                      // Don't allow file attachments during project setup
+                      // Create a new chat with the first message as the title
+                      final title = content.length > 60 ? '${content.substring(0, 60)}...' : content;
+                      final newChat = await ref.read(chatProvider.notifier).createChat(
+                        title: title,
+                        projectId: widget.projectId,
+                      );
+                      
+                      // Set the selected chat ID
+                      setState(() => _selectedChatId = newChat.id);
+                      
+                      // Get the current project to check if setup is needed
+                      final project = ref.read(projectProvider.notifier).getProject(widget.projectId);
                       if (project != null && _projectNeedsSetup(project)) {
+                        // Don't allow file attachments during project setup
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Files cannot be attached until project setup is complete.')),
                         );
                         return;
+                      } else {
+                        // Normal chat processing for projects that are already set up
+                        await ref.read(chatProvider.notifier).sendMessageWithMultipleFiles(
+                          newChat.id,
+                          content,
+                          filePaths,
+                        );
                       }
-                      
-                      // For regular chats, handle multiple file attachments
-                      await ref.read(chatProvider.notifier).sendMessageWithMultipleFiles(
-                        _selectedChatId!,
-                        content,
-                        filePaths,
-                      );
                     },
                     isLoading: false,
                   ),
@@ -1039,20 +1069,95 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                         );
                       }
                     },
-                    onSendMessageWithFile: (_, __) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Please send a message first to create the chat before attaching files.')),
+                    onSendMessageWithFile: (content, filePath) async {
+                      if (content.trim().isEmpty) return;
+                      
+                      // Create a new chat with the first message as the title
+                      final title = content.length > 60 ? '${content.substring(0, 60)}...' : content;
+                      final newChat = await ref.read(chatProvider.notifier).createChat(
+                        title: title,
+                        projectId: widget.projectId,
                       );
+                      
+                      // Set the selected chat ID
+                      setState(() => _selectedChatId = newChat.id);
+                      
+                      // Get the current project to check if setup is needed
+                      final project = ref.read(projectProvider.notifier).getProject(widget.projectId);
+                      if (project != null && _projectNeedsSetup(project)) {
+                        // Don't allow file attachments during project setup
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Files cannot be attached until project setup is complete.')),
+                        );
+                        return;
+                      } else {
+                        // Normal chat processing for projects that are already set up
+                        await ref.read(chatProvider.notifier).sendMessageWithFile(
+                          newChat.id,
+                          content,
+                          filePath,
+                        );
+                      }
                     },
-                    onSendMessageWithImage: (_, __) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Please send a message first to create the chat before attaching images.')),
+                    onSendMessageWithImage: (content, imagePath) async {
+                      if (content.trim().isEmpty) return;
+                      
+                      // Create a new chat with the first message as the title
+                      final title = content.length > 60 ? '${content.substring(0, 60)}...' : content;
+                      final newChat = await ref.read(chatProvider.notifier).createChat(
+                        title: title,
+                        projectId: widget.projectId,
                       );
+                      
+                      // Set the selected chat ID
+                      setState(() => _selectedChatId = newChat.id);
+                      
+                      // Get the current project to check if setup is needed
+                      final project = ref.read(projectProvider.notifier).getProject(widget.projectId);
+                      if (project != null && _projectNeedsSetup(project)) {
+                        // Don't allow image attachments during project setup
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Images cannot be attached until project setup is complete.')),
+                        );
+                        return;
+                      } else {
+                        // Normal chat processing for projects that are already set up
+                        await ref.read(chatProvider.notifier).sendMessageWithImage(
+                          newChat.id,
+                          content,
+                          imagePath,
+                        );
+                      }
                     },
-                    onSendMessageWithMultipleFiles: (_, __) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Please send a message first to create the chat before attaching files.')),
+                    onSendMessageWithMultipleFiles: (content, filePaths) async {
+                      if (content.trim().isEmpty) return;
+                      
+                      // Create a new chat with the first message as the title
+                      final title = content.length > 60 ? '${content.substring(0, 60)}...' : content;
+                      final newChat = await ref.read(chatProvider.notifier).createChat(
+                        title: title,
+                        projectId: widget.projectId,
                       );
+                      
+                      // Set the selected chat ID
+                      setState(() => _selectedChatId = newChat.id);
+                      
+                      // Get the current project to check if setup is needed
+                      final project = ref.read(projectProvider.notifier).getProject(widget.projectId);
+                      if (project != null && _projectNeedsSetup(project)) {
+                        // Don't allow file attachments during project setup
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Files cannot be attached until project setup is complete.')),
+                        );
+                        return;
+                      } else {
+                        // Normal chat processing for projects that are already set up
+                        await ref.read(chatProvider.notifier).sendMessageWithMultipleFiles(
+                          newChat.id,
+                          content,
+                          filePaths,
+                        );
+                      }
                     },
                     isLoading: false,
                   ),
