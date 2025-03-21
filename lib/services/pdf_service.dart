@@ -83,18 +83,78 @@ class PdfService {
   
   /// Extract text from PDF bytes using OCR for scanned documents
   Future<String> _extractTextWithOcr(Uint8List bytes) async {
-    debugPrint('Using OCR-based PDF text extraction');
+    debugPrint('Using OCR for text extraction');
     try {
-      // Use the OCR service to extract text from scanned pages
-      final OcrService ocrService = OcrService();
-      final String extractedText = await ocrService.extractTextFromScannedPdf(bytes);
+      // Load the PDF document
+      final PdfDocument document = PdfDocument(inputBytes: bytes);
       
-      // Process the extracted text
-      return _preprocessText(extractedText);
+      // Get total page count
+      final int pageCount = document.pages.count;
+      
+      // Add document metadata
+      final StringBuffer extractedText = StringBuffer();
+      extractedText.writeln('Document processed with OCR');
+      extractedText.writeln('Total pages: $pageCount');
+      extractedText.writeln('-----------------');
+      
+      // To improve performance, we'll limit processing to a reasonable number of pages
+      // For web especially, processing too many pages can cause browser freezes
+      final int maxPagesToProcess = 10;
+      final int pagesToProcess = pageCount > maxPagesToProcess ? maxPagesToProcess : pageCount;
+      
+      if (pageCount > maxPagesToProcess) {
+        extractedText.writeln('Note: This is a large document. Only processing the first $maxPagesToProcess pages for performance reasons.');
+        extractedText.writeln('-----------------');
+      }
+      
+      // Process pages with OCR
+      for (int i = 0; i < pagesToProcess; i++) {
+        try {
+          // Use a timeout for each page to prevent browser from freezing
+          final String pageText = await _extractOcrTextFromPage(document.pages[i], i)
+              .timeout(Duration(seconds: 30), onTimeout: () {
+            return '⚠️ OCR processing timed out for page ${i+1}. This page may be too complex for browser-based OCR.';
+          });
+          
+          extractedText.writeln('--- Page ${i+1} ---');
+          extractedText.writeln(pageText);
+          extractedText.writeln();
+        } catch (e) {
+          debugPrint('Error processing page ${i+1} with OCR: $e');
+          extractedText.writeln('--- Page ${i+1} (Error extracting text) ---');
+          extractedText.writeln('Error: $e');
+          extractedText.writeln();
+        }
+        
+        // Yield back to the main thread periodically to prevent UI freezes
+        await Future.delayed(Duration.zero);
+      }
+      
+      if (pageCount > maxPagesToProcess) {
+        extractedText.writeln('-----------------');
+        extractedText.writeln('Note: ${pageCount - maxPagesToProcess} remaining pages were not processed to prevent browser performance issues.');
+      }
+      
+      // Clean up
+      document.dispose();
+      
+      return extractedText.toString();
     } catch (e) {
-      debugPrint('Error in OCR PDF text extraction: $e');
-      return '';
+      debugPrint('Error in OCR text extraction: $e');
+      return 'Error extracting text with OCR: $e';
     }
+  }
+  
+  Future<String> _extractOcrTextFromPage(PdfPage page, int pageIndex) async {
+    // Use OCR service to extract text from this page
+    final result = await _ocrService.extractTextFromPageUsingOcr(page);
+    
+    // If the result is empty, provide feedback about the page
+    if (result.trim().isEmpty) {
+      return '(No text content detected on this page. It may contain only images or non-textual content.)';
+    }
+    
+    return result;
   }
   
   /// Extract text from a PDF and divide it into semantic chunks

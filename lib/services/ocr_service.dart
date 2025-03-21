@@ -11,7 +11,7 @@ import 'package:syncfusion_flutter_pdf/pdf.dart';
 /// Helper class to extract images from PDF pages
 class PdfPageImageExtractor {
   final PdfPage page;
-  static const double _dpiResolution = 300.0; // 300 DPI for good OCR quality
+  static const double _dpiResolution = 200.0; // Reduced from 300 to 200 for better performance
   static const double _pdfPointsToDpi = _dpiResolution / 72.0; // PDF points to DPI conversion
   
   PdfPageImageExtractor(this.page);
@@ -56,7 +56,7 @@ class OcrService {
   
   // Private constructor for singleton
   OcrService._internal() {
-    _textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
+    _textRecognizer = TextRecognizer();
   }
   
   // The ML Kit text recognizer instance
@@ -71,10 +71,29 @@ class OcrService {
     _textRecognizer.close();
   }
   
-  /// Check if a PDF appears to be a scanned document (image-based) rather than digital text
-  /// 
-  /// Returns a score between 0.0 (definitely digital) and 1.0 (definitely scanned)
+  /// Check if a PDF appears to be a scanned document
+  /// Returns a value between 0.0 (not scanned) and 1.0 (definitely scanned)
+  /// This uses a heuristic approach:
+  /// - Extracts text directly from the PDF
+  /// - Counts images on sample pages
+  /// - Analyzes text properties (sparseness, formatting)
   Future<double> isScannedPdf(Uint8List pdfBytes) async {
+    try {
+      // Add timeout for safety
+      return await _isScannedPdfImpl(pdfBytes).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          debugPrint('isScannedPdf operation timed out');
+          return 0.8; // Assume likely scanned on timeout for better UX
+        }
+      );
+    } catch (e) {
+      debugPrint('Error checking if PDF is scanned: $e');
+      return 0.0; // Default to not scanned on error
+    }
+  }
+  
+  Future<double> _isScannedPdfImpl(Uint8List pdfBytes) async {
     try {
       // Load the PDF document
       final PdfDocument document = PdfDocument(inputBytes: pdfBytes);
@@ -86,185 +105,166 @@ class OcrService {
       final PdfTextExtractor textExtractor = PdfTextExtractor(document);
       String sampleText = '';
       
-      // Check first page and a middle page if available
+      // Check only the first page for performance
       try {
         sampleText = textExtractor.extractText(startPageIndex: 0, endPageIndex: 0);
+      } catch (e) {
+        debugPrint('Error extracting text from first page: $e');
+        // If text extraction fails, it's often a sign of a scanned document
+        return 0.8;
+      }
+      
+      // Quick first check - if there's substantial text, it's likely not scanned
+      if (sampleText.length > 500) {
+        // Check if the text has proper formatting (not just garbage OCR)
+        if (_textHasProperFormatting(sampleText)) {
+          return 0.1; // Probably not scanned
+        }
+      }
+      
+      // Limit analysis to just the first page for performance
+      int pagesToCheck = 1;
+      
+      // Sample various pages if we haven't decided yet
+      double scoreSum = 0;
+      int pagesAnalyzed = 0;
+      
+      for (int i = 0; i < pagesToCheck && i < pageCount; i++) {
+        // Get the page
+        final PdfPage page = document.pages[i];
         
-        // If we have more than one page, check another page too
-        if (pageCount > 1) {
-          int middlePage = (pageCount / 2).floor();
-          sampleText += textExtractor.extractText(startPageIndex: middlePage, endPageIndex: middlePage);
-        }
-      } catch (e) {
-        // If text extraction fails, it might be a scanned document
-        debugPrint('Error extracting text: $e');
-        document.dispose();
-        return 0.9; // Likely scanned
-      }
-      
-      // Also check for images on the first page
-      bool hasImages = false;
-      try {
-        // Attempt to extract images from the first page
-        final PdfPage firstPage = document.pages[0];
-        hasImages = await _pageHasImages(firstPage);
-      } catch (e) {
-        debugPrint('Error checking for images: $e');
-      }
-      
-      // Clean up
-      document.dispose();
-      
-      // Determine if it's likely a scanned document based on text content and images
-      if (sampleText.trim().length < 100) {
-        if (hasImages) {
-          return 0.9; // Very likely scanned with images and little text
-        }
-        return 0.7; // Probably scanned with little text
-      }
-      
-      // If we got reasonable text, it's probably a digital document
-      return 0.2; // Probably digital
-    } catch (e) {
-      debugPrint('Error analyzing PDF for scanned content: $e');
-      // If we can't determine, assume digital (safer default)
-      return 0.0;
-    }
-  }
-  
-  /// Check if a PDF page contains images (useful for detecting scanned documents)
-  Future<bool> _pageHasImages(PdfPage page) async {
-    try {
-      // This is a simplistic approach - in a real implementation,
-      // we would traverse the page content tree to find image objects
-      // For now, we'll estimate based on presence of graphics
-      return page.graphics != null;
-    } catch (e) {
-      debugPrint('Error checking for images on page: $e');
-      return false;
-    }
-  }
-  
-  /// Extract text from a scanned PDF using OCR
-  /// 
-  /// Used when standard text extraction is unlikely to work well
-  Future<String> extractTextFromScannedPdf(Uint8List pdfBytes) async {
-    try {
-      // Load the PDF document
-      final PdfDocument document = PdfDocument(inputBytes: pdfBytes);
-      
-      // Get total page count
-      final int pageCount = document.pages.count;
-      
-      // Extract text using OCR
-      final StringBuffer extractedText = StringBuffer();
-      
-      // Add header with metadata
-      extractedText.writeln('PDF Document OCR Analysis (${pageCount} pages)');
-      extractedText.writeln('---');
-      
-      // Process each page with OCR
-      for (int i = 0; i < pageCount; i++) {
+        // Count images on the page
+        final int imageCount = await _countImagesOnPage(page);
+        
+        // Extract text content
+        String extractedText = '';
         try {
-          debugPrint('Processing page ${i + 1} with OCR');
-          // Render the page as an image
-          final Uint8List? pageImage = await renderPdfPageAsImage(document.pages[i]);
-          
-          if (pageImage != null) {
-            // Apply image preprocessing for better OCR quality
-            final Uint8List? processedImage = await preprocessImageForOcr(pageImage);
-            
-            // Extract text using OCR
-            final String pageText = await recognizeTextFromImage(processedImage ?? pageImage);
-            
-            // Skip empty pages
-            if (pageText.trim().isNotEmpty) {
-              extractedText.writeln('--- Page ${i + 1} ---');
-              extractedText.writeln(pageText);
-              extractedText.writeln();
-            } else {
-              debugPrint('No text extracted from page ${i + 1}');
-            }
-          } else {
-            debugPrint('Failed to render page ${i + 1} as image');
-          }
+          extractedText = textExtractor.extractText(startPageIndex: i, endPageIndex: i);
         } catch (e) {
-          debugPrint('Error processing page ${i + 1} with OCR: $e');
-          extractedText.writeln('--- Page ${i + 1} (Error extracting text) ---');
+          debugPrint('Error extracting text from page $i: $e');
+          // Error typically indicates a scanned page
+          scoreSum += 0.8;
+          pagesAnalyzed++;
+          continue;
+        }
+        
+        // Calculate the likelihood of the page being scanned
+        double pageScore = await _isPageLikelyScanned(extractedText, imageCount, page);
+        scoreSum += pageScore;
+        pagesAnalyzed++;
+      }
+      
+      // Determine final score (average of analyzed pages)
+      double finalScore = pagesAnalyzed > 0 ? scoreSum / pagesAnalyzed : 0.5;
+      debugPrint('PDF scan detection final score: $finalScore');
+      return finalScore;
+    } catch (e) {
+      debugPrint('Error in isScannedPdf: $e');
+      return 0.5; // Default to uncertain on error
+    }
+  }
+  
+  Future<int> _countImagesOnPage(PdfPage page) async {
+    try {
+      // For performance, we'll just check if there are any images at all
+      final int imageCount = page.graphics.count;
+      for (int i = 0; i < imageCount; i++) {
+        if (page.graphics[i] is PdfBitmap) {
+          // If we find even one image, assume there might be more
+          return 1;
         }
       }
-      
-      // Clean up
-      document.dispose();
-      
-      final String result = extractedText.toString();
-      debugPrint('Completed OCR processing, extracted ${result.length} characters');
-      return result;
+      return 0;
     } catch (e) {
-      debugPrint('Error extracting text from scanned PDF: $e');
-      return 'Error extracting text from scanned PDF: $e';
+      debugPrint('Error counting images: $e');
+      return 0;
     }
   }
   
-  /// Render a PDF page as an image for OCR processing
-  Future<Uint8List?> renderPdfPageAsImage(PdfPage page) async {
-    try {
-      // For MVP implementation, we'll use a simpler approach
-      // that works with the Syncfusion PDF API
-      
-      // Export the page as an image (PNG format)
-      List<int> bytes = await _exportPageAsImage(page);
-      return Uint8List.fromList(bytes);
-    } catch (e) {
-      debugPrint('Error rendering PDF page as image: $e');
-      return null;
+  Future<double> _isPageLikelyScanned(String extractedText, int imageCount, PdfPage page) async {
+    // If no text but has images, very likely scanned
+    if (extractedText.trim().isEmpty && imageCount > 0) {
+      return 0.9;
     }
-  }
-  
-  /// Export a PDF page as a PNG image
-  Future<List<int>> _exportPageAsImage(PdfPage page) async {
-    try {
-      // Create a simpler image exporter
-      final exporter = PdfPageImageExtractor(page);
-      
-      // Get the image
-      final img.Image? image = await exporter.extractImage();
-      
-      if (image != null) {
-        // Convert to PNG
-        return img.encodePng(image);
-      } else {
-        throw Exception('Failed to extract image from PDF page');
+    
+    // If it has substantial text, check if it's proper text or possible OCR artifacts
+    if (extractedText.length > 100) {
+      if (_textHasProperFormatting(extractedText)) {
+        return 0.2; // Likely not scanned
       }
+    }
+    
+    // If little text but large images, likely scanned
+    if (extractedText.length < 100 && imageCount > 0) {
+      return 0.8;
+    }
+    
+    // Default: medium probability
+    return 0.5;
+  }
+  
+  bool _textHasProperFormatting(String text) {
+    // Check for common signs of proper formatting
+    // 1. Proper paragraph breaks
+    bool hasProperParagraphs = text.contains('\n\n');
+    
+    // 2. Punctuation usage
+    bool hasPunctuation = RegExp(r'[.,:;]').hasMatch(text);
+    
+    // 3. Word distribution (not just random OCR artifacts)
+    List<String> words = text.split(RegExp(r'\s+'));
+    bool hasReasonableWordLength = words.where((w) => w.length > 2 && w.length < 15).length > words.length * 0.7;
+    
+    return hasProperParagraphs && hasPunctuation && hasReasonableWordLength;
+  }
+  
+  /// Extract text from a PDF page using OCR
+  Future<String> extractTextFromPageUsingOcr(PdfPage page) async {
+    try {
+      // Use timeout for safety
+      return await _extractTextFromPageUsingOcrImpl(page).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          debugPrint('OCR extraction timed out');
+          return "OCR processing timed out for this page. The document may be too complex or large for web processing.";
+        }
+      );
     } catch (e) {
-      debugPrint('Error exporting page as image: $e');
-      return [];
+      debugPrint('Error in extractTextFromPageUsingOcr: $e');
+      return "Error processing this page: $e";
     }
   }
   
-  /// Pre-process an image for better OCR quality
-  Future<Uint8List?> preprocessImageForOcr(Uint8List imageBytes) async {
+  Future<String> _extractTextFromPageUsingOcrImpl(PdfPage page) async {
+    // Render the page to an image
+    final PdfPageImageExtractor extractor = PdfPageImageExtractor(page);
+    final img.Image? pageImage = await extractor.extractImage();
+    
+    if (pageImage == null) {
+      return "";
+    }
+    
+    // Preprocess the image to improve OCR quality
+    final Uint8List? preprocessedImage = await _preprocessImageForOcr(pageImage);
+    if (preprocessedImage == null) {
+      return "";
+    }
+    
+    // Perform OCR
+    final String recognizedText = await recognizeTextFromImage(preprocessedImage);
+    return recognizedText;
+  }
+  
+  /// Preprocess an image to improve OCR quality
+  Future<Uint8List?> _preprocessImageForOcr(img.Image image) async {
     try {
-      // Decode the image
-      img.Image? image = img.decodeImage(imageBytes);
-      if (image == null) {
-        debugPrint('Failed to decode image for OCR preprocessing');
-        return null;
-      }
-      
-      // Apply image processing to improve OCR results
-      
-      // 1. Convert to grayscale (often improves OCR)
-      image = img.grayscale(image);
-      
-      // 2. Adjust contrast to make text more visible
-      image = img.adjustColor(image, contrast: 1.5);
-      
-      // 3. Adjust exposure for sharper text
-      image = img.adjustColor(image, exposure: 0.2);
-      
-      // 4. Apply luminance threshold to create black and white image
-      image = img.luminanceThreshold(image);
+      // Apply basic image processing for OCR enhancement
+      // For now, we'll just use the original image
+      // In a real implementation, you might apply:
+      // - Grayscale conversion
+      // - Contrast enhancement
+      // - Noise reduction
+      // - Thresholding
       
       // Encode the processed image
       final List<int> processed = img.encodePng(image);
