@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -899,5 +900,90 @@ Example output format:
     }
     
     return content;
+  }
+
+  /// Analyze an image with OpenAI Vision API
+  Future<String> analyzeImage(String imagePath, String prompt) async {
+    try {
+      // Check if we have access to the file
+      final Uint8List? imageBytes = await _getImageBytes(imagePath);
+      if (imageBytes == null) {
+        return 'Error: Unable to read image file.';
+      }
+
+      // Convert image bytes to base64
+      final String base64Image = base64Encode(imageBytes);
+
+      // Build the vision request with image and prompt
+      final Map<String, dynamic> requestBody = {
+        'model': 'gpt-4o',
+        'messages': [
+          {
+            'role': 'system',
+            'content': 'You are an OCR assistant that specializes in extracting text from scanned documents. Provide only the text content from the image, preserving formatting where possible. Do not add any explanations - only output the extracted text.'
+          },
+          {
+            'role': 'user',
+            'content': [
+              {
+                'type': 'text',
+                'text': prompt,
+              },
+              {
+                'type': 'image_url',
+                'image_url': {
+                  'url': 'data:image/png;base64,$base64Image',
+                },
+              },
+            ],
+          },
+        ],
+        'max_tokens': 4000,
+      };
+
+      // Send API request
+      final response = await _dio.post(
+        '$_baseUrl/chat/completions',
+        data: requestBody,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ${getApiKey()}',
+          },
+        ),
+      );
+
+      // Process response
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        return responseData['choices'][0]['message']['content'] as String;
+      } else {
+        return 'Error: ${response.statusCode} - ${response.statusMessage}';
+      }
+    } catch (e) {
+      debugPrint('Error in analyzeImage: $e');
+      return 'Error analyzing image: $e';
+    }
+  }
+
+  /// Get image bytes from a file path
+  Future<Uint8List?> _getImageBytes(String imagePath) async {
+    try {
+      if (kIsWeb) {
+        // For web, use the FileService to get bytes from browser storage
+        final FileService fileService = FileService();
+        return fileService.getWebFileBytes(imagePath);
+      } else {
+        // For native platforms, read from the file system
+        final File file = File(imagePath);
+        if (await file.exists()) {
+          return await file.readAsBytes();
+        }
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error reading image file: $e');
+      return null;
+    }
   }
 } 

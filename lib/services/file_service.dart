@@ -397,18 +397,12 @@ class FileService {
     return 'data:$mimeType;base64,${base64Encode(bytes)}';
   }
   
-  // Get web file bytes by ID
+  /// Get web file bytes from the web storage
   Uint8List? getWebFileBytes(String webFileId) {
-    if (!kIsWeb) return null; // Not applicable on non-web platforms
-    
-    // Check if we have this file's bytes
-    final bytes = _webFileBytes[webFileId];
-    if (bytes == null) {
-      debugPrint('Web file bytes not found for ID: $webFileId');
-      return null;
+    if (kIsWeb) {
+      return _webFileBytes[webFileId];
     }
-    
-    return bytes;
+    return null;
   }
   
   // Specific method for picking images only
@@ -475,5 +469,35 @@ class FileService {
       debugPrint('Error clearing temporary files: $e');
       // We don't rethrow here as this is a cleanup operation
     }
+  }
+  
+  // Read file bytes from a given path, handling both web and native platforms
+  Future<Uint8List?> readFile(String filePath) async {
+    try {
+      if (kIsWeb) {
+        // For web, check if this is a web file ID
+        if (filePath.startsWith('web_file_')) {
+          return getWebFileBytes(filePath);
+        }
+        return null;
+      } else {
+        // For native platforms, read from the file system
+        final file = File(filePath);
+        if (await file.exists()) {
+          return await file.readAsBytes();
+        }
+        return null;
+      }
+    } catch (e) {
+      debugPrint('Error reading file: $e');
+      return null;
+    }
+  }
+  
+  // Save web file data and return a web file ID
+  Future<String> saveWebFileData(String fileName, Uint8List bytes) async {
+    final String webFileId = 'web_file_${DateTime.now().millisecondsSinceEpoch}_$fileName';
+    _webFileBytes[webFileId] = bytes;
+    return webFileId;
   }
 } 
