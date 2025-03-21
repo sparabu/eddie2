@@ -395,7 +395,7 @@ class PdfService {
     processed = processed.replaceAll(RegExp(r'\n{3,}'), '\n\n');
     
     // 3. Fix hyphenated words split across lines
-    processed = processed.replaceAll(RegExp(r'(\w+)-\s*\n\s*(\w+)'), '$1$2');
+    processed = processed.replaceAll(RegExp(r'(\w+)-\s*\n\s*(\w+)'), r'$1$2');
     
     // 4. Trim each line
     processed = processed.split('\n').map((line) => line.trim()).join('\n');
