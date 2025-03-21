@@ -57,75 +57,43 @@ class PdfService {
     }
   }
   
-  /// Standard text extraction method for digital PDFs
+  /// Extract text from PDF bytes using standard extraction
   Future<String> _extractTextStandard(Uint8List bytes) async {
+    debugPrint('Using standard PDF text extraction');
     try {
       // Load the PDF document
       final PdfDocument document = PdfDocument(inputBytes: bytes);
       
-      // Capture document metadata for context
-      final int pageCount = document.pages.count;
-      debugPrint('PDF has $pageCount pages');
+      // Create a text extractor
+      final PdfTextExtractor textExtractor = PdfTextExtractor(document);
       
-      final StringBuffer extractedText = StringBuffer();
-      
-      // Add basic document metadata
-      extractedText.writeln('Document with $pageCount pages');
-      extractedText.writeln('---');
-      
-      // Extract text from each page
-      for (int i = 0; i < pageCount; i++) {
-        final PdfPage page = document.pages[i];
-        final PdfTextExtractor extractor = PdfTextExtractor(document);
-        
-        try {
-          String pageText = extractor.extractText(startPageIndex: i, endPageIndex: i);
-          pageText = _preprocessText(pageText, i + 1, pageCount);
-          
-          extractedText.writeln('--- Page ${i + 1} ---');
-          extractedText.writeln(pageText);
-          extractedText.writeln();
-        } catch (e) {
-          debugPrint('Error extracting text from page ${i + 1}: $e');
-          extractedText.writeln('--- Page ${i + 1} (Error extracting text) ---');
-        }
-      }
+      // Get the text from the entire document
+      final String text = textExtractor.extractText();
       
       // Clean up
       document.dispose();
       
-      final String result = extractedText.toString();
-      debugPrint('Successfully extracted ${result.length} characters from PDF');
-      return result;
+      // Process the extracted text
+      return _preprocessText(text);
     } catch (e) {
-      debugPrint('Error in standard text extraction: $e');
-      return 'Error extracting text from PDF: $e';
+      debugPrint('Error in standard PDF text extraction: $e');
+      return '';
     }
   }
   
-  /// OCR-based extraction for scanned documents
+  /// Extract text from PDF bytes using OCR for scanned documents
   Future<String> _extractTextWithOcr(Uint8List bytes) async {
+    debugPrint('Using OCR-based PDF text extraction');
     try {
+      // Use the OCR service to extract text from scanned pages
       final OcrService ocrService = OcrService();
       final String extractedText = await ocrService.extractTextFromScannedPdf(bytes);
       
-      // Check OCR quality
-      final double ocrQuality = ocrService.estimateOcrQuality(extractedText);
-      debugPrint('OCR quality score: $ocrQuality');
-      
-      // Add quality indicator if low quality
-      if (ocrQuality < 0.5) {
-        return '''
-OCR QUALITY WARNING: The text extraction quality appears to be low. Results may not be accurate.
-
-$extractedText
-''';
-      }
-      
-      return extractedText;
+      // Process the extracted text
+      return _preprocessText(extractedText);
     } catch (e) {
-      debugPrint('Error in OCR text extraction: $e');
-      return 'Error extracting text using OCR: $e';
+      debugPrint('Error in OCR PDF text extraction: $e');
+      return '';
     }
   }
   
@@ -411,29 +379,29 @@ $extractedText
     }
   }
   
-  /// Preprocess extracted text to improve quality
+  /// Preprocess extracted text to improve quality and readability
   /// 
-  /// - [text] The raw extracted text
-  /// - [pageNumber] Current page number
-  /// - [totalPages] Total pages in document
+  /// - [text] Raw extracted text
   /// - Returns preprocessed text
-  String _preprocessText(String text, int pageNumber, int totalPages) {
+  String _preprocessText(String text) {
     if (text.isEmpty) return text;
     
-    // Replace multiple spaces with a single space
-    String processed = text.replaceAll(RegExp(r'\s+'), ' ');
+    String processed = text;
     
-    // Remove excessive newlines (keep max two in a row)
+    // 1. Fix multiple spaces and tabs
+    processed = processed.replaceAll(RegExp(r'\s{2,}'), ' ');
+    
+    // 2. Fix excessive line breaks
     processed = processed.replaceAll(RegExp(r'\n{3,}'), '\n\n');
     
-    // Fix common hyphenation issues (words broken across lines)
-    processed = processed.replaceAll(RegExp(r'(\w+)-\s*\n\s*(\w+)'), r'$1$2');
+    // 3. Fix hyphenated words split across lines
+    processed = processed.replaceAll(RegExp(r'(\w+)-\s*\n\s*(\w+)'), '$1$2');
     
-    // Remove headers/footers that contain only page numbers
-    processed = processed.replaceAll(RegExp(r'\n\s*\d+\s*\n'), '\n');
-    
-    // Trim whitespace from each line
+    // 4. Trim each line
     processed = processed.split('\n').map((line) => line.trim()).join('\n');
+    
+    // 5. Remove any non-printable characters
+    processed = processed.replaceAll(RegExp(r'[^\x20-\x7E\n\r\t]'), '');
     
     return processed;
   }

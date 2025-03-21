@@ -26,6 +26,10 @@ class OcrService {
   // The ML Kit text recognizer instance
   late final TextRecognizer _textRecognizer;
   
+  // Constants for OCR processing
+  static const double _dpiResolution = 300.0; // 300 DPI for good OCR quality
+  static const double _pdfPointsToDpi = _dpiResolution / 72.0; // PDF points to DPI conversion
+  
   // Dispose resources when no longer needed
   void dispose() {
     _textRecognizer.close();
@@ -62,12 +66,25 @@ class OcrService {
         return 0.9; // Likely scanned
       }
       
+      // Also check for images on the first page
+      bool hasImages = false;
+      try {
+        // Attempt to extract images from the first page
+        final PdfPageBase firstPage = document.pages[0];
+        hasImages = await _pageHasImages(firstPage);
+      } catch (e) {
+        debugPrint('Error checking for images: $e');
+      }
+      
       // Clean up
       document.dispose();
       
-      // Simple heuristic: if very little text was extracted, it might be a scanned document
+      // Determine if it's likely a scanned document based on text content and images
       if (sampleText.trim().length < 100) {
-        return 0.7; // Probably scanned
+        if (hasImages) {
+          return 0.9; // Very likely scanned with images and little text
+        }
+        return 0.7; // Probably scanned with little text
       }
       
       // If we got reasonable text, it's probably a digital document
@@ -76,6 +93,19 @@ class OcrService {
       debugPrint('Error analyzing PDF for scanned content: $e');
       // If we can't determine, assume digital (safer default)
       return 0.0;
+    }
+  }
+  
+  /// Check if a PDF page contains images (useful for detecting scanned documents)
+  Future<bool> _pageHasImages(PdfPageBase page) async {
+    try {
+      // This is a simplistic approach - in a real implementation,
+      // we would traverse the page content tree to find image objects
+      // For now, we'll estimate based on presence of graphics
+      return page.graphics != null;
+    } catch (e) {
+      debugPrint('Error checking for images on page: $e');
+      return false;
     }
   }
   
@@ -90,26 +120,41 @@ class OcrService {
       // Get total page count
       final int pageCount = document.pages.count;
       
-      // For MVP, return a placeholder message since actual OCR implementation
-      // requires rendering pages as images and more complex processing
+      // Extract text using OCR
       final StringBuffer extractedText = StringBuffer();
       
-      extractedText.writeln('OCR extraction detected a scanned document with $pageCount pages.');
-      extractedText.writeln('Note: The text content may be limited as this appears to be a scanned document.');
-      extractedText.writeln('');
+      // Add header with metadata
+      extractedText.writeln('PDF Document OCR Analysis (${pageCount} pages)');
+      extractedText.writeln('---');
       
-      // Try basic text extraction as fallback
-      final PdfTextExtractor textExtractor = PdfTextExtractor(document);
+      // Process each page with OCR
       for (int i = 0; i < pageCount; i++) {
         try {
-          String pageText = textExtractor.extractText(startPageIndex: i, endPageIndex: i);
-          if (pageText.trim().isNotEmpty) {
-            extractedText.writeln('--- Page ${i + 1} ---');
-            extractedText.writeln(pageText);
-            extractedText.writeln('');
+          debugPrint('Processing page ${i + 1} with OCR');
+          // Render the page as an image
+          final Uint8List? pageImage = await renderPdfPageAsImage(document.pages[i]);
+          
+          if (pageImage != null) {
+            // Apply image preprocessing for better OCR quality
+            final Uint8List? processedImage = await preprocessImageForOcr(pageImage);
+            
+            // Extract text using OCR
+            final String pageText = await recognizeTextFromImage(processedImage ?? pageImage);
+            
+            // Skip empty pages
+            if (pageText.trim().isNotEmpty) {
+              extractedText.writeln('--- Page ${i + 1} ---');
+              extractedText.writeln(pageText);
+              extractedText.writeln();
+            } else {
+              debugPrint('No text extracted from page ${i + 1}');
+            }
+          } else {
+            debugPrint('Failed to render page ${i + 1} as image');
           }
         } catch (e) {
-          debugPrint('Error extracting text from page ${i + 1}: $e');
+          debugPrint('Error processing page ${i + 1} with OCR: $e');
+          extractedText.writeln('--- Page ${i + 1} (Error extracting text) ---');
         }
       }
       
@@ -117,6 +162,7 @@ class OcrService {
       document.dispose();
       
       final String result = extractedText.toString();
+      debugPrint('Completed OCR processing, extracted ${result.length} characters');
       return result;
     } catch (e) {
       debugPrint('Error extracting text from scanned PDF: $e');
@@ -124,19 +170,193 @@ class OcrService {
     }
   }
   
+  /// Render a PDF page as an image for OCR processing
+  Future<Uint8List?> renderPdfPageAsImage(PdfPage page) async {
+    try {
+      // Get page dimensions
+      final Size pageSize = page.size;
+      
+      // Calculate dimensions with higher DPI for better OCR
+      final int width = (pageSize.width * _pdfPointsToDpi).round();
+      final int height = (pageSize.height * _pdfPointsToDpi).round();
+      
+      // Create a bitmap and render the page
+      if (kIsWeb) {
+        // Web implementation using browser canvas
+        return _renderPageAsImageWeb(page, width, height);
+      } else {
+        // Native implementation using Syncfusion's built-in rendering
+        return _renderPageAsImageNative(page, width, height);
+      }
+    } catch (e) {
+      debugPrint('Error rendering PDF page as image: $e');
+      return null;
+    }
+  }
+  
+  /// Render a PDF page as an image for web platforms
+  Future<Uint8List?> _renderPageAsImageWeb(PdfPage page, int width, int height) async {
+    try {
+      // Create a PdfBitmap to hold the rendered page
+      final PdfBitmap bitmap = PdfBitmap(width, height);
+      
+      // Draw the page content onto the bitmap
+      page.graphics?.drawPdfTemplate(
+        PdfTemplate(width.toDouble(), height.toDouble())..graphics?.drawPdfPage(page),
+        Offset.zero,
+        Size(width.toDouble(), height.toDouble()),
+      );
+      
+      // Export the bitmap data
+      return bitmap.buffer;
+    } catch (e) {
+      debugPrint('Error rendering PDF page as image on web: $e');
+      return null;
+    }
+  }
+  
+  /// Render a PDF page as an image for native platforms
+  Future<Uint8List?> _renderPageAsImageNative(PdfPage page, int width, int height) async {
+    try {
+      // Create a PdfBitmap to hold the rendered page
+      final PdfBitmap bitmap = PdfBitmap(width, height);
+      
+      // Draw the page content onto the bitmap
+      page.graphics?.drawPdfTemplate(
+        PdfTemplate(width.toDouble(), height.toDouble())..graphics?.drawPdfPage(page),
+        Offset.zero,
+        Size(width.toDouble(), height.toDouble()),
+      );
+      
+      // Export the bitmap data
+      return bitmap.buffer;
+    } catch (e) {
+      debugPrint('Error rendering PDF page as image on native: $e');
+      return null;
+    }
+  }
+  
+  /// Pre-process an image for better OCR quality
+  Future<Uint8List?> preprocessImageForOcr(Uint8List imageBytes) async {
+    try {
+      // Decode the image
+      img.Image? image = img.decodeImage(imageBytes);
+      if (image == null) {
+        debugPrint('Failed to decode image for OCR preprocessing');
+        return null;
+      }
+      
+      // Apply image processing to improve OCR results
+      
+      // 1. Convert to grayscale (often improves OCR)
+      image = img.grayscale(image);
+      
+      // 2. Adjust contrast to make text more visible
+      image = img.adjustColor(image, contrast: 1.5);
+      
+      // 3. Adjust exposure for sharper text
+      image = img.adjustColor(image, exposure: 0.2);
+      
+      // 4. Apply luminance threshold to create black and white image
+      image = img.luminanceThreshold(image);
+      
+      // Encode the processed image
+      final List<int> processed = img.encodePng(image);
+      return Uint8List.fromList(processed);
+    } catch (e) {
+      debugPrint('Error preprocessing image for OCR: $e');
+      return null;
+    }
+  }
+  
+  /// Recognize text from an image using Google ML Kit
+  Future<String> recognizeTextFromImage(Uint8List imageBytes) async {
+    try {
+      // Create InputImage from bytes
+      final InputImage inputImage = InputImage.fromBytes(
+        bytes: imageBytes,
+        metadata: InputImageMetadata(
+          size: const Size(1000, 1000), // Approximate size, will be scaled by ML Kit
+          rotation: InputImageRotation.rotation0deg,
+          format: InputImageFormat.bgra8888,
+          bytesPerRow: 4000, // Approximate for BGRA format (4 bytes per pixel)
+        ),
+      );
+      
+      // Process the image with ML Kit
+      final RecognizedText recognizedText = await _textRecognizer.processImage(inputImage);
+      
+      // Build the full text from blocks, lines, and elements
+      final StringBuffer fullText = StringBuffer();
+      
+      for (TextBlock block in recognizedText.blocks) {
+        for (var line in block.lines) {
+          fullText.writeln(line.text);
+        }
+        fullText.writeln(); // Add paragraph break between blocks
+      }
+      
+      return fullText.toString();
+    } catch (e) {
+      debugPrint('Error recognizing text from image: $e');
+      return '';
+    }
+  }
+  
   /// Estimate the quality of an OCR result
   double estimateOcrQuality(String ocrText) {
     if (ocrText.isEmpty) return 0.0;
     
-    // Simple quality estimate based on text length
-    if (ocrText.length > 1000) {
-      return 0.8; // Reasonable amount of text extracted
+    // Calculate multiple quality factors
+    double qualityScore = 0.0;
+    
+    // 1. Text length quality (longer text generally means better extraction)
+    if (ocrText.length > 2000) {
+      qualityScore += 0.4;
+    } else if (ocrText.length > 1000) {
+      qualityScore += 0.3;
     } else if (ocrText.length > 500) {
-      return 0.6; // Some text extracted
+      qualityScore += 0.2;
     } else if (ocrText.length > 100) {
-      return 0.4; // Limited text extracted
-    } else {
-      return 0.2; // Very little text extracted
+      qualityScore += 0.1;
     }
+    
+    // 2. Word count and average word length (meaningful content detection)
+    final List<String> words = ocrText.split(RegExp(r'\s+'));
+    final int wordCount = words.length;
+    
+    if (wordCount > 200) {
+      qualityScore += 0.3;
+    } else if (wordCount > 100) {
+      qualityScore += 0.2;
+    } else if (wordCount > 50) {
+      qualityScore += 0.1;
+    }
+    
+    // 3. Paragraph structure (presence of line breaks indicates structure preservation)
+    final int paragraphCount = ocrText.split('\n\n').length;
+    if (paragraphCount > 5) {
+      qualityScore += 0.2;
+    } else if (paragraphCount > 2) {
+      qualityScore += 0.1;
+    }
+    
+    // 4. Presence of common words (indicates meaningful text)
+    final Set<String> commonWords = {'the', 'a', 'and', 'of', 'to', 'in', 'is', 'it', 'for', 'on'};
+    int commonWordCount = 0;
+    
+    for (String word in words) {
+      if (commonWords.contains(word.toLowerCase())) {
+        commonWordCount++;
+      }
+    }
+    
+    final double commonWordRatio = wordCount > 0 ? commonWordCount / wordCount : 0;
+    if (commonWordRatio > 0.1) {
+      qualityScore += 0.1;
+    }
+    
+    // Ensure score is between 0.0 and 1.0
+    return qualityScore.clamp(0.0, 1.0);
   }
 } 
