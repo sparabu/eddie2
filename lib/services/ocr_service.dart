@@ -19,16 +19,20 @@ class PdfPageImageExtractor {
   Future<img.Image?> extractImage() async {
     try {
       // Create a blank image with the page dimensions at the desired DPI
-      final double width = page.size.width * _pdfPointsToDpi;
-      final double height = page.size.height * _pdfPointsToDpi;
+      final int width = (page.size.width * _pdfPointsToDpi).toInt();
+      final int height = (page.size.height * _pdfPointsToDpi).toInt();
       
       // For the MVP, we'll return a placeholder image
       // In a real implementation, we would use a native method to render the PDF
       // such as pdf.js on web or a native PDF renderer on mobile
-      final img.Image image = img.Image.rgba(width.toInt(), height.toInt());
+      final img.Image image = img.Image(width: width, height: height);
       
-      // Fill with white background
-      img.fill(image, color: img.ColorRgb8(255, 255, 255));
+      // Fill with white background (255, 255, 255)
+      for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+          image.setPixel(x, y, 0xFFFFFFFF); // RGBA white color
+        }
+      }
       
       // Return the image
       return image;
