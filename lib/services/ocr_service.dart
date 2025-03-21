@@ -25,7 +25,7 @@ class PdfPageImageExtractor {
       // For the MVP, we'll return a placeholder image
       // In a real implementation, we would use a native method to render the PDF
       // such as pdf.js on web or a native PDF renderer on mobile
-      final img.Image image = img.Image(width.toInt(), height.toInt());
+      final img.Image image = img.Image.rgba(width.toInt(), height.toInt());
       
       // Fill with white background
       img.fill(image, color: img.ColorRgb8(255, 255, 255));
