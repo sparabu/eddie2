@@ -18,7 +18,9 @@ class PdfService {
   }
   
   // Private constructor for singleton
-  PdfService._internal();
+  PdfService._internal() {
+    _ocrService = OcrService();
+  }
   
   /// Default token limit for chunks to stay within OpenAI's limits
   /// Using a conservative number to account for tokens in messages and metadata
@@ -31,6 +33,9 @@ class PdfService {
   /// Higher values require more evidence that it's a scanned document
   static const double scannedPdfThreshold = 0.6;
   
+  // OCR service instance
+  late final OcrService _ocrService;
+  
   /// Extract text from a PDF file
   /// 
   /// - [bytes] The PDF file as bytes
@@ -40,8 +45,7 @@ class PdfService {
     try {
       // Check if this appears to be a scanned document that would benefit from OCR
       if (useOcrIfNeeded) {
-        final OcrService ocrService = OcrService();
-        final double scannedProbability = await ocrService.isScannedPdf(bytes);
+        final double scannedProbability = await _ocrService.isScannedPdf(bytes);
         
         if (scannedProbability >= scannedPdfThreshold) {
           debugPrint('PDF appears to be scanned (score: $scannedProbability). Using OCR extraction.');
@@ -172,8 +176,7 @@ class PdfService {
       
       if (useOcrIfNeeded) {
         // Check if this is a scanned PDF
-        final OcrService ocrService = OcrService();
-        final double scannedScore = await ocrService.isScannedPdf(bytes);
+        final double scannedScore = await _ocrService.isScannedPdf(bytes);
         
         if (scannedScore >= scannedPdfThreshold) {
           debugPrint('Detected scanned PDF (score: $scannedScore), using OCR extraction');
