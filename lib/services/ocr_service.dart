@@ -8,6 +8,37 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 import 'package:image/image.dart' as img;
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
+/// Helper class to extract images from PDF pages
+class PdfPageImageExtractor {
+  final PdfPage page;
+  static const double _dpiResolution = 300.0; // 300 DPI for good OCR quality
+  static const double _pdfPointsToDpi = _dpiResolution / 72.0; // PDF points to DPI conversion
+  
+  PdfPageImageExtractor(this.page);
+  
+  Future<img.Image?> extractImage() async {
+    try {
+      // Create a blank image with the page dimensions at the desired DPI
+      final double width = page.size.width * _pdfPointsToDpi;
+      final double height = page.size.height * _pdfPointsToDpi;
+      
+      // For the MVP, we'll return a placeholder image
+      // In a real implementation, we would use a native method to render the PDF
+      // such as pdf.js on web or a native PDF renderer on mobile
+      final img.Image image = img.Image(width.toInt(), height.toInt());
+      
+      // Fill with white background
+      img.fill(image, color: img.ColorRgb8(255, 255, 255));
+      
+      // Return the image
+      return image;
+    } catch (e) {
+      debugPrint('Error creating image from PDF page: $e');
+      return null;
+    }
+  }
+}
+
 /// Service for handling OCR (Optical Character Recognition) operations
 class OcrService {
   // Singleton instance
@@ -203,35 +234,6 @@ class OcrService {
     } catch (e) {
       debugPrint('Error exporting page as image: $e');
       return [];
-    }
-  }
-  
-  /// Helper class to extract images from PDF pages
-  class PdfPageImageExtractor {
-    final PdfPage page;
-    
-    PdfPageImageExtractor(this.page);
-    
-    Future<img.Image?> extractImage() async {
-      try {
-        // Create a blank image with the page dimensions at the desired DPI
-        final double width = page.size.width * _pdfPointsToDpi;
-        final double height = page.size.height * _pdfPointsToDpi;
-        
-        // For the MVP, we'll return a placeholder image
-        // In a real implementation, we would use a native method to render the PDF
-        // such as pdf.js on web or a native PDF renderer on mobile
-        final img.Image image = img.Image(width.toInt(), height.toInt());
-        
-        // Fill with white background
-        img.fill(image, color: img.ColorRgb8(255, 255, 255));
-        
-        // Return the image
-        return image;
-      } catch (e) {
-        debugPrint('Error creating image from PDF page: $e');
-        return null;
-      }
     }
   }
   
